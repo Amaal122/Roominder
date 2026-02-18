@@ -14,6 +14,9 @@ export default function Layout() {
         <Stack.Screen name="sweethome" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="findhome" />
+        <Stack.Screen name="lookingfor" />
+        <Stack.Screen name="location" />
+        <Stack.Screen name="completeprofile" />
         <Stack.Screen name="index" />
         <Stack.Screen name="register" />
       </Stack>

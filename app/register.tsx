@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import {
     ScrollView,
@@ -12,6 +12,15 @@ import {
 
 export default function Register() {
   const router = useRouter();
+  const { role } = useLocalSearchParams<{ role?: string }>();
+
+  const handleContinue = () => {
+    if (role === "housing") {
+      router.push("/lookingfor");
+    } else {
+      router.push("/sweethome");
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -49,7 +58,7 @@ export default function Register() {
           secure
         />
 
-        <TouchableOpacity style={styles.btnPrimary}>
+        <TouchableOpacity style={styles.btnPrimary} onPress={handleContinue}>
           <Text style={styles.btnText}>Create Account</Text>
         </TouchableOpacity>
 

@@ -3,11 +3,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function RoleSelection() {
@@ -33,7 +33,12 @@ export default function RoleSelection() {
           {/* Carte : Looking for Housing */}
           <TouchableOpacity
             style={styles.roleCard}
-            onPress={() => router.push("/register")}
+            onPress={() =>
+              router.push({
+                pathname: "/register",
+                params: { role: "housing" },
+              })
+            }
           >
             <LinearGradient
               colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
@@ -54,7 +59,9 @@ export default function RoleSelection() {
           {/* Carte : Property Owner */}
           <TouchableOpacity
             style={styles.roleCard}
-            onPress={() => router.push("/register")}
+            onPress={() =>
+              router.push({ pathname: "/register", params: { role: "owner" } })
+            }
           >
             <LinearGradient
               colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
