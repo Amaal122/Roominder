@@ -19,7 +19,7 @@ export default function CompleteProfile() {
   const [occupation, setOccupation] = useState("");
 
   const handleContinue = () => {
-    router.push("/sweethome");
+    router.push("/form");
   };
 
   return (
