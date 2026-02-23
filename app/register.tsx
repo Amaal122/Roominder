@@ -17,6 +17,8 @@ export default function Register() {
   const handleContinue = () => {
     if (role === "housing") {
       router.push("/lookingfor");
+    } else if (role === "owner") {
+      router.push("/propertyowner");
     } else {
       router.push("/sweethome");
     }

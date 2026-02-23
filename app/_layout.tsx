@@ -11,6 +11,9 @@ export default function Layout() {
           contentStyle: { backgroundColor: "#F5F5F5" },
         }}
       >
+        <Stack.Screen name="propertydetails" />
+        <Stack.Screen name="newproperty" />
+        <Stack.Screen name="propertyowner" />
         <Stack.Screen name="sweethome" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="findhome" />
