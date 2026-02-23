@@ -20,6 +20,7 @@ export default function Layout() {
         <Stack.Screen name="form" />
         <Stack.Screen name="index" />
         <Stack.Screen name="register" />
+        <Stack.Screen name="HomeScreen" />
       </Stack>
     </>
   );

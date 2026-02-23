@@ -1,15 +1,15 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
-    Image,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function CompleteProfile() {
@@ -19,7 +19,9 @@ export default function CompleteProfile() {
   const [occupation, setOccupation] = useState("");
 
   const handleContinue = () => {
-    router.push("/form");
+    // On redirige vers "/homescreen" qui correspond au fichier app/homescreen.tsx
+    // On utilise .replace pour que l'utilisateur ne revienne pas au formulaire
+    router.replace("/homescreen");
   };
 
   return (
@@ -100,7 +102,7 @@ export default function CompleteProfile() {
           activeOpacity={0.9}
           onPress={handleContinue}
         >
-          <Text style={styles.ctaText}>Continue</Text>
+          <Text style={styles.ctaText}>Confirm Profile</Text>
         </TouchableOpacity>
       </SafeAreaView>
     </LinearGradient>
