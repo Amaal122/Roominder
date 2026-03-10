@@ -21,6 +21,7 @@ export default function Layout() {
         <Stack.Screen name="location" />
         <Stack.Screen name="completeprofile" />
         <Stack.Screen name="form" />
+        <Stack.Screen name="roomatematch" />
         <Stack.Screen name="index" />
         <Stack.Screen name="register" />
         <Stack.Screen name="HomeScreen" />

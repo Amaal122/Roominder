@@ -134,7 +134,7 @@ const ListingCard = ({
 }: Listing & { onPress: () => void }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  // hover يخدم على web فقط، مش مشكل نخليوه
+  
   const handleHoverIn = () => {
     Animated.spring(scaleAnim, {
       toValue: 1.05,
@@ -148,7 +148,7 @@ const ListingCard = ({
   return (
     <Pressable
       style={styles.listingCard}
-      onPress={onPress} // ✅ أهم حاجة
+      onPress={onPress} 
       onHoverIn={handleHoverIn}
       onHoverOut={handleHoverOut}
     >
@@ -197,9 +197,13 @@ export default function HomeScreen() {
     { icon: "👤", label: "Profile" },
   ];
 
+  const handleTabPress = (label: string) => {
+    setActiveTab(label);
+  };
+
   const goToDetails = (item: Listing) => {
     router.push({
-      pathname: "/screens/PropertyDetail", // ✅ بما أن الملف داخل app/screens/
+      pathname: "/screens/PropertyDetail", 
       params: {
         id: item.id,
         title: item.title,
@@ -234,7 +238,10 @@ export default function HomeScreen() {
               <Text style={styles.toggleIconActive}>🏠</Text>
               <Text style={styles.toggleTextActive}>Housing</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.toggleBtn}>
+            <TouchableOpacity
+              style={styles.toggleBtn}
+              onPress={() => router.push("/roomatematch")}
+            >
               <Text style={styles.toggleIcon}>👥</Text>
               <Text style={styles.toggleText}>Roommates</Text>
             </TouchableOpacity>
@@ -280,7 +287,7 @@ export default function HomeScreen() {
             icon={tab.icon}
             label={tab.label}
             active={activeTab === tab.label}
-            onPress={() => setActiveTab(tab.label)}
+            onPress={() => handleTabPress(tab.label)}
           />
         ))}
       </View>
