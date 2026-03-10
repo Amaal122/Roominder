@@ -19,9 +19,8 @@ export default function CompleteProfile() {
   const [occupation, setOccupation] = useState("");
 
   const handleContinue = () => {
-    // On redirige vers "/homescreen" qui correspond au fichier app/homescreen.tsx
-    // On utilise .replace pour que l'utilisateur ne revienne pas au formulaire
-    router.replace("/homescreen");
+    // Move to lifestyle form once profile basics are filled
+    router.push("/form");
   };
 
   return (

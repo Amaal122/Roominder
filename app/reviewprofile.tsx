@@ -1,7 +1,7 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import {
     SafeAreaView,
     StyleSheet,
@@ -56,7 +56,7 @@ export default function ReviewProfile() {
   const allAnswered = selections.every((item) => item.label !== "Not selected");
 
   const handleConfirm = () => {
-    router.replace("/sweethome");
+    router.replace("/homescreen");
   };
 
   return (
