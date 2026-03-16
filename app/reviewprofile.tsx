@@ -33,7 +33,7 @@ export default function ReviewProfile() {
     try {
       const data = JSON.parse(answersParam);
       return typeof data === "object" && data ? data : {};
-    } catch (error) {
+    } catch {
       return {};
     }
   }, [answersParam]);

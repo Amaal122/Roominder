@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import {
   Animated,
   Dimensions,
+  Image,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -11,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import PropertyMap from "../../components/PropertyMap";
 
 const { width } = Dimensions.get("window");
 
@@ -230,6 +232,11 @@ export default function PropertyDetail() {
     rooms?: string;
     match?: string;
     image?: string;
+    baths?: string;
+    size?: string;
+    description?: string;
+    lat?: string;
+    lng?: string;
   }>();
 
   const title = params.title ?? "Modern Loft\nin Marais";
@@ -237,6 +244,14 @@ export default function PropertyDetail() {
   const location = params.location ?? "Le Marais, Paris";
   const rooms = params.rooms ?? "2 Beds";
   const match = params.match ?? "95";
+  const image = params.image;
+  const baths = params.baths ?? "1 Bath";
+  const size = params.size ?? "65 m²";
+  const description =
+    params.description ??
+    "Beautiful modern loft in the heart of Le Marais. This spacious apartment features high ceilings, large windows, and a contemporary design. Perfect for young professionals looking for a stylish living space in a vibrant neighborhood.";
+  const lat = params.lat ? Number(params.lat) : 48.8566;
+  const lng = params.lng ? Number(params.lng) : 2.3522;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -248,7 +263,15 @@ export default function PropertyDetail() {
       >
         {/* HERO */}
         <View style={styles.hero}>
-          <RoomIllustration />
+          {image ? (
+            <Image
+              source={{ uri: image }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <RoomIllustration />
+          )}
 
           {/* Top Nav */}
           <View style={styles.heroNav}>
@@ -297,7 +320,7 @@ export default function PropertyDetail() {
 
           {/* Specs */}
           <View style={styles.specsRow}>
-            {[rooms, "1 Bath", "65 m²"].map((s) => (
+            {[rooms, baths, size].map((s) => (
               <View key={s} style={styles.specTag}>
                 <Text style={styles.specText}>{s}</Text>
               </View>
@@ -328,12 +351,7 @@ export default function PropertyDetail() {
               <Text style={styles.sectionTitle}>Description</Text>
               <Text style={styles.sectionArrow}>▲</Text>
             </View>
-            <Text style={styles.descText}>
-              Beautiful modern loft in the heart of Le Marais. This spacious
-              apartment features high ceilings, large windows, and a
-              contemporary design. Perfect for young professionals looking for a
-              stylish living space in a vibrant neighborhood.
-            </Text>
+            <Text style={styles.descText}>{description}</Text>
           </View>
 
           {/* Amenities */}
@@ -357,24 +375,7 @@ export default function PropertyDetail() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Location</Text>
             <View style={styles.mapContainer}>
-              {[0.25, 0.5, 0.75].map((p) => (
-                <View
-                  key={`h${p}`}
-                  style={[styles.mapLineH, { top: `${p * 100}%` as any }]}
-                />
-              ))}
-              {[0.25, 0.5, 0.75].map((p) => (
-                <View
-                  key={`v${p}`}
-                  style={[styles.mapLineV, { left: `${p * 100}%` as any }]}
-                />
-              ))}
-              <View style={styles.mapPinWrapper}>
-                <View style={styles.mapPin}>
-                  <View style={styles.mapPinDot} />
-                </View>
-                <View style={styles.mapPinShadow} />
-              </View>
+              <PropertyMap lat={lat} lng={lng} />
             </View>
           </View>
         </View>
@@ -382,7 +383,11 @@ export default function PropertyDetail() {
 
       {/* CTA */}
       <View style={styles.ctaBar}>
-        <TouchableOpacity style={styles.ctaBtn} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.ctaBtn}
+          activeOpacity={0.85}
+          onPress={() => router.push("/screens/OwnerProfile")}
+        >
           <Text style={styles.ctaText}>Contact Owner</Text>
         </TouchableOpacity>
       </View>
@@ -404,6 +409,7 @@ const styles = StyleSheet.create({
 
   // HERO
   hero: { height: 300, position: "relative", overflow: "hidden" },
+  heroImage: { width: "100%", height: "100%" },
   roomScene: { flex: 1, position: "relative" },
   roomBg: { ...StyleSheet.absoluteFillObject, backgroundColor: "#FAE8D8" },
   window: {
@@ -673,50 +679,6 @@ const styles = StyleSheet.create({
     borderColor: BORDER,
     overflow: "hidden",
     position: "relative",
-  },
-  mapLineH: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: "rgba(108,99,255,0.15)",
-  },
-  mapLineV: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    width: 1,
-    backgroundColor: "rgba(108,99,255,0.15)",
-  },
-  mapPinWrapper: { alignItems: "center" },
-  mapPin: {
-    width: 36,
-    height: 36,
-    backgroundColor: PURPLE,
-    borderRadius: 18,
-    borderBottomRightRadius: 0,
-    transform: [{ rotate: "-45deg" }],
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: PURPLE,
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  },
-  mapPinDot: {
-    width: 12,
-    height: 12,
-    backgroundColor: "white",
-    borderRadius: 6,
-    transform: [{ rotate: "45deg" }],
-  },
-  mapPinShadow: {
-    width: 18,
-    height: 6,
-    backgroundColor: "rgba(108,99,255,0.25)",
-    borderRadius: 9,
-    marginTop: 2,
   },
 
   // CTA

@@ -3,13 +3,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import {
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type Params = {
@@ -93,7 +93,23 @@ export default function PropertyDetails() {
             >
               <Text style={styles.tabActiveText}>Overview</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.tab} activeOpacity={0.9}>
+            <TouchableOpacity
+              style={styles.tab}
+              activeOpacity={0.9}
+              onPress={() =>
+                router.push({
+                  pathname: "/propertyownerapplications",
+                  params: {
+                    id: params.id,
+                    title: details.title,
+                    location: details.location,
+                    price: details.price,
+                    image: details.image,
+                    applications: details.applications,
+                  },
+                })
+              }
+            >
               <Text style={styles.tabText}>Applications</Text>
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{details.applications}</Text>

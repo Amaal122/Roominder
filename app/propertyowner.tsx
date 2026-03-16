@@ -10,6 +10,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { usePendingCount } from "./state/ownerDashboard";
 
 const STATS = [
   {
@@ -100,6 +101,7 @@ const PROPERTIES: Property[] = [
 
 export default function PropertyOwner() {
   const router = useRouter();
+  const pendingCount = usePendingCount();
 
   const handleNewProperty = () => {
     router.push("/newproperty" as Href);
@@ -165,7 +167,7 @@ export default function PropertyOwner() {
                   <Feather name={stat.icon} size={18} color={stat.color} />
                 </View>
                 <Text style={[styles.statValue, { color: stat.color }]}>
-                  {stat.value}
+                  {stat.key === "pending" ? String(pendingCount) : stat.value}
                 </Text>
                 <Text style={styles.statLabel}>{stat.label}</Text>
               </View>
@@ -182,7 +184,7 @@ export default function PropertyOwner() {
                 style={styles.propertyCard}
                 onPress={() =>
                   router.push({
-                    pathname: "/propertydetails" as Href,
+                    pathname: "/propertyownerdetail" as Href,
                     params: {
                       id: property.id,
                       title: property.title,
