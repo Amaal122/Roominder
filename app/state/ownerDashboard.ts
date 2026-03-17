@@ -29,3 +29,8 @@ export const usePendingCount = () => {
 
   return count;
 };
+
+// Expo Router treats files under app/ as routes; provide a no-op component to satisfy default export requirement.
+export default function OwnerDashboardState() {
+  return null;
+}

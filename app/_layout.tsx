@@ -12,7 +12,6 @@ export default function Layout() {
         }}
         initialRouteName="index"
       >
-        <Stack.Screen name="propertydetails" />
         <Stack.Screen name="newproperty" />
         <Stack.Screen name="propertyowner" />
         <Stack.Screen name="sweethome" />
