@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
+import React from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -10,18 +11,11 @@ import {
   View,
 } from "react-native";
 
-export default function Register() {
+export default function Login() {
   const router = useRouter();
-  const { role } = useLocalSearchParams<{ role?: string }>();
 
   const handleContinue = () => {
-    if (role === "housing") {
-      router.push("/lookingfor");
-    } else if (role === "owner") {
-      router.push("/propertyowner");
-    } else {
-      router.push("/sweethome");
-    }
+    router.push("/homescreen");
   };
 
   return (
@@ -35,18 +29,13 @@ export default function Register() {
         <TouchableOpacity onPress={() => router.back()}>
           <Feather name="arrow-left" size={24} color="white" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Account</Text>
+        <Text style={styles.headerTitle}>Welcome Back</Text>
         <Text style={styles.headerSubtitle}>
-          Join our community and find your perfect home
+          Sign in to continue your Roominder journey
         </Text>
       </LinearGradient>
 
       <View style={styles.formCard}>
-        <InputField
-          label="Full Name"
-          icon="user"
-          placeholder="hanine hamrouni"
-        />
         <InputField
           label="Email Address"
           icon="mail"
@@ -58,26 +47,19 @@ export default function Register() {
           placeholder="........"
           secure
         />
-        <InputField
-          label="Confirm Password"
-          icon="lock"
-          placeholder="Confirm Password"
-          secure
-        />
 
         <TouchableOpacity style={styles.btnPrimary} onPress={handleContinue}>
-          <Text style={styles.btnText}>Create Account</Text>
+          <Text style={styles.btnText}>Sign In</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push("/login")}>
+        <TouchableOpacity onPress={() => router.push("/register")}>
           <Text style={styles.footerText}>
-            Already have an account? <Text style={styles.link}>Sign In</Text>
+            New here? <Text style={styles.link}>Create Account</Text>
           </Text>
         </TouchableOpacity>
 
         <Text style={styles.terms}>
-          By creating an account, you agree to our Terms of Service and Privacy
-          Policy
+          By signing in, you agree to our Terms of Service and Privacy Policy
         </Text>
       </View>
     </ScrollView>
@@ -109,7 +91,7 @@ const styles = StyleSheet.create({
     color: "white",
     marginTop: 20,
   },
-  headerSubtitle: { color: "rgba(255,255,255,0.8)", marginTop: 5 },
+  headerSubtitle: { color: "rgba(255,255,255,0.85)", marginTop: 5 },
   formCard: {
     flex: 1,
     backgroundColor: "white",

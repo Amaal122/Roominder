@@ -1,10 +1,12 @@
 import { router, useLocalSearchParams } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useRef } from "react";
 import {
   Animated,
   BackHandler,
   Dimensions,
   Image,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -17,6 +19,14 @@ import PropertyMap from "../../components/PropertyMap";
 
 const { width } = Dimensions.get("window");
 
+const CORAL = "#F4896B";
+const CORAL_PASTEL = "#F9D4C2";
+const TEAL = "#7ECEC4";
+const INK = "#2B2B33";
+const MUTED = "#7A6D6A";
+const BG = "#FFF7F3";
+const BORDER = "#F1E3DC";
+
 // ── Icons (inline SVG-like with View shapes) ──────────────────────────────────
 const IconWifi = () => (
   <View style={{ alignItems: "center", gap: 3 }}>
@@ -27,7 +37,7 @@ const IconWifi = () => (
           width: w,
           height: 3,
           borderRadius: 2,
-          backgroundColor: "#6C63FF",
+          backgroundColor: TEAL,
           opacity: 1 - i * 0.15,
         }}
       />
@@ -37,7 +47,7 @@ const IconWifi = () => (
         width: 4,
         height: 4,
         borderRadius: 2,
-        backgroundColor: "#6C63FF",
+        backgroundColor: TEAL,
       }}
     />
   </View>
@@ -48,13 +58,13 @@ const IconTV = () => (
       width: 24,
       height: 18,
       borderWidth: 2,
-      borderColor: "#6C63FF",
+      borderColor: TEAL,
       borderRadius: 3,
       alignItems: "center",
       justifyContent: "center",
     }}
   >
-    <View style={{ width: 10, height: 1.5, backgroundColor: "#6C63FF" }} />
+    <View style={{ width: 10, height: 1.5, backgroundColor: TEAL }} />
   </View>
 );
 const IconKitchen = () => (
@@ -63,14 +73,14 @@ const IconKitchen = () => (
       width: 20,
       height: 22,
       borderWidth: 2,
-      borderColor: "#6C63FF",
+      borderColor: TEAL,
       borderRadius: 3,
       alignItems: "center",
       justifyContent: "flex-start",
       paddingTop: 4,
     }}
   >
-    <View style={{ width: 12, height: 1.5, backgroundColor: "#6C63FF" }} />
+    <View style={{ width: 12, height: 1.5, backgroundColor: TEAL }} />
   </View>
 );
 const IconElevator = () => (
@@ -79,7 +89,7 @@ const IconElevator = () => (
       width: 20,
       height: 22,
       borderWidth: 2,
-      borderColor: "#6C63FF",
+      borderColor: TEAL,
       borderRadius: 3,
       alignItems: "center",
       justifyContent: "center",
@@ -95,7 +105,7 @@ const IconElevator = () => (
         borderBottomWidth: 5,
         borderLeftColor: "transparent",
         borderRightColor: "transparent",
-        borderBottomColor: "#6C63FF",
+        borderBottomColor: TEAL,
       }}
     />
     <View
@@ -107,7 +117,7 @@ const IconElevator = () => (
         borderTopWidth: 5,
         borderLeftColor: "transparent",
         borderRightColor: "transparent",
-        borderTopColor: "#6C63FF",
+        borderTopColor: TEAL,
       }}
     />
   </View>
@@ -118,13 +128,13 @@ const IconParking = () => (
       width: 22,
       height: 22,
       borderWidth: 2,
-      borderColor: "#6C63FF",
+      borderColor: TEAL,
       borderRadius: 3,
       alignItems: "center",
       justifyContent: "center",
     }}
   >
-    <Text style={{ fontSize: 13, fontWeight: "700", color: "#6C63FF" }}>P</Text>
+    <Text style={{ fontSize: 13, fontWeight: "700", color: TEAL }}>P</Text>
   </View>
 );
 const IconPeople = () => (
@@ -137,7 +147,7 @@ const IconPeople = () => (
             height: 10,
             borderRadius: 5,
             borderWidth: 2,
-            borderColor: "#6C63FF",
+            borderColor: TEAL,
           }}
         />
         <View
@@ -146,7 +156,7 @@ const IconPeople = () => (
             height: 8,
             borderRadius: 7,
             borderWidth: 2,
-            borderColor: "#6C63FF",
+            borderColor: TEAL,
           }}
         />
       </View>
@@ -287,6 +297,13 @@ export default function PropertyDetail() {
           ) : (
             <RoomIllustration />
           )}
+          <LinearGradient
+            colors={["rgba(244,137,107,0.2)", "rgba(126,206,196,0.3)"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroOverlay}
+            pointerEvents="none"
+          />
 
           {/* Top Nav */}
           <View style={styles.heroNav}>
@@ -387,7 +404,17 @@ export default function PropertyDetail() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Location</Text>
             <View style={styles.mapContainer}>
-              <PropertyMap lat={lat} lng={lng} />
+              {Platform.OS === "web" ? (
+                <View style={styles.mapPlaceholder}>
+                  <View style={styles.mapPin} />
+                  <Text style={styles.mapTitle}>Map Preview</Text>
+                  <Text style={styles.mapCoords}>
+                    {lat.toFixed(4)}, {lng.toFixed(4)}
+                  </Text>
+                </View>
+              ) : (
+                <PropertyMap lat={lat} lng={lng} />
+              )}
             </View>
           </View>
         </View>
@@ -408,13 +435,6 @@ export default function PropertyDetail() {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const PURPLE = "#6C63FF";
-const PURPLE_LIGHT = "#EDE9FF";
-const TEXT = "#1A1A2E";
-const MUTED = "#8B8CA8";
-const BG = "#F8F7FF";
-const BORDER = "#EEECFA";
-
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
   scroll: { flex: 1 },
@@ -422,6 +442,7 @@ const styles = StyleSheet.create({
   // HERO
   hero: { height: 300, position: "relative", overflow: "hidden" },
   heroImage: { width: "100%", height: "100%" },
+  heroOverlay: { ...StyleSheet.absoluteFillObject },
   roomScene: { flex: 1, position: "relative" },
   roomBg: { ...StyleSheet.absoluteFillObject, backgroundColor: "#FAE8D8" },
   window: {
@@ -547,7 +568,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 16,
     right: 16,
-    backgroundColor: "white",
+    backgroundColor: "rgba(255,255,255,0.95)",
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -560,8 +581,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 4,
   },
-  matchStar: { fontSize: 14, color: PURPLE },
-  matchText: { fontSize: 13, fontWeight: "600", color: TEXT },
+  matchStar: { fontSize: 14, color: CORAL },
+  matchText: { fontSize: 13, fontWeight: "600", color: INK },
 
   // CARD
   card: {
@@ -570,11 +591,16 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     marginTop: -20,
     padding: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -2 },
+    elevation: 6,
   },
   pill: {
     width: 36,
     height: 4,
-    backgroundColor: "#DDD",
+    backgroundColor: "#EAD6CC",
     borderRadius: 2,
     alignSelf: "center",
     marginBottom: 20,
@@ -585,8 +611,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 8,
   },
-  title: { fontSize: 22, fontWeight: "700", color: TEXT, lineHeight: 28 },
-  price: { fontSize: 22, fontWeight: "700", color: PURPLE, textAlign: "right" },
+  title: { fontSize: 22, fontWeight: "700", color: INK, lineHeight: 28 },
+  price: { fontSize: 22, fontWeight: "700", color: CORAL, textAlign: "right" },
   pricePer: { fontSize: 12, color: MUTED, textAlign: "right" },
   locationRow: {
     flexDirection: "row",
@@ -598,16 +624,16 @@ const styles = StyleSheet.create({
   locationText: { fontSize: 13, color: MUTED },
   specsRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
   specTag: {
-    backgroundColor: PURPLE_LIGHT,
+    backgroundColor: CORAL_PASTEL,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
-  specText: { fontSize: 12, fontWeight: "500", color: PURPLE },
+  specText: { fontSize: 12, fontWeight: "600", color: CORAL },
 
   // SCORE
   scoreCard: {
-    backgroundColor: BG,
+    backgroundColor: "#FFF5F0",
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
@@ -620,23 +646,23 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 16,
   },
-  scoreStar: { fontSize: 18, color: PURPLE },
-  scoreTitle: { fontSize: 15, fontWeight: "600", color: TEXT },
+  scoreStar: { fontSize: 18, color: TEAL },
+  scoreTitle: { fontSize: 15, fontWeight: "600", color: INK },
   scoreRow: { marginBottom: 14 },
   scoreLabelRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 6,
   },
-  scoreLabel: { fontSize: 13, color: TEXT },
-  scoreValue: { fontSize: 13, fontWeight: "600", color: PURPLE },
+  scoreLabel: { fontSize: 13, color: INK },
+  scoreValue: { fontSize: 13, fontWeight: "600", color: TEAL },
   progressTrack: {
     height: 6,
-    backgroundColor: "#E8E5FF",
+    backgroundColor: "#F6D9CC",
     borderRadius: 3,
     overflow: "hidden",
   },
-  progressFill: { height: 6, backgroundColor: PURPLE, borderRadius: 3 },
+  progressFill: { height: 6, backgroundColor: TEAL, borderRadius: 3 },
 
   // SECTIONS
   section: { marginBottom: 24 },
@@ -649,7 +675,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: TEXT,
+    color: INK,
     marginBottom: 12,
   },
   sectionArrow: { fontSize: 14, color: MUTED },
@@ -659,7 +685,7 @@ const styles = StyleSheet.create({
   amenitiesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   amenityCard: {
     width: (width - 48 - 24) / 3,
-    backgroundColor: BG,
+    backgroundColor: "#FFF5F0",
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 12,
@@ -682,7 +708,7 @@ const styles = StyleSheet.create({
 
   // MAP
   mapContainer: {
-    backgroundColor: PURPLE_LIGHT,
+    backgroundColor: CORAL_PASTEL,
     borderRadius: 16,
     height: 130,
     alignItems: "center",
@@ -692,6 +718,21 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
   },
+  mapPlaceholder: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.6)",
+  },
+  mapPin: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: CORAL,
+    marginBottom: 8,
+  },
+  mapTitle: { fontSize: 12, fontWeight: "600", color: INK },
+  mapCoords: { fontSize: 11, color: MUTED, marginTop: 2 },
 
   // CTA
   ctaBar: {
@@ -705,11 +746,11 @@ const styles = StyleSheet.create({
     borderTopColor: BORDER,
   },
   ctaBtn: {
-    backgroundColor: PURPLE,
+    backgroundColor: TEAL,
     borderRadius: 16,
     padding: 16,
     alignItems: "center",
-    shadowColor: PURPLE,
+    shadowColor: TEAL,
     shadowOpacity: 0.4,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },

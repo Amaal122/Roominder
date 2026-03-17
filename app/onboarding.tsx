@@ -1,7 +1,6 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React from "react";
 import {
   ImageBackground,
   StyleSheet,
@@ -16,11 +15,13 @@ export default function SafeSecureScreen() {
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={{ uri: "https://votre-image-bureau.jpg" }}
+        source={{
+          uri: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80",
+        }}
         style={styles.topSection}
       >
         <LinearGradient
-          colors={["rgba(142, 68, 173, 0.8)", "rgba(243, 156, 18, 0.6)"]}
+          colors={["rgba(244, 137, 107, 0.9)", "rgba(126, 206, 196, 0.8)"]}
           style={styles.overlay}
         >
           <View style={styles.iconBox}>
@@ -56,12 +57,12 @@ export default function SafeSecureScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFF" },
+  container: { flex: 1, backgroundColor: "#FFF7F3" },
   topSection: { flex: 1.2 },
   overlay: { flex: 1, justifyContent: "center", alignItems: "center" },
   iconBox: {
     padding: 20,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.28)",
     borderRadius: 25,
   },
   bottomSection: {
@@ -75,10 +76,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#1F2937",
+    color: "#2B2B33",
     marginBottom: 15,
   },
-  description: { fontSize: 16, color: "#6B7280", lineHeight: 24 },
+  description: { fontSize: 16, color: "#7A6D6A", lineHeight: 24 },
   pagination: {
     flexDirection: "row",
     marginVertical: 30,
@@ -88,17 +89,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#F9D4C2",
     marginHorizontal: 4,
   },
   activeDot: {
     width: 24,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#6D28D9",
+    backgroundColor: "#36b37e",
   },
   sliderButton: {
-    backgroundColor: "#312E81",
+    backgroundColor: "#F4896B",
     height: 64,
     borderRadius: 32,
     flexDirection: "row",

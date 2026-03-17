@@ -17,12 +17,12 @@ export default function SweetHome() {
     <View style={styles.container}>
       <ImageBackground
         source={{
-          uri: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
+          uri: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80",
         }}
         style={styles.topSection}
       >
         <LinearGradient
-          colors={["rgba(98, 0, 234, 0.85)", "rgba(236, 64, 122, 0.7)"]}
+          colors={["rgba(244, 137, 107, 0.9)", "rgba(126, 206, 196, 0.8)"]}
           style={styles.overlay}
         >
           <View style={styles.iconBox}>
@@ -61,17 +61,17 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: "center", alignItems: "center" },
   iconBox: {
     padding: 20,
-    backgroundColor: "rgba(255,255,255,0.25)",
+    backgroundColor: "rgba(255,255,255,0.3)",
     borderRadius: 20,
   },
-  bottomSection: { flex: 1, padding: 30, backgroundColor: "#FFF" },
+  bottomSection: { flex: 1, padding: 30, backgroundColor: "#FFF7F3" },
   title: {
     fontSize: 26,
     fontWeight: "bold",
-    color: "#1F2937",
+    color: "#2B2B33",
     marginBottom: 12,
   },
-  description: { fontSize: 16, color: "#6B7280", lineHeight: 24 },
+  description: { fontSize: 16, color: "#7A6D6A", lineHeight: 24 },
   pagination: {
     flexDirection: "row",
     marginVertical: 28,
@@ -83,15 +83,15 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#F9D4C2",
   },
   activeDot: {
     width: 24,
     borderRadius: 6,
-    backgroundColor: "#8B5CF6",
+    backgroundColor: "#7ECEC4",
   },
   nextButton: {
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#F4896B",
     height: 58,
     borderRadius: 18,
     flexDirection: "row",

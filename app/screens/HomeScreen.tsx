@@ -1,6 +1,7 @@
 // app/screens/HomeScreen.tsx
 
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRef, useState } from "react";
 import {
   Animated,
@@ -217,15 +218,28 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={PURPLE} />
+      <StatusBar barStyle="light-content" backgroundColor={CORAL} />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* ── HERO ── */}
-        <View style={styles.hero}>
+        <LinearGradient
+          colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
           <View style={styles.heroTop}>
             <View>
               <Text style={styles.heroTitle}>Your Sweet{"\n"}Home</Text>
               <Text style={styles.heroSubtitle}>Find your perfect match</Text>
+              <View style={styles.heroChips}>
+                <View style={styles.heroChip}>
+                  <Text style={styles.heroChipText}>New in Paris</Text>
+                </View>
+                <View style={[styles.heroChip, styles.heroChipTeal]}>
+                  <Text style={styles.heroChipTextDark}>Verified</Text>
+                </View>
+              </View>
             </View>
             <TouchableOpacity style={styles.bellButton}>
               <Text style={styles.bellIcon}>🔔</Text>
@@ -245,17 +259,17 @@ export default function HomeScreen() {
               <Text style={styles.toggleText}>Roommates</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </LinearGradient>
 
         {/* ── STATS ── */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>📈 New Listings</Text>
-            <Text style={styles.statValue}>24</Text>
+            <Text style={[styles.statValue, styles.statValueTeal]}>24</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>✨ Best Match</Text>
-            <Text style={[styles.statValue, styles.statValuePurple]}>95%</Text>
+            <Text style={[styles.statValue, styles.statValueAccent]}>95%</Text>
           </View>
         </View>
 
@@ -295,15 +309,19 @@ export default function HomeScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const PURPLE = "#7B2FBE";
+const CORAL = "#F4896B";
+const CORAL_LIGHT = "#F7B89A";
+const CORAL_PASTEL = "#F9D4C2";
+const TEAL = "#7ECEC4";
+const INK = "#2B2B33";
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F7F7FB" },
+  safeArea: { flex: 1, backgroundColor: CORAL_PASTEL },
   container: { flex: 1 },
 
   // HERO
   hero: {
-    backgroundColor: PURPLE,
+    backgroundColor: CORAL,
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 28,
@@ -317,9 +335,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   heroTitle: { fontSize: 28, fontWeight: "800", color: "#FFF", lineHeight: 34 },
-  heroSubtitle: { fontSize: 13, color: "rgba(255,255,255,0.75)", marginTop: 4 },
+  heroSubtitle: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 },
+  heroChips: { flexDirection: "row", gap: 8, marginTop: 10 },
+  heroChip: {
+    backgroundColor: "rgba(255,255,255,0.25)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  heroChipTeal: { backgroundColor: "rgba(255,255,255,0.85)" },
+  heroChipText: { color: "#FFF", fontSize: 11, fontWeight: "600" },
+  heroChipTextDark: { color: INK, fontSize: 11, fontWeight: "700" },
   bellButton: {
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.25)",
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -331,7 +359,7 @@ const styles = StyleSheet.create({
   // TOGGLE
   toggleContainer: {
     flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.95)",
+    backgroundColor: "rgba(255,255,255,0.96)",
     borderRadius: 14,
     padding: 4,
   },
@@ -354,8 +382,8 @@ const styles = StyleSheet.create({
   },
   toggleIcon: { fontSize: 16 },
   toggleIconActive: { fontSize: 16 },
-  toggleText: { fontSize: 14, color: PURPLE, fontWeight: "500" },
-  toggleTextActive: { fontSize: 14, color: "#1A1A2E", fontWeight: "700" },
+  toggleText: { fontSize: 14, color: TEAL, fontWeight: "600" },
+  toggleTextActive: { fontSize: 14, color: CORAL, fontWeight: "700" },
 
   // STATS
   statsRow: {
@@ -366,18 +394,21 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: "#FFF",
+    backgroundColor: "rgba(255,255,255,0.92)",
     borderRadius: 14,
     padding: 14,
+    borderWidth: 1,
+    borderColor: CORAL_PASTEL,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
-  statLabel: { fontSize: 11, color: "#888", marginBottom: 4 },
-  statValue: { fontSize: 26, fontWeight: "800", color: "#1A1A2E" },
-  statValuePurple: { color: PURPLE },
+  statLabel: { fontSize: 11, color: "#7A6D6A", marginBottom: 4 },
+  statValue: { fontSize: 26, fontWeight: "800", color: INK },
+  statValueTeal: { color: TEAL },
+  statValueAccent: { color: TEAL },
 
   // SECTION HEADER
   sectionHeader: {
@@ -385,18 +416,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     paddingHorizontal: 16,
-    marginTop: 22,
+    marginTop: 18,
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "800",
-    color: "#1A1A2E",
+    color: INK,
     lineHeight: 24,
   },
   viewAll: {
     fontSize: 13,
-    color: PURPLE,
+    color: TEAL,
     fontWeight: "600",
     textAlign: "right",
   },
@@ -408,6 +439,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     borderRadius: 16,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: CORAL_PASTEL,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -415,12 +448,12 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   imageWrapper: { position: "relative" },
-  listingImage: { width: "100%", height: 180 },
+  listingImage: { width: "100%", height: 190 },
   matchBadge: {
     position: "absolute",
     top: 12,
     right: 12,
-    backgroundColor: "#FFF",
+    backgroundColor: TEAL,
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -430,31 +463,31 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
-  matchBadgeText: { fontSize: 13, fontWeight: "700", color: "#F0A500" },
+  matchBadgeText: { fontSize: 13, fontWeight: "700", color: "#FFF" },
   cardBody: { padding: 14 },
   listingTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#1A1A2E",
+    color: INK,
     marginBottom: 4,
   },
   locationRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   locationPin: { fontSize: 12, marginRight: 4 },
-  locationText: { fontSize: 12, color: "#888" },
+  locationText: { fontSize: 12, color: "#7A6D6A" },
   cardFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  price: { fontSize: 18, fontWeight: "800", color: PURPLE },
-  perMonth: { fontSize: 12, fontWeight: "400", color: "#888" },
+  price: { fontSize: 18, fontWeight: "800", color: CORAL },
+  perMonth: { fontSize: 12, fontWeight: "400", color: "#7A6D6A" },
   roomsBadge: {
-    backgroundColor: "#F3E8FF",
+    backgroundColor: CORAL_PASTEL,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  roomsText: { fontSize: 12, color: PURPLE, fontWeight: "600" },
+  roomsText: { fontSize: 12, color: CORAL, fontWeight: "600" },
 
   // BOTTOM TAB BAR
   tabBar: {
@@ -463,10 +496,10 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#F0F0F5",
+    borderTopColor: CORAL_PASTEL,
   },
   tabItem: { flex: 1, alignItems: "center" },
   tabIcon: { fontSize: 20, marginBottom: 2 },
   tabLabel: { fontSize: 10, color: "#AAAAAA", fontWeight: "500" },
-  tabLabelActive: { color: PURPLE, fontWeight: "700" },
+  tabLabelActive: { color: CORAL, fontWeight: "700" },
 });
