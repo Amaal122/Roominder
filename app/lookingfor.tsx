@@ -1,33 +1,95 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
-    SafeAreaView,
+    Animated,
+    Pressable,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const OPTIONS = [
   {
     key: "housing",
     title: "Looking for Housing",
     subtitle: "Find places that fit you",
-    icon: <Feather name="home" size={26} color="#7C3AED" />,
+    icon: <Feather name="home" size={26} color="#36b37e" />,
   },
   {
     key: "roommate",
     title: "Looking for Roommate",
     subtitle: "Meet people to share with",
-    icon: <Feather name="users" size={26} color="#7C3AED" />,
+    icon: <Feather name="users" size={26} color="#36b37e" />,
   },
 ] as const;
 
 type OptionKey = (typeof OPTIONS)[number]["key"];
-
 type SelectedState = Record<OptionKey, boolean>;
+
+type OptionCardProps = {
+  option: (typeof OPTIONS)[number];
+  isActive: boolean;
+  onPress: () => void;
+};
+
+const OptionCard = ({ option, isActive, onPress }: OptionCardProps) => {
+  const lift = useRef(new Animated.Value(0)).current;
+
+  const animateTo = (value: number) => {
+    Animated.timing(lift, {
+      toValue: value,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  return (
+    <Animated.View
+      style={[
+        styles.optionCardShadow,
+        {
+          transform: [
+            {
+              translateY: lift.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, -6],
+              }),
+            },
+            {
+              scale: lift.interpolate({
+                inputRange: [0, 1],
+                outputRange: [1, 1.03],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      <Pressable
+        key={option.key}
+        style={[styles.optionCard, isActive && styles.optionCardActive]}
+        onPress={onPress}
+        onHoverIn={() => animateTo(1)}
+        onHoverOut={() => animateTo(0)}
+        onPressIn={() => animateTo(1)}
+        onPressOut={() => animateTo(0)}
+      >
+        <View style={styles.optionIcon}>{option.icon}</View>
+        <View style={styles.optionTextBox}>
+          <Text style={styles.optionTitle}>{option.title}</Text>
+          <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
+        </View>
+        <View style={[styles.check, isActive && styles.checkActive]}>
+          {isActive && <AntDesign name="check" size={16} color="#fff" />}
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+};
 
 export default function LookingFor() {
   const router = useRouter();
@@ -52,9 +114,9 @@ export default function LookingFor() {
 
   return (
     <LinearGradient
-      colors={["#6D28D9", "#9333EA", "#F472B6"]}
+      colors={["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]}
       start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+      end={{ x: 0, y: 1 }}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -62,8 +124,9 @@ export default function LookingFor() {
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backBtn}
+            activeOpacity={0.8}
           >
-            <Feather name="arrow-left" size={22} color="#4C1D95" />
+            <Feather name="arrow-left" size={22} color="#2f9b6e" />
           </TouchableOpacity>
 
           <View style={styles.progressTrack}>
@@ -78,26 +141,12 @@ export default function LookingFor() {
             {OPTIONS.map((option) => {
               const isActive = selected[option.key];
               return (
-                <TouchableOpacity
+                <OptionCard
                   key={option.key}
-                  style={[
-                    styles.optionCard,
-                    isActive && styles.optionCardActive,
-                  ]}
-                  activeOpacity={0.9}
+                  option={option}
+                  isActive={isActive}
                   onPress={() => toggle(option.key)}
-                >
-                  <View style={styles.optionIcon}>{option.icon}</View>
-                  <View style={styles.optionTextBox}>
-                    <Text style={styles.optionTitle}>{option.title}</Text>
-                    <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
-                  </View>
-                  <View style={[styles.check, isActive && styles.checkActive]}>
-                    {isActive && (
-                      <AntDesign name="check" size={16} color="#fff" />
-                    )}
-                  </View>
-                </TouchableOpacity>
+                />
               );
             })}
           </View>
@@ -121,7 +170,7 @@ const styles = StyleSheet.create({
   cardWrapper: {
     marginTop: 16,
     marginHorizontal: 16,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "transparent",
     borderRadius: 24,
     padding: 20,
     gap: 12,
@@ -130,7 +179,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#EDE9FE",
+    backgroundColor: "rgba(54, 179, 126, 0.08)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 6,
@@ -138,72 +187,79 @@ const styles = StyleSheet.create({
   progressTrack: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "rgba(54, 179, 126, 0.16)",
     overflow: "hidden",
   },
   progressFill: {
     width: "22%",
     height: "100%",
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#36b37e",
   },
-  stepLabel: { color: "#6B7280", fontSize: 13, fontWeight: "600" },
-  title: { fontSize: 26, fontWeight: "800", color: "#111827" },
-  subtitle: { color: "#6B7280", fontSize: 15 },
+  stepLabel: { color: "#5c7a6a", fontSize: 13, fontWeight: "600" },
+  title: { fontSize: 26, fontWeight: "800", color: "#0f3d2a" },
+  subtitle: { color: "#4f6a5b", fontSize: 15 },
   optionsContainer: { gap: 12, marginTop: 8 },
   optionCard: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
     borderRadius: 18,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+    borderColor: "rgba(54, 179, 126, 0.35)",
   },
   optionCardActive: {
-    borderColor: "#7C3AED",
-    backgroundColor: "#F3E8FF",
+    borderColor: "#36b37e",
+    backgroundColor: "rgba(54, 179, 126, 0.08)",
+  },
+  optionCardShadow: {
+    borderRadius: 18,
+    shadowColor: "#2f9b6e",
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
   optionIcon: {
     width: 46,
     height: 46,
     borderRadius: 14,
-    backgroundColor: "#F5F3FF",
+    backgroundColor: "rgba(54, 179, 126, 0.12)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,
   },
   optionTextBox: { flex: 1 },
-  optionTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
-  optionSubtitle: { color: "#6B7280", marginTop: 4, fontSize: 13 },
+  optionTitle: { fontSize: 17, fontWeight: "700", color: "#0f3d2a" },
+  optionSubtitle: { color: "#4f6a5b", marginTop: 4, fontSize: 13 },
   check: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#E5E7EB",
+    borderColor: "rgba(54, 179, 126, 0.35)",
     justifyContent: "center",
     alignItems: "center",
   },
   checkActive: {
-    backgroundColor: "#7C3AED",
-    borderColor: "#7C3AED",
+    backgroundColor: "#36b37e",
+    borderColor: "#36b37e",
   },
   cta: {
     marginHorizontal: 16,
     marginBottom: 24,
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#36b37e",
+    borderWidth: 0,
+    borderColor: "#36b37e",
     borderRadius: 16,
     height: 56,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#7C3AED",
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    shadowColor: "transparent",
+    elevation: 0,
   },
   ctaDisabled: {
     opacity: 0.5,
   },
-  ctaText: { color: "#FFF", fontSize: 16, fontWeight: "700" },
+  ctaText: { color: "#0f3d2a", fontSize: 16, fontWeight: "700" },
 });

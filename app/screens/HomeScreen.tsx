@@ -5,7 +5,6 @@ import { useRef, useState } from "react";
 import {
   Animated,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 const LISTINGS = [
@@ -134,7 +134,6 @@ const ListingCard = ({
 }: Listing & { onPress: () => void }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  
   const handleHoverIn = () => {
     Animated.spring(scaleAnim, {
       toValue: 1.05,
@@ -148,7 +147,7 @@ const ListingCard = ({
   return (
     <Pressable
       style={styles.listingCard}
-      onPress={onPress} 
+      onPress={onPress}
       onHoverIn={handleHoverIn}
       onHoverOut={handleHoverOut}
     >
@@ -203,7 +202,7 @@ export default function HomeScreen() {
 
   const goToDetails = (item: Listing) => {
     router.push({
-      pathname: "/screens/PropertyDetail", 
+      pathname: "/screens/PropertyDetail",
       params: {
         id: item.id,
         title: item.title,

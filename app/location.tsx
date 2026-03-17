@@ -2,16 +2,17 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
     ActivityIndicator,
-    SafeAreaView,
+    ImageBackground,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LocationStep() {
   const router = useRouter();
@@ -63,9 +64,9 @@ export default function LocationStep() {
 
   return (
     <LinearGradient
-      colors={["#6D28D9", "#9333EA", "#F472B6"]}
+      colors={["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]}
       start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+      end={{ x: 0, y: 1 }}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -73,8 +74,9 @@ export default function LocationStep() {
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backBtn}
+            activeOpacity={0.8}
           >
-            <Feather name="arrow-left" size={22} color="#4C1D95" />
+            <Feather name="arrow-left" size={22} color="#2f9b6e" />
           </TouchableOpacity>
 
           <View style={styles.progressTrack}>
@@ -87,9 +89,15 @@ export default function LocationStep() {
             Set your preferred location and search radius
           </Text>
 
-          <View style={styles.mapPlaceholder}>
-            <Feather name="map-pin" size={48} color="#7C3AED" />
-          </View>
+          <ImageBackground
+            style={styles.mapPlaceholder}
+            imageStyle={styles.mapImage}
+            source={require("../assets/images/map.jpg")}
+          >
+            <View style={styles.mapOverlay}>
+              <Feather name="map-pin" size={32} color="#ffffff" />
+            </View>
+          </ImageBackground>
 
           <TouchableOpacity
             style={[
@@ -101,12 +109,12 @@ export default function LocationStep() {
             disabled={locStatus === "loading"}
           >
             {locStatus === "loading" ? (
-              <ActivityIndicator size="small" color="#7C3AED" />
+              <ActivityIndicator size="small" color="#36b37e" />
             ) : (
-              <Feather name="navigation" size={18} color="#7C3AED" />
+              <Feather name="navigation" size={18} color="#36b37e" />
             )}
             <Text style={styles.locationBtnText}>Use My Location</Text>
-            <Feather name="map-pin" size={16} color="#F43F5E" />
+            <Feather name="map-pin" size={16} color="#36b37e" />
           </TouchableOpacity>
 
           {locError ? <Text style={styles.errorText}>{locError}</Text> : null}
@@ -166,7 +174,7 @@ const styles = StyleSheet.create({
   cardWrapper: {
     marginTop: 16,
     marginHorizontal: 16,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "transparent",
     borderRadius: 24,
     padding: 20,
     gap: 14,
@@ -175,7 +183,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#EDE9FE",
+    backgroundColor: "rgba(54, 179, 126, 0.08)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 6,
@@ -183,23 +191,38 @@ const styles = StyleSheet.create({
   progressTrack: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "rgba(54, 179, 126, 0.16)",
     overflow: "hidden",
   },
   progressFill: {
     width: "44%",
     height: "100%",
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#36b37e",
   },
-  stepLabel: { color: "#6B7280", fontSize: 13, fontWeight: "600" },
-  title: { fontSize: 26, fontWeight: "800", color: "#111827" },
-  subtitle: { color: "#6B7280", fontSize: 15 },
+  stepLabel: { color: "#5c7a6a", fontSize: 13, fontWeight: "600" },
+  title: { fontSize: 26, fontWeight: "800", color: "#0f3d2a" },
+  subtitle: { color: "#4f6a5b", fontSize: 15 },
   mapPlaceholder: {
-    height: 220,
-    borderRadius: 24,
-    backgroundColor: "#EEE9FF",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    height: 160,
+    borderRadius: 20,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+    shadowColor: "#36b37e",
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
+  mapImage: {
+    borderRadius: 20,
+  },
+  mapOverlay: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "rgba(0,0,0,0.25)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -208,46 +231,46 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#7C3AED",
+    borderColor: "#36b37e",
     borderStyle: "dashed",
     borderRadius: 14,
     paddingVertical: 12,
     gap: 8,
   },
-  locationBtnText: { color: "#7C3AED", fontWeight: "700", fontSize: 15 },
+  locationBtnText: { color: "#36b37e", fontWeight: "700", fontSize: 15 },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "rgba(54, 179, 126, 0.25)",
     borderRadius: 14,
     paddingHorizontal: 12,
     height: 52,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(255,255,255,0.8)",
     gap: 8,
   },
   input: {
     flex: 1,
     fontSize: 15,
-    color: "#111827",
+    color: "#0f3d2a",
   },
   sliderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  sliderLabel: { fontSize: 15, fontWeight: "700", color: "#111827" },
-  sliderValue: { fontSize: 15, fontWeight: "700", color: "#7C3AED" },
+  sliderLabel: { fontSize: 15, fontWeight: "700", color: "#0f3d2a" },
+  sliderValue: { fontSize: 15, fontWeight: "700", color: "#36b37e" },
   sliderTrack: {
     height: 10,
     borderRadius: 6,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "rgba(54, 179, 126, 0.16)",
     overflow: "hidden",
     position: "relative",
   },
   sliderThumb: {
     height: "100%",
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#36b37e",
     borderRadius: 6,
   },
   sliderHandle: {
@@ -256,36 +279,28 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#36b37e",
     borderWidth: 2,
-    borderColor: "#fff",
-    transform: [{ translateX: -11 }],
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    borderColor: "rgba(255,255,255,0.9)",
   },
   sliderEnds: {
     flexDirection: "row",
     justifyContent: "space-between",
+    marginTop: 6,
   },
-  sliderEndText: { color: "#9CA3AF", fontSize: 12 },
+  sliderEndText: { color: "#4f6a5b", fontSize: 12 },
+  errorText: { color: "#ef4444", marginTop: 6 },
+  disabled: { opacity: 0.6 },
   cta: {
     marginHorizontal: 16,
     marginBottom: 24,
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#36b37e",
     borderRadius: 16,
     height: 56,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#7C3AED",
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    shadowColor: "transparent",
+    elevation: 0,
   },
-  ctaText: { color: "#FFF", fontSize: 16, fontWeight: "700" },
-  errorText: { color: "#DC2626", fontSize: 12, marginTop: 6 },
-  disabled: { opacity: 0.6 },
+  ctaText: { color: "#0f3d2a", fontSize: 16, fontWeight: "700" },
 });

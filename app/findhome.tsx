@@ -3,26 +3,41 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
-  SafeAreaView,
+  Animated,
+  Easing,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RoleSelection() {
   const router = useRouter();
+  const housingScale = React.useRef(new Animated.Value(1)).current;
+  const ownerScale = React.useRef(new Animated.Value(1)).current;
+
+  const animatePress = (anim: Animated.Value, toValue: number) => {
+    Animated.timing(anim, {
+      toValue,
+      duration: 260,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+  };
 
   return (
     <LinearGradient
-      colors={["#9333EA", "#7B1FA2", "#4C1D95"]} // Dégradé violet profond
+      colors={["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
         {/* En-tête avec Icône */}
         <View style={styles.header}>
           <View style={styles.logoBadge}>
-            <Feather name="home" size={32} color="white" />
+            <Feather name="home" size={32} color="#fcbf77" />
           </View>
           <Text style={styles.mainTitle}>Roominder</Text>
           <Text style={styles.subTitle}>AI-Powered Colocation Platform</Text>
@@ -32,7 +47,10 @@ export default function RoleSelection() {
         <View style={styles.cardsContainer}>
           {/* Carte : Looking for Housing */}
           <TouchableOpacity
-            style={styles.roleCard}
+            activeOpacity={0.9}
+            style={[styles.roleCard, { transform: [{ scale: housingScale }] }]}
+            onPressIn={() => animatePress(housingScale, 0.95)}
+            onPressOut={() => animatePress(housingScale, 1)}
             onPress={() =>
               router.push({
                 pathname: "/register",
@@ -44,8 +62,13 @@ export default function RoleSelection() {
               colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
               style={styles.cardGradient}
             >
-              <View style={[styles.iconBox, { backgroundColor: "#8B5CF6" }]}>
-                <Feather name="home" size={24} color="white" />
+              <View
+                style={[
+                  styles.iconBox,
+                  { backgroundColor: "rgba(255,255,255,0.12)" },
+                ]}
+              >
+                <Feather name="home" size={24} color="#fcbf77" />
               </View>
               <View style={styles.cardTextContent}>
                 <Text style={styles.cardTitle}>Looking for Housing</Text>
@@ -58,7 +81,10 @@ export default function RoleSelection() {
 
           {/* Carte : Property Owner */}
           <TouchableOpacity
-            style={styles.roleCard}
+            activeOpacity={0.9}
+            style={[styles.roleCard, { transform: [{ scale: ownerScale }] }]}
+            onPressIn={() => animatePress(ownerScale, 0.95)}
+            onPressOut={() => animatePress(ownerScale, 1)}
             onPress={() =>
               router.push({ pathname: "/register", params: { role: "owner" } })
             }
@@ -67,11 +93,16 @@ export default function RoleSelection() {
               colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
               style={styles.cardGradient}
             >
-              <View style={[styles.iconBox, { backgroundColor: "#F87171" }]}>
+              <View
+                style={[
+                  styles.iconBox,
+                  { backgroundColor: "rgba(255,255,255,0.12)" },
+                ]}
+              >
                 <MaterialCommunityIcons
                   name="key-variant"
                   size={24}
-                  color="white"
+                  color="#fcbf77"
                 />
               </View>
               <View style={styles.cardTextContent}>
@@ -109,14 +140,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  mainTitle: { fontSize: 32, fontWeight: "bold", color: "white" },
-  subTitle: { fontSize: 16, color: "rgba(255,255,255,0.8)", marginTop: 5 },
+  mainTitle: { fontSize: 32, fontWeight: "bold", color: "#0f3d2a" },
+  subTitle: { fontSize: 16, color: "#2f5a48", marginTop: 5 },
   cardsContainer: { gap: 20 },
   roleCard: {
     borderRadius: 24,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.7)",
+    shadowColor: "#36b37e",
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
   },
   cardGradient: {
     padding: 20,
@@ -130,15 +167,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 15,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   cardTextContent: { flex: 1 },
   cardTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "white",
+    color: "#0f3d2a",
     marginBottom: 5,
   },
-  cardDesc: { fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 20 },
+  cardDesc: { fontSize: 14, color: "#2f5a48", lineHeight: 20 },
   footer: {
     position: "absolute",
     bottom: 40,
@@ -161,5 +203,5 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
   },
-  footerText: { color: "rgba(255,255,255,0.6)", marginTop: 40, fontSize: 13 },
+  footerText: { color: "#2f5a48", marginTop: 40, fontSize: 13 },
 });

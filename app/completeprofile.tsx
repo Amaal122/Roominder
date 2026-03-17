@@ -1,33 +1,56 @@
 import { Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Image,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CompleteProfile() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [age, setAge] = useState("");
   const [occupation, setOccupation] = useState("");
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  const pickImage = async () => {
+    setError("");
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      setError("Permission required to access photos.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets?.length) {
+      setAvatarUri(result.assets[0].uri);
+    }
+  };
 
   const handleContinue = () => {
-    // Move to lifestyle form once profile basics are filled
+    if (!fullName.trim() || !age.trim() || !occupation.trim() || !avatarUri) {
+      setError("Please add a photo and fill in all fields.");
+      return;
+    }
     router.push("/form");
   };
 
   return (
     <LinearGradient
-      colors={["#6D28D9", "#9333EA", "#F472B6"]}
+      colors={["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]}
       start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+      end={{ x: 0, y: 1 }}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -36,7 +59,7 @@ export default function CompleteProfile() {
             onPress={() => router.back()}
             style={styles.backBtn}
           >
-            <Feather name="arrow-left" size={22} color="#4C1D95" />
+            <Feather name="arrow-left" size={22} color="#36b37e" />
           </TouchableOpacity>
 
           <View style={styles.progressTrack}>
@@ -52,11 +75,13 @@ export default function CompleteProfile() {
           <View style={styles.avatarBox}>
             <Image
               source={{
-                uri: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=300",
+                uri:
+                  avatarUri ??
+                  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'><rect width='200' height='200' rx='100' fill='white'/><circle cx='100' cy='80' r='45' fill='%23e5e7eb'/><path d='M40 180c0-40 30-70 60-70s60 30 60 70' fill='%23e5e7eb'/></svg>",
               }}
               style={styles.avatar}
             />
-            <TouchableOpacity style={styles.cameraBadge}>
+            <TouchableOpacity style={styles.cameraBadge} onPress={pickImage}>
               <Feather name="camera" size={16} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -94,6 +119,8 @@ export default function CompleteProfile() {
               onChangeText={setOccupation}
             />
           </View>
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
 
         <TouchableOpacity
@@ -114,7 +141,7 @@ const styles = StyleSheet.create({
   cardWrapper: {
     marginTop: 16,
     marginHorizontal: 16,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "transparent",
     borderRadius: 24,
     padding: 20,
     gap: 14,
@@ -123,7 +150,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#EDE9FE",
+    backgroundColor: "rgba(54, 179, 126, 0.08)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 6,
@@ -131,17 +158,17 @@ const styles = StyleSheet.create({
   progressTrack: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "rgba(54, 179, 126, 0.16)",
     overflow: "hidden",
   },
   progressFill: {
     width: "66%",
     height: "100%",
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#36b37e",
   },
-  stepLabel: { color: "#6B7280", fontSize: 13, fontWeight: "600" },
-  title: { fontSize: 26, fontWeight: "800", color: "#111827" },
-  subtitle: { color: "#6B7280", fontSize: 15 },
+  stepLabel: { color: "#5c7a6a", fontSize: 13, fontWeight: "600" },
+  title: { fontSize: 26, fontWeight: "800", color: "#0f3d2a" },
+  subtitle: { color: "#4f6a5b", fontSize: 15 },
   avatarBox: {
     alignItems: "center",
     justifyContent: "center",
@@ -153,6 +180,11 @@ const styles = StyleSheet.create({
     borderRadius: 80,
     borderWidth: 4,
     borderColor: "#fff",
+    shadowColor: "#36b37e",
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
   cameraBadge: {
     position: "absolute",
@@ -161,7 +193,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#36b37e",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 3,
@@ -171,31 +203,34 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "rgba(54, 179, 126, 0.25)",
     borderRadius: 14,
     paddingHorizontal: 12,
     height: 52,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(255,255,255,0.8)",
     gap: 8,
+    shadowColor: "#36b37e",
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
   input: {
     flex: 1,
     fontSize: 15,
-    color: "#111827",
+    color: "#0f3d2a",
   },
+  errorText: { color: "#ef4444", marginTop: 8, fontWeight: "600" },
   cta: {
     marginHorizontal: 16,
     marginBottom: 24,
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#36b37e",
     borderRadius: 16,
     height: 56,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#7C3AED",
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    shadowColor: "transparent",
+    elevation: 0,
   },
-  ctaText: { color: "#FFF", fontSize: 16, fontWeight: "700" },
+  ctaText: { color: "#0f3d2a", fontSize: 16, fontWeight: "700" },
 });

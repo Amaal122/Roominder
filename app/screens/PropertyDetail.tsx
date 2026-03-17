@@ -1,10 +1,10 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   Animated,
+  BackHandler,
   Dimensions,
   Image,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import PropertyMap from "../../components/PropertyMap";
 
 const { width } = Dimensions.get("window");
@@ -253,6 +254,20 @@ export default function PropertyDetail() {
   const lat = params.lat ? Number(params.lat) : 48.8566;
   const lng = params.lng ? Number(params.lng) : 2.3522;
 
+  const handleBack = useCallback(() => {
+    if (router.canGoBack?.()) {
+      router.back();
+      return true;
+    }
+    router.replace("/homescreen");
+    return true;
+  }, [router]);
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", handleBack);
+    return () => sub.remove();
+  }, [handleBack]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
@@ -275,10 +290,7 @@ export default function PropertyDetail() {
 
           {/* Top Nav */}
           <View style={styles.heroNav}>
-            <TouchableOpacity
-              style={styles.navBtn}
-              onPress={() => router.back()}
-            >
+            <TouchableOpacity style={styles.navBtn} onPress={handleBack}>
               <Text style={styles.navIcon}>←</Text>
             </TouchableOpacity>
 

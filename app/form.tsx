@@ -1,15 +1,17 @@
 import { Feather } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Question = {
   key: string;
@@ -83,18 +85,27 @@ export default function Form() {
 
   return (
     <LinearGradient
-      colors={["#6D28D9", "#9333EA", "#F472B6"]}
+      colors={["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]}
       start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+      end={{ x: 0, y: 1 }}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.cardWrapper}>
+        <BlurView
+          intensity={90}
+          tint="light"
+          style={
+            Platform.OS === "web"
+              ? [styles.cardWrapper, styles.cardWrapperWeb]
+              : styles.cardWrapper
+          }
+        >
+          <View pointerEvents="none" style={styles.glassOverlay} />
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backBtn}
           >
-            <Feather name="arrow-left" size={22} color="#4C1D95" />
+            <Feather name="arrow-left" size={22} color="#36b37e" />
           </TouchableOpacity>
 
           <View style={styles.progressTrack}>
@@ -125,14 +136,14 @@ export default function Form() {
                           styles.optionCard,
                           selected && styles.optionSelected,
                         ]}
-                        activeOpacity={0.85}
+                        activeOpacity={0.9}
                         onPress={() => handleSelect(question.key, option.id)}
                       >
                         <View style={styles.optionIconCircle}>
                           <Feather
                             name={option.icon}
                             size={18}
-                            color={selected ? "#7C3AED" : "#6B7280"}
+                            color={selected ? "#36b37e" : "#6B7280"}
                           />
                         </View>
                         <Text
@@ -150,7 +161,7 @@ export default function Form() {
               </View>
             ))}
           </ScrollView>
-        </View>
+        </BlurView>
 
         <TouchableOpacity
           style={[styles.cta, !allAnswered && styles.ctaDisabled]}
@@ -169,19 +180,47 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
   safeArea: { flex: 1, justifyContent: "space-between" },
   cardWrapper: {
-    marginTop: 16,
-    marginHorizontal: 16,
-    backgroundColor: "#F8FAFC",
+    marginTop: 12,
+    marginHorizontal: 20,
+    width: "92%",
+    alignSelf: "center",
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.85)",
     borderRadius: 24,
-    padding: 20,
+    padding: 16,
     gap: 14,
     flex: 1,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 14,
+  },
+  glassOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.35)",
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  cardWrapperWeb: {
+    ...(Platform.OS === "web"
+      ? ({
+          backdropFilter: "blur(10.8px)",
+          WebkitBackdropFilter: "blur(10.8px)",
+        } as any)
+      : {}),
   },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#EDE9FE",
+    backgroundColor: "rgba(54, 179, 126, 0.08)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 6,
@@ -189,17 +228,17 @@ const styles = StyleSheet.create({
   progressTrack: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "rgba(54, 179, 126, 0.16)",
     overflow: "hidden",
   },
   progressFill: {
     width: "80%",
     height: "100%",
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#36b37e",
   },
-  stepLabel: { color: "#6B7280", fontSize: 13, fontWeight: "600" },
-  title: { fontSize: 26, fontWeight: "800", color: "#111827" },
-  subtitle: { color: "#6B7280", fontSize: 15 },
+  stepLabel: { color: "#5c7a6a", fontSize: 13, fontWeight: "600" },
+  title: { fontSize: 26, fontWeight: "800", color: "#0f3d2a" },
+  subtitle: { color: "#4f6a5b", fontSize: 15 },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 12, gap: 16 },
   questionBlock: { gap: 10 },
@@ -209,47 +248,47 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FFFFFF",
+    borderColor: "rgba(54, 179, 126, 0.25)",
+    backgroundColor: "rgba(255,255,255,0.6)",
     paddingVertical: 14,
     paddingHorizontal: 12,
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    shadowColor: "#36b37e",
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
   optionSelected: {
-    borderColor: "#7C3AED",
-    shadowOpacity: 0.12,
+    borderColor: "#36b37e",
+    shadowOpacity: 0.18,
   },
   optionIconCircle: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#eefbf4",
     alignItems: "center",
     justifyContent: "center",
   },
   optionLabel: { color: "#111827", fontSize: 14, fontWeight: "600" },
-  optionLabelSelected: { color: "#7C3AED" },
+  optionLabelSelected: { color: "#36b37e" },
   cta: {
     marginHorizontal: 16,
     marginBottom: 24,
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#36b37e",
     borderRadius: 16,
     height: 56,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#7C3AED",
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    shadowColor: "#36b37e",
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
   },
   ctaDisabled: { opacity: 0.6 },
-  ctaText: { color: "#FFF", fontSize: 16, fontWeight: "700" },
+  ctaText: { color: "#0f3d2a", fontSize: 16, fontWeight: "700" },
 });

@@ -7,12 +7,12 @@ import {
     Image,
     PanResponder,
     Pressable,
-    SafeAreaView,
     StatusBar,
     StyleSheet,
     Text,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 const SWIPE_THRESHOLD = width * 0.25;

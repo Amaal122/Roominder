@@ -10,6 +10,7 @@ export default function Layout() {
           headerShown: false,
           contentStyle: { backgroundColor: "#F5F5F5" },
         }}
+        initialRouteName="index"
       >
         <Stack.Screen name="propertydetails" />
         <Stack.Screen name="newproperty" />
@@ -24,7 +25,7 @@ export default function Layout() {
         <Stack.Screen name="roomatematch" />
         <Stack.Screen name="index" />
         <Stack.Screen name="register" />
-        <Stack.Screen name="HomeScreen" />
+        <Stack.Screen name="homescreen" />
       </Stack>
     </>
   );
