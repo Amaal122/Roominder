@@ -1,8 +1,9 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
+    Image,
     ScrollView,
     StyleSheet,
     Text,
@@ -11,16 +12,30 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
+import { addProperty, getPropertyById, updateProperty } from "./state/properties";
 
 export default function NewProperty() {
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [address, setAddress] = useState("");
-  const [rent, setRent] = useState("");
-  const [beds, setBeds] = useState("");
-  const [baths, setBaths] = useState("");
-  const [size, setSize] = useState("");
+  const params = useLocalSearchParams<{ id?: string }>();
+  const editingId = params.id ?? "";
+  const editingProperty = editingId ? getPropertyById(editingId) : undefined;
+  const [title, setTitle] = useState(editingProperty?.title ?? "");
+  const [address, setAddress] = useState(editingProperty?.location ?? "");
+  const [rent, setRent] = useState(
+    editingProperty?.price?.replace("€", "") ?? ""
+  );
+  const [beds, setBeds] = useState(
+    editingProperty?.beds ? String(editingProperty.beds) : ""
+  );
+  const [baths, setBaths] = useState(
+    editingProperty?.baths ? String(editingProperty.baths) : ""
+  );
+  const [size, setSize] = useState(
+    editingProperty?.size ? String(editingProperty.size) : ""
+  );
   const [description, setDescription] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
 
   const formComplete = useMemo(
     () => title && address && rent && beds && baths && size && description,
@@ -29,12 +44,61 @@ export default function NewProperty() {
 
   const handlePublish = () => {
     if (!formComplete) return;
-    router.push("/sweethome");
+    const image =
+      photos[0] ||
+      editingProperty?.image ||
+      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80";
+
+    if (editingId) {
+      updateProperty(editingId, {
+        title,
+        location: address,
+        price: `€${rent}`,
+        beds: Number(beds),
+        baths: Number(baths),
+        size: Number(size),
+        image,
+      });
+    } else {
+      addProperty({
+        id: String(Date.now()),
+        title,
+        location: address,
+        price: `€${rent}`,
+        tenants: "Available",
+        status: "Available",
+        beds: Number(beds),
+        baths: Number(baths),
+        size: Number(size),
+        views: 0,
+        applications: 0,
+        image,
+      });
+    }
+    router.replace("/propertyowner");
+  };
+
+  const handlePickPhotos = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      selectionLimit: 6,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const uris = result.assets.map((a) => a.uri);
+      setPhotos(uris);
+    }
   };
 
   return (
     <LinearGradient
-      colors={["#6D28D9", "#9333EA", "#F472B6"]}
+      colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.gradient}
@@ -45,22 +109,45 @@ export default function NewProperty() {
             onPress={() => router.back()}
             style={styles.backBtn}
           >
-            <Feather name="arrow-left" size={22} color="#4C1D95" />
+            <Feather name="arrow-left" size={22} color="#2B2B33" />
           </TouchableOpacity>
 
-          <Text style={styles.stepLabel}>Add New Property</Text>
-          <Text style={styles.title}>Fill in the property details</Text>
+          <Text style={styles.stepLabel}>
+            {editingId ? "Edit Property" : "Add New Property"}
+          </Text>
+          <Text style={styles.title}>
+            {editingId ? "Update the property details" : "Fill in the property details"}
+          </Text>
 
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <TouchableOpacity style={styles.uploadCard} activeOpacity={0.9}>
-              <Feather name="image" size={26} color="#7C3AED" />
+            <TouchableOpacity
+              style={styles.uploadCard}
+              activeOpacity={0.9}
+              onPress={handlePickPhotos}
+            >
+              <Feather name="image" size={26} color="#F4896B" />
               <Text style={styles.uploadTitle}>Upload Photos</Text>
-              <Text style={styles.uploadHint}>Tap to browse your gallery</Text>
+              <Text style={styles.uploadHint}>
+                {photos.length > 0
+                  ? `${photos.length} selected`
+                  : "Tap to browse your gallery"}
+              </Text>
             </TouchableOpacity>
+            {photos.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.previewRow}
+              >
+                {photos.map((uri) => (
+                  <Image key={uri} source={{ uri }} style={styles.previewImg} />
+                ))}
+              </ScrollView>
+            ) : null}
 
             <InputField
               label="Property Title"
@@ -139,7 +226,9 @@ export default function NewProperty() {
           activeOpacity={formComplete ? 0.9 : 1}
           onPress={handlePublish}
         >
-          <Text style={styles.ctaText}>Publish Property</Text>
+          <Text style={styles.ctaText}>
+            {editingId ? "Save Changes" : "Publish Property"}
+          </Text>
         </TouchableOpacity>
       </SafeAreaView>
     </LinearGradient>
@@ -187,7 +276,7 @@ const styles = StyleSheet.create({
   cardWrapper: {
     marginTop: 16,
     marginHorizontal: 16,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#FFF7F3",
     borderRadius: 24,
     padding: 20,
     gap: 14,
@@ -197,17 +286,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#EDE9FE",
+    backgroundColor: "rgba(255,255,255,0.85)",
     justifyContent: "center",
     alignItems: "center",
   },
-  stepLabel: { color: "#6B7280", fontSize: 13, fontWeight: "700" },
-  title: { fontSize: 24, fontWeight: "800", color: "#111827" },
+  stepLabel: { color: "#7A6D6A", fontSize: 13, fontWeight: "700" },
+  title: { fontSize: 24, fontWeight: "800", color: "#2B2B33" },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 18, gap: 14 },
   uploadCard: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#F1E3DC",
     borderRadius: 18,
     backgroundColor: "#FFFFFF",
     padding: 18,
@@ -219,21 +308,29 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  uploadTitle: { fontWeight: "700", color: "#111827", fontSize: 15 },
-  uploadHint: { color: "#9CA3AF", fontSize: 13 },
+  uploadTitle: { fontWeight: "700", color: "#2B2B33", fontSize: 15 },
+  uploadHint: { color: "#7A6D6A", fontSize: 13 },
+  previewRow: { gap: 10 },
+  previewImg: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#F1E3DC",
+  },
   inputWrapper: { gap: 8 },
-  label: { color: "#4C1D95", fontSize: 13, fontWeight: "700" },
+  label: { color: "#F4896B", fontSize: 13, fontWeight: "700" },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#F1E3DC",
     borderRadius: 14,
     paddingHorizontal: 14,
     height: 52,
     backgroundColor: "#FFFFFF",
   },
-  input: { flex: 1, marginLeft: 10, color: "#111827", fontSize: 15 },
+  input: { flex: 1, marginLeft: 10, color: "#2B2B33", fontSize: 15 },
   inlineRow: { flexDirection: "row", gap: 10 },
   inlineThird: { flex: 1 },
   textArea: { height: 120, alignItems: "flex-start", paddingVertical: 12 },
@@ -241,12 +338,12 @@ const styles = StyleSheet.create({
   cta: {
     marginHorizontal: 16,
     marginBottom: 24,
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#7ECEC4",
     borderRadius: 16,
     height: 56,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#7C3AED",
+    shadowColor: "#7ECEC4",
     shadowOpacity: 0.25,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },

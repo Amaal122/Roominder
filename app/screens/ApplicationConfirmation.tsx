@@ -31,7 +31,7 @@ export default function ApplicationConfirmation() {
         <TouchableOpacity
           style={styles.secondaryBtn}
           activeOpacity={0.85}
-          onPress={() => router.replace("/screens/propertyownerapplications")}
+          onPress={() => router.replace("/propertyownerapplications")}
         >
           <Text style={styles.secondaryText}>Back to Applications</Text>
         </TouchableOpacity>
@@ -40,11 +40,12 @@ export default function ApplicationConfirmation() {
   );
 }
 
-const GREEN = "#22C55E";
-const BG = "#F8F7FF";
-const TEXT = "#1A1A2E";
-const MUTED = "#8B8CA8";
-const BORDER = "#EEECFA";
+const CORAL = "#F4896B";
+const TEAL = "#7ECEC4";
+const BG = "#FFF7F3";
+const TEXT = "#2B2B33";
+const MUTED = "#7A6D6A";
+const BORDER = "#F1E3DC";
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -67,7 +68,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: GREEN,
+    backgroundColor: TEAL,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
@@ -85,7 +86,7 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     marginTop: 16,
-    backgroundColor: GREEN,
+    backgroundColor: CORAL,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 18,
@@ -98,7 +99,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: CORAL,
   },
-  secondaryText: { color: TEXT, fontSize: 14, fontWeight: "700" },
+  secondaryText: { color: CORAL, fontSize: 14, fontWeight: "700" },
 });

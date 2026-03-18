@@ -11,6 +11,7 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { removeProperty } from "./state/properties";
 
 type Params = {
   id?: string;
@@ -30,6 +31,7 @@ type Params = {
 export default function PropertyDetails() {
   const router = useRouter();
   const params = useLocalSearchParams<Params>();
+  const propertyId = params.id ?? "";
 
   const details = useMemo(() => {
     return {
@@ -51,7 +53,7 @@ export default function PropertyDetails() {
 
   return (
     <LinearGradient
-      colors={["#6D28D9", "#9333EA", "#F472B6"]}
+      colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.gradient}
@@ -76,10 +78,26 @@ export default function PropertyDetails() {
                 <Feather name="arrow-left" size={18} color="#111827" />
               </TouchableOpacity>
               <View style={{ flexDirection: "row", gap: 10 }}>
-                <TouchableOpacity style={styles.roundBtn}>
+                <TouchableOpacity
+                  style={styles.roundBtn}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/newproperty",
+                      params: { id: propertyId },
+                    })
+                  }
+                >
                   <Feather name="edit-2" size={16} color="#111827" />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.roundBtn}>
+                <TouchableOpacity
+                  style={styles.roundBtn}
+                  onPress={() => {
+                    if (propertyId) {
+                      removeProperty(propertyId);
+                    }
+                    router.back();
+                  }}
+                >
                   <Feather name="trash-2" size={16} color="#DC2626" />
                 </TouchableOpacity>
               </View>
@@ -214,16 +232,16 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 12,
   },
-  tabActive: { backgroundColor: "#7C3AED" },
+  tabActive: { backgroundColor: "#F4896B" },
   tabActiveText: { color: "#fff", fontWeight: "800" },
-  tabText: { color: "#6B7280", fontWeight: "700" },
+  tabText: { color: "#7A6D6A", fontWeight: "700" },
   badge: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: "#DDF3F1",
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  badgeText: { color: "#DC2626", fontWeight: "800", fontSize: 12 },
+  badgeText: { color: "#0F766E", fontWeight: "800", fontSize: 12 },
   card: {
     marginHorizontal: 18,
     backgroundColor: "#fff",
@@ -236,21 +254,21 @@ const styles = StyleSheet.create({
     elevation: 3,
     gap: 10,
   },
-  title: { fontSize: 20, fontWeight: "800", color: "#111827" },
-  location: { color: "#6B7280", fontSize: 14 },
+  title: { fontSize: 20, fontWeight: "800", color: "#2B2B33" },
+  location: { color: "#7A6D6A", fontSize: 14 },
   metaRow: { flexDirection: "row", gap: 10 },
   chip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F9D4C2",
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
-  chipText: { color: "#111827", fontWeight: "700", fontSize: 12 },
-  price: { color: "#7C3AED", fontSize: 24, fontWeight: "800" },
-  perMonth: { color: "#6B7280", fontSize: 13, fontWeight: "600" },
+  chipText: { color: "#F4896B", fontWeight: "700", fontSize: 12 },
+  price: { color: "#F4896B", fontSize: 24, fontWeight: "800" },
+  perMonth: { color: "#7A6D6A", fontSize: 13, fontWeight: "600" },
   statsRow: {
     flexDirection: "row",
     gap: 12,
@@ -268,7 +286,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     gap: 6,
   },
-  statLabel: { color: "#6B7280", fontWeight: "700", fontSize: 12 },
-  statValue: { color: "#111827", fontWeight: "800", fontSize: 20 },
-  statSub: { color: "#10B981", fontWeight: "700", fontSize: 12 },
+  statLabel: { color: "#7A6D6A", fontWeight: "700", fontSize: 12 },
+  statValue: { color: "#2B2B33", fontWeight: "800", fontSize: 20 },
+  statSub: { color: "#7ECEC4", fontWeight: "700", fontSize: 12 },
 });

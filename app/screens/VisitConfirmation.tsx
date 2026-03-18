@@ -45,14 +45,21 @@ export default function VisitConfirmation() {
   );
 }
 
-const PURPLE = "#6C63FF";
-const BG = "#F8F7FF";
-const TEXT = "#1A1A2E";
-const MUTED = "#8B8CA8";
-const BORDER = "#EEECFA";
+const CORAL = "#F4896B";
+const TEAL = "#7ECEC4";
+const BG = "#FFF7F3";
+const TEXT = "#2B2B33";
+const MUTED = "#7A6D6A";
+const BORDER = "#F1E3DC";
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG, alignItems: "center", justifyContent: "center", padding: 20 },
+  safeArea: {
+    flex: 1,
+    backgroundColor: BG,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
   card: {
     width: "100%",
     backgroundColor: "white",
@@ -66,7 +73,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: PURPLE,
+    backgroundColor: TEAL,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
@@ -78,7 +85,7 @@ const styles = StyleSheet.create({
   note: { fontSize: 12, color: MUTED, textAlign: "center", lineHeight: 18, marginTop: 10 },
   primaryBtn: {
     marginTop: 16,
-    backgroundColor: PURPLE,
+    backgroundColor: CORAL,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 18,
@@ -91,7 +98,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: CORAL,
   },
-  secondaryText: { color: TEXT, fontSize: 14, fontWeight: "700" },
+  secondaryText: { color: CORAL, fontSize: 14, fontWeight: "700" },
 });

@@ -30,6 +30,14 @@ export default function Layout() {
         <Stack.Screen name="favorite" />
         <Stack.Screen name="chat" />
         <Stack.Screen name="chat/[id]" />
+        <Stack.Screen name="notifications" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="change-password" />
+        <Stack.Screen name="two-factor" />
+        <Stack.Screen name="blocked-users" />
+        <Stack.Screen name="language" />
+        <Stack.Screen name="theme" />
+        <Stack.Screen name="about" />
       </Stack>
     </>
   );

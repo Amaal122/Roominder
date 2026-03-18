@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import {
@@ -38,7 +39,12 @@ export default function VisitRequest() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
       >
-        <View style={styles.header}>
+        <LinearGradient
+          colors={["#F4896B", "#7ECEC4"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
           <TouchableOpacity
             style={styles.backBtn}
             onPress={() => router.back()}
@@ -46,7 +52,7 @@ export default function VisitRequest() {
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Visit Request</Text>
-        </View>
+        </LinearGradient>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Property</Text>
@@ -128,11 +134,13 @@ export default function VisitRequest() {
   );
 }
 
-const PURPLE = "#6C63FF";
-const BG = "#F8F7FF";
-const TEXT = "#1A1A2E";
-const MUTED = "#8B8CA8";
-const BORDER = "#EEECFA";
+const CORAL = "#F4896B";
+const CORAL_PASTEL = "#F9D4C2";
+const TEAL = "#7ECEC4";
+const BG = "#FFF7F3";
+const TEXT = "#2B2B33";
+const MUTED = "#7A6D6A";
+const BORDER = "#F1E3DC";
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
@@ -142,6 +150,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginBottom: 20,
+    padding: 16,
+    borderRadius: 16,
   },
   backBtn: {
     width: 34,
@@ -151,10 +161,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "rgba(255,255,255,0.7)",
   },
   backIcon: { fontSize: 16, color: TEXT },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: TEXT },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: "white" },
   card: {
     backgroundColor: "white",
     borderRadius: 16,
@@ -194,12 +204,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: "white",
   },
-  choicePillActive: { backgroundColor: PURPLE, borderColor: PURPLE },
+  choicePillActive: { backgroundColor: TEAL, borderColor: TEAL },
   choiceText: { fontSize: 13, color: MUTED, fontWeight: "600" },
   choiceTextActive: { color: "white" },
   primaryBtn: {
     marginTop: 6,
-    backgroundColor: PURPLE,
+    backgroundColor: CORAL,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: "center",

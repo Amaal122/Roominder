@@ -98,7 +98,7 @@ export default function PropertyOwnerApplications() {
 
   return (
     <LinearGradient
-      colors={["#6D28D9", "#9333EA", "#F472B6"]}
+      colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.gradient}
@@ -280,16 +280,16 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 12,
   },
-  tabActive: { backgroundColor: "#7C3AED" },
+  tabActive: { backgroundColor: "#F4896B" },
   tabActiveText: { color: "#fff", fontWeight: "800" },
-  tabText: { color: "#6B7280", fontWeight: "700" },
+  tabText: { color: "#7A6D6A", fontWeight: "700" },
   badge: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: "#DDF3F1",
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  badgeText: { color: "#DC2626", fontWeight: "800", fontSize: 12 },
+  badgeText: { color: "#0F766E", fontWeight: "800", fontSize: 12 },
   card: {
     marginHorizontal: 18,
     backgroundColor: "#fff",
@@ -302,10 +302,10 @@ const styles = StyleSheet.create({
     elevation: 3,
     gap: 8,
   },
-  title: { fontSize: 18, fontWeight: "800", color: "#111827" },
-  location: { color: "#6B7280", fontSize: 13 },
-  price: { color: "#7C3AED", fontSize: 20, fontWeight: "800" },
-  perMonth: { color: "#6B7280", fontSize: 12, fontWeight: "600" },
+  title: { fontSize: 18, fontWeight: "800", color: "#2B2B33" },
+  location: { color: "#7A6D6A", fontSize: 13 },
+  price: { color: "#F4896B", fontSize: 20, fontWeight: "800" },
+  perMonth: { color: "#7A6D6A", fontSize: 12, fontWeight: "600" },
   list: { gap: 14, marginHorizontal: 18 },
   emptyCard: {
     marginHorizontal: 18,
@@ -320,8 +320,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
-  emptyTitle: { fontSize: 16, fontWeight: "800", color: "#111827" },
-  emptySubtitle: { fontSize: 13, color: "#6B7280", textAlign: "center" },
+  emptyTitle: { fontSize: 16, fontWeight: "800", color: "#2B2B33" },
+  emptySubtitle: { fontSize: 13, color: "#7A6D6A", textAlign: "center" },
   appCard: {
     backgroundColor: "#fff",
     borderRadius: 18,
@@ -336,10 +336,10 @@ const styles = StyleSheet.create({
   },
   avatar: { width: 54, height: 54, borderRadius: 27 },
   appInfo: { flex: 1, gap: 6 },
-  appName: { fontSize: 15, fontWeight: "800", color: "#111827" },
-  appRole: { color: "#6B7280", fontSize: 12 },
+  appName: { fontSize: 15, fontWeight: "800", color: "#2B2B33" },
+  appRole: { color: "#7A6D6A", fontSize: 12 },
   appMetaRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  matchText: { color: "#7C3AED", fontWeight: "700", fontSize: 12 },
+  matchText: { color: "#7ECEC4", fontWeight: "700", fontSize: 12 },
   metaDot: {
     width: 4,
     height: 4,
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "#F3F4F6",
   },
-  rejectText: { color: "#6B7280", fontWeight: "700", fontSize: 12 },
+  rejectText: { color: "#7A6D6A", fontWeight: "700", fontSize: 12 },
   approveBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 12,
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#F4896B",
   },
   approveText: { color: "#fff", fontWeight: "700", fontSize: 12 },
 });

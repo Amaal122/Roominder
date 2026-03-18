@@ -249,6 +249,10 @@ export default function PropertyDetail() {
     description?: string;
     lat?: string;
     lng?: string;
+    ownerName?: string;
+    ownerAvatar?: string;
+    ownerRating?: string;
+    ownerResponse?: string;
   }>();
 
   const title = params.title ?? "Modern Loft\nin Marais";
@@ -264,6 +268,12 @@ export default function PropertyDetail() {
     "Beautiful modern loft in the heart of Le Marais. This spacious apartment features high ceilings, large windows, and a contemporary design. Perfect for young professionals looking for a stylish living space in a vibrant neighborhood.";
   const lat = params.lat ? Number(params.lat) : 48.8566;
   const lng = params.lng ? Number(params.lng) : 2.3522;
+  const ownerName = params.ownerName ?? "Amina Diallo";
+  const ownerAvatar =
+    params.ownerAvatar ??
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200";
+  const ownerRating = params.ownerRating ?? "4.9";
+  const ownerResponse = params.ownerResponse ?? "2h response";
 
   const handleFavorite = () => {
     const id = params.id ?? `${title}-${location}`;
@@ -431,7 +441,19 @@ export default function PropertyDetail() {
         <TouchableOpacity
           style={styles.ctaBtn}
           activeOpacity={0.85}
-          onPress={() => router.push("/screens/OwnerProfile")}
+          onPress={() =>
+            router.push({
+              pathname: "/screens/OwnerProfile",
+              params: {
+                title,
+                location,
+                ownerName,
+                ownerAvatar,
+                ownerRating,
+                ownerResponse,
+              },
+            })
+          }
         >
           <Text style={styles.ctaText}>Contact Owner</Text>
         </TouchableOpacity>

@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { usePendingCount } from "./state/ownerDashboard";
+import { useProperties } from "./state/properties";
 
 const STATS = [
   {
@@ -36,72 +37,11 @@ const STATS = [
   },
 ] as const;
 
-type Property = {
-  id: string;
-  title: string;
-  location: string;
-  price: string;
-  tenants: string;
-  status: "Occupied" | "Available";
-  image: string;
-  beds: number;
-  baths: number;
-  size: number;
-  views?: number;
-  applications?: number;
-};
-
-const PROPERTIES: Property[] = [
-  {
-    id: "1",
-    title: "Modern Loft in Marais",
-    location: "Le Marais, Paris",
-    price: "€1200",
-    tenants: "2 tenants",
-    status: "Occupied",
-    beds: 2,
-    baths: 1,
-    size: 65,
-    views: 247,
-    applications: 2,
-    image:
-      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "2",
-    title: "Bright Flat near Canal",
-    location: "Canal Saint-Martin, Paris",
-    price: "€980",
-    tenants: "Available",
-    status: "Available",
-    beds: 1,
-    baths: 1,
-    size: 48,
-    views: 180,
-    applications: 1,
-    image:
-      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "3",
-    title: "Cozy Studio in Bastille",
-    location: "Bastille, Paris",
-    price: "€850",
-    tenants: "1 tenant",
-    status: "Occupied",
-    beds: 1,
-    baths: 1,
-    size: 32,
-    views: 132,
-    applications: 0,
-    image:
-      "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=1200&q=80",
-  },
-];
 
 export default function PropertyOwner() {
   const router = useRouter();
   const pendingCount = usePendingCount();
+  const properties = useProperties();
 
   const handleNewProperty = () => {
     router.push("/newproperty");
@@ -109,7 +49,7 @@ export default function PropertyOwner() {
 
   return (
     <LinearGradient
-      colors={["#6D28D9", "#9333EA", "#F472B6"]}
+      colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.gradient}
@@ -124,13 +64,21 @@ export default function PropertyOwner() {
             <View style={styles.headerTopRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.headerTitle}>My Properties</Text>
-                <Text style={styles.headerSubtitle}>3 active listings</Text>
+              <Text style={styles.headerSubtitle}>
+                {properties.length} active listings
+              </Text>
               </View>
               <View style={styles.headerActions}>
-                <TouchableOpacity style={styles.iconBtn}>
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={() => router.push("/notifications")}
+                >
                   <Feather name="bell" size={18} color="#fff" />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.iconBtn}>
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={() => router.push("/settings")}
+                >
                   <Feather name="settings" size={18} color="#fff" />
                 </TouchableOpacity>
               </View>
@@ -142,7 +90,7 @@ export default function PropertyOwner() {
               onPress={handleNewProperty}
             >
               <LinearGradient
-                colors={["#F97316", "#F43F5E"]}
+                colors={["#F4896B", "#7ECEC4"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.addBtn}
@@ -177,7 +125,7 @@ export default function PropertyOwner() {
           <Text style={styles.sectionTitle}>Your Properties</Text>
 
           <View style={styles.propertiesList}>
-            {PROPERTIES.map((property) => (
+            {properties.map((property) => (
               <TouchableOpacity
                 key={property.id}
                 activeOpacity={0.9}
@@ -266,7 +214,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 28, gap: 16 },
   headerCard: {
-    backgroundColor: "#7C3AED",
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderRadius: 26,
     padding: 20,
     shadowColor: "#000",
@@ -282,7 +230,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerTitle: { color: "#fff", fontSize: 26, fontWeight: "800" },
-  headerSubtitle: { color: "#E0E7FF", marginTop: 4, fontSize: 13 },
+  headerSubtitle: { color: "rgba(255,255,255,0.85)", marginTop: 4, fontSize: 13 },
   headerActions: { flexDirection: "row", gap: 10 },
   iconBtn: {
     width: 36,
@@ -305,7 +253,7 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: "row", gap: 12 },
   statCard: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(255,255,255,0.9)",
     borderRadius: 18,
     padding: 14,
     shadowColor: "#000",
@@ -324,11 +272,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   statValue: { fontSize: 20, fontWeight: "800" },
-  statLabel: { color: "#6B7280", fontSize: 12, fontWeight: "600" },
+  statLabel: { color: "#7A6D6A", fontSize: 12, fontWeight: "600" },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#111827",
+    color: "#2B2B33",
     marginTop: 4,
     marginBottom: 4,
   },
@@ -354,19 +302,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   statusAvailable: { backgroundColor: "#DCFCE7" },
-  statusOccupied: { backgroundColor: "#DBEAFE" },
+  statusOccupied: { backgroundColor: "#FDE7DD" },
   statusText: { fontWeight: "700", fontSize: 12 },
   statusTextAvailable: { color: "#166534" },
-  statusTextOccupied: { color: "#1D4ED8" },
+  statusTextOccupied: { color: "#C2410C" },
   propertyBody: { padding: 14, gap: 8 },
-  propertyTitle: { fontSize: 16, fontWeight: "800", color: "#111827" },
+  propertyTitle: { fontSize: 16, fontWeight: "800", color: "#2B2B33" },
   locationRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  locationText: { color: "#6B7280", fontSize: 13 },
+  locationText: { color: "#7A6D6A", fontSize: 13 },
   priceRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  priceText: { color: "#7C3AED", fontWeight: "800", fontSize: 16 },
-  tenantsText: { color: "#6B7280", fontWeight: "700", fontSize: 12 },
+  priceText: { color: "#F4896B", fontWeight: "800", fontSize: 16 },
+  tenantsText: { color: "#7A6D6A", fontWeight: "700", fontSize: 12 },
 });

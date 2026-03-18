@@ -1,4 +1,5 @@
-import { router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -15,6 +16,8 @@ import {
 type Message = { id: string; from: "owner" | "me"; text: string };
 
 export default function OwnerChat() {
+  const params = useLocalSearchParams<{ ownerName?: string }>();
+  const ownerName = params.ownerName ?? "Amina Diallo";
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -39,15 +42,20 @@ export default function OwnerChat() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+      <LinearGradient
+        colors={["#F4896B", "#7ECEC4"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <View>
-          <Text style={styles.headerTitle}>Amina Diallo</Text>
+          <Text style={styles.headerTitle}>{ownerName}</Text>
           <Text style={styles.headerSub}>Owner · Typically replies in 2h</Text>
         </View>
-      </View>
+      </LinearGradient>
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -99,11 +107,13 @@ export default function OwnerChat() {
   );
 }
 
-const PURPLE = "#6C63FF";
-const BG = "#F8F7FF";
-const TEXT = "#1A1A2E";
-const MUTED = "#8B8CA8";
-const BORDER = "#EEECFA";
+const CORAL = "#F4896B";
+const CORAL_PASTEL = "#F9D4C2";
+const TEAL = "#7ECEC4";
+const BG = "#FFF7F3";
+const TEXT = "#2B2B33";
+const MUTED = "#7A6D6A";
+const BORDER = "#F1E3DC";
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
@@ -115,8 +125,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-    backgroundColor: "white",
+    borderBottomColor: "rgba(255,255,255,0.4)",
   },
   backBtn: {
     width: 34,
@@ -126,11 +135,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "rgba(255,255,255,0.7)",
   },
   backIcon: { fontSize: 16, color: TEXT },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: TEXT },
-  headerSub: { fontSize: 12, color: MUTED, marginTop: 2 },
+  headerTitle: { fontSize: 16, fontWeight: "700", color: "white" },
+  headerSub: { fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 2 },
   chat: { flex: 1, padding: 16 },
   bubble: {
     maxWidth: "80%",
@@ -138,8 +147,13 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginBottom: 10,
   },
-  bubbleOwner: { alignSelf: "flex-start", backgroundColor: "white", borderWidth: 1, borderColor: BORDER },
-  bubbleMe: { alignSelf: "flex-end", backgroundColor: PURPLE },
+  bubbleOwner: {
+    alignSelf: "flex-start",
+    backgroundColor: "white",
+    borderWidth: 1,
+    borderColor: CORAL_PASTEL,
+  },
+  bubbleMe: { alignSelf: "flex-end", backgroundColor: TEAL },
   bubbleText: { fontSize: 13, lineHeight: 18 },
   bubbleTextOwner: { color: TEXT },
   bubbleTextMe: { color: "white" },
@@ -162,7 +176,7 @@ const styles = StyleSheet.create({
     color: TEXT,
   },
   sendBtn: {
-    backgroundColor: PURPLE,
+    backgroundColor: CORAL,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,

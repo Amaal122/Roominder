@@ -1,4 +1,6 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
+import { Image } from "react-native";
 import {
   SafeAreaView,
   ScrollView,
@@ -9,9 +11,22 @@ import {
 } from "react-native";
 
 export default function OwnerProfile() {
-  const params = useLocalSearchParams<{ title?: string; location?: string }>();
+  const params = useLocalSearchParams<{
+    title?: string;
+    location?: string;
+    ownerName?: string;
+    ownerAvatar?: string;
+    ownerRating?: string;
+    ownerResponse?: string;
+  }>();
   const title = params.title ?? "Modern Loft in Marais";
   const location = params.location ?? "Le Marais, Paris";
+  const ownerName = params.ownerName ?? "Amina Diallo";
+  const ownerAvatar =
+    params.ownerAvatar ??
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200";
+  const ownerRating = params.ownerRating ?? "4.9";
+  const ownerResponse = params.ownerResponse ?? "2h response";
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -20,7 +35,12 @@ export default function OwnerProfile() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
       >
-        <View style={styles.header}>
+        <LinearGradient
+          colors={["#F4896B", "#7ECEC4"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
           <TouchableOpacity
             style={styles.backBtn}
             onPress={() => router.back()}
@@ -28,13 +48,15 @@ export default function OwnerProfile() {
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Owner Profile</Text>
-        </View>
+        </LinearGradient>
 
         <View style={styles.card}>
-          <View style={styles.avatar} />
+          <Image source={{ uri: ownerAvatar }} style={styles.avatar} />
           <View style={styles.ownerInfo}>
-            <Text style={styles.ownerName}>Amina Diallo</Text>
-            <Text style={styles.ownerMeta}>Verified · 4.9 ★ · 2h response</Text>
+            <Text style={styles.ownerName}>{ownerName}</Text>
+            <Text style={styles.ownerMeta}>
+              Verified · {ownerRating} ★ · {ownerResponse}
+            </Text>
           </View>
         </View>
 
@@ -77,7 +99,12 @@ export default function OwnerProfile() {
           <TouchableOpacity
             style={styles.secondaryBtn}
             activeOpacity={0.85}
-            onPress={() => router.push("/screens/OwnerChat")}
+            onPress={() =>
+              router.push({
+                pathname: "/screens/OwnerChat",
+                params: { ownerName },
+              })
+            }
           >
             <Text style={styles.secondaryText}>Chat with Owner</Text>
           </TouchableOpacity>
@@ -87,11 +114,13 @@ export default function OwnerProfile() {
   );
 }
 
-const PURPLE = "#6C63FF";
-const BG = "#F8F7FF";
-const TEXT = "#1A1A2E";
-const MUTED = "#8B8CA8";
-const BORDER = "#EEECFA";
+const CORAL = "#F4896B";
+const CORAL_PASTEL = "#F9D4C2";
+const TEAL = "#7ECEC4";
+const BG = "#FFF7F3";
+const TEXT = "#2B2B33";
+const MUTED = "#7A6D6A";
+const BORDER = "#F1E3DC";
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
@@ -101,6 +130,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginBottom: 20,
+    padding: 16,
+    borderRadius: 16,
   },
   backBtn: {
     width: 34,
@@ -110,10 +141,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "rgba(255,255,255,0.7)",
   },
-  backIcon: { fontSize: 16, color: TEXT },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: TEXT },
+  backIcon: { fontSize: 16, color: "#2B2B33" },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: "white" },
   card: {
     backgroundColor: "white",
     borderRadius: 16,
@@ -129,7 +160,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#D9D6FF",
+    backgroundColor: CORAL_PASTEL,
   },
   ownerInfo: { flex: 1 },
   ownerName: { fontSize: 16, fontWeight: "700", color: TEXT },
@@ -146,7 +177,7 @@ const styles = StyleSheet.create({
   aboutText: { fontSize: 13, color: MUTED, lineHeight: 20 },
   primaryBtn: {
     marginTop: 6,
-    backgroundColor: PURPLE,
+    backgroundColor: TEAL,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: "center",
@@ -160,7 +191,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: CORAL,
   },
-  secondaryText: { color: TEXT, fontSize: 15, fontWeight: "700" },
+  secondaryText: { color: CORAL, fontSize: 15, fontWeight: "700" },
 });
