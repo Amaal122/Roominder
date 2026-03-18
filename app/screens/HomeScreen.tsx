@@ -1,7 +1,7 @@
 // app/screens/HomeScreen.tsx
 
-import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
   Animated,
@@ -199,6 +199,22 @@ export default function HomeScreen() {
 
   const handleTabPress = (label: string) => {
     setActiveTab(label);
+    if (label === "Chat") {
+      router.push("/chat");
+      return;
+    }
+    if (label === "Match") {
+      router.push("/match");
+      return;
+    }
+    if (label === "Favorites") {
+      router.push("/favorite");
+      return;
+    }
+    if (label === "Profile") {
+      router.push("/profile");
+      return;
+    }
   };
 
   const goToDetails = (item: Listing) => {
@@ -217,94 +233,106 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={CORAL} />
+    <LinearGradient
+      colors={["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={styles.gradient}
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="light-content" backgroundColor={CORAL} />
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* ── HERO ── */}
-        <LinearGradient
-          colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.hero}
+        <ScrollView
+          style={styles.container}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.heroTop}>
-            <View>
-              <Text style={styles.heroTitle}>Your Sweet{"\n"}Home</Text>
-              <Text style={styles.heroSubtitle}>Find your perfect match</Text>
-              <View style={styles.heroChips}>
-                <View style={styles.heroChip}>
-                  <Text style={styles.heroChipText}>New in Paris</Text>
-                </View>
-                <View style={[styles.heroChip, styles.heroChipTeal]}>
-                  <Text style={styles.heroChipTextDark}>Verified</Text>
+          {/* ── HERO ── */}
+          <LinearGradient
+            colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.hero}
+          >
+            <View style={styles.heroTop}>
+              <View>
+                <Text style={styles.heroTitle}>Welcome to{"\n"}Roominder</Text>
+                <Text style={styles.heroSubtitle}>Find your perfect match</Text>
+                <View style={styles.heroChips}>
+                  <View style={styles.heroChip}>
+                    <Text style={styles.heroChipText}>New in Paris</Text>
+                  </View>
+                  <View style={[styles.heroChip, styles.heroChipTeal]}>
+                    <Text style={styles.heroChipTextDark}>Verified</Text>
+                  </View>
                 </View>
               </View>
+              <TouchableOpacity style={styles.bellButton}>
+                <Text style={styles.bellIcon}>🔔</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.bellButton}>
-              <Text style={styles.bellIcon}>🔔</Text>
+
+            <View style={styles.toggleContainer}>
+              <TouchableOpacity style={[styles.toggleBtn, styles.toggleActive]}>
+                <Text style={styles.toggleIconActive}>🏠</Text>
+                <Text style={styles.toggleTextActive}>Housing</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.toggleBtn}
+                onPress={() => router.push("/roomatematch")}
+              >
+                <Text style={styles.toggleIcon}>👥</Text>
+                <Text style={styles.toggleText}>Roommates</Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+
+          {/* ── STATS ── */}
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>📈 New Listings</Text>
+              <Text style={[styles.statValue, styles.statValueTeal]}>24</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>✨ Best Match</Text>
+              <Text style={[styles.statValue, styles.statValueAccent]}>
+                95%
+              </Text>
+            </View>
+          </View>
+
+          {/* ── LISTINGS ── */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recommended for{"\n"}You</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAll}>View{"\n"}All</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity style={[styles.toggleBtn, styles.toggleActive]}>
-              <Text style={styles.toggleIconActive}>🏠</Text>
-              <Text style={styles.toggleTextActive}>Housing</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.toggleBtn}
-              onPress={() => router.push("/roomatematch")}
-            >
-              <Text style={styles.toggleIcon}>👥</Text>
-              <Text style={styles.toggleText}>Roommates</Text>
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
+          {LISTINGS.map((item) => (
+            <ListingCard
+              key={item.id}
+              {...item}
+              onPress={() => goToDetails(item)}
+            />
+          ))}
 
-        {/* ── STATS ── */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>📈 New Listings</Text>
-            <Text style={[styles.statValue, styles.statValueTeal]}>24</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>✨ Best Match</Text>
-            <Text style={[styles.statValue, styles.statValueAccent]}>95%</Text>
-          </View>
+          <View style={{ height: 16 }} />
+        </ScrollView>
+
+        {/* ── BOTTOM TAB BAR ── */}
+        <View style={styles.tabBar}>
+          {tabs.map((tab) => (
+            <AnimatedTabIcon
+              key={tab.label}
+              icon={tab.icon}
+              label={tab.label}
+              active={activeTab === tab.label}
+              onPress={() => handleTabPress(tab.label)}
+            />
+          ))}
         </View>
-
-        {/* ── LISTINGS ── */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recommended for{"\n"}You</Text>
-          <TouchableOpacity>
-            <Text style={styles.viewAll}>View{"\n"}All</Text>
-          </TouchableOpacity>
-        </View>
-
-        {LISTINGS.map((item) => (
-          <ListingCard
-            key={item.id}
-            {...item}
-            onPress={() => goToDetails(item)}
-          />
-        ))}
-
-        <View style={{ height: 16 }} />
-      </ScrollView>
-
-      {/* ── BOTTOM TAB BAR ── */}
-      <View style={styles.tabBar}>
-        {tabs.map((tab) => (
-          <AnimatedTabIcon
-            key={tab.label}
-            icon={tab.icon}
-            label={tab.label}
-            active={activeTab === tab.label}
-            onPress={() => handleTabPress(tab.label)}
-          />
-        ))}
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
@@ -312,11 +340,12 @@ export default function HomeScreen() {
 const CORAL = "#F4896B";
 const CORAL_LIGHT = "#F7B89A";
 const CORAL_PASTEL = "#F9D4C2";
-const TEAL = "#7ECEC4";
+const TEAL = "#78CFC7";
 const INK = "#2B2B33";
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: CORAL_PASTEL },
+  gradient: { flex: 1 },
+  safeArea: { flex: 1, backgroundColor: "transparent" },
   container: { flex: 1 },
 
   // HERO
@@ -327,6 +356,11 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 12,
   },
   heroTop: {
     flexDirection: "row",

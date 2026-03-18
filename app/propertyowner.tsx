@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Href, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import {
   Image,
   ScrollView,
@@ -104,7 +104,7 @@ export default function PropertyOwner() {
   const pendingCount = usePendingCount();
 
   const handleNewProperty = () => {
-    router.push("/newproperty" as Href);
+    router.push("/newproperty");
   };
 
   return (
@@ -184,7 +184,7 @@ export default function PropertyOwner() {
                 style={styles.propertyCard}
                 onPress={() =>
                   router.push({
-                    pathname: "/propertyownerdetail" as Href,
+                    pathname: "/propertyownerdetail",
                     params: {
                       id: property.id,
                       title: property.title,

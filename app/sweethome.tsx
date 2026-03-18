@@ -1,20 +1,24 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React from "react";
 import {
-    ImageBackground,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function SweetHome() {
   const router = useRouter();
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={styles.container}
+    >
       <ImageBackground
         source={{
           uri: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80",
@@ -51,12 +55,12 @@ export default function SweetHome() {
           <AntDesign name="right" size={18} color="white" />
         </TouchableOpacity>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFF" },
+  container: { flex: 1 },
   topSection: { flex: 1.2 },
   overlay: { flex: 1, justifyContent: "center", alignItems: "center" },
   iconBox: {
@@ -64,7 +68,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.3)",
     borderRadius: 20,
   },
-  bottomSection: { flex: 1, padding: 30, backgroundColor: "#FFF7F3" },
+  bottomSection: { flex: 1, padding: 30, backgroundColor: "transparent" },
   title: {
     fontSize: 26,
     fontWeight: "bold",

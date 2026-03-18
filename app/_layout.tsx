@@ -14,6 +14,7 @@ export default function Layout() {
       >
         <Stack.Screen name="newproperty" />
         <Stack.Screen name="propertyowner" />
+        <Stack.Screen name="propertyownerdetail" />
         <Stack.Screen name="sweethome" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="findhome" />
@@ -25,6 +26,10 @@ export default function Layout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="register" />
         <Stack.Screen name="homescreen" />
+        <Stack.Screen name="match" />
+        <Stack.Screen name="favorite" />
+        <Stack.Screen name="chat" />
+        <Stack.Screen name="chat/[id]" />
       </Stack>
     </>
   );

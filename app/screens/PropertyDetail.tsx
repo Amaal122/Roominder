@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef } from "react";
 import {
   Animated,
@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import PropertyMap from "../../components/PropertyMap";
+import { addFavorite } from "../../store/favoriteStore";
 
 const { width } = Dimensions.get("window");
 
@@ -255,7 +256,7 @@ export default function PropertyDetail() {
   const location = params.location ?? "Le Marais, Paris";
   const rooms = params.rooms ?? "2 Beds";
   const match = params.match ?? "95";
-  const image = params.image;
+  const image = Array.isArray(params.image) ? params.image[0] : params.image;
   const baths = params.baths ?? "1 Bath";
   const size = params.size ?? "65 m²";
   const description =
@@ -263,6 +264,11 @@ export default function PropertyDetail() {
     "Beautiful modern loft in the heart of Le Marais. This spacious apartment features high ceilings, large windows, and a contemporary design. Perfect for young professionals looking for a stylish living space in a vibrant neighborhood.";
   const lat = params.lat ? Number(params.lat) : 48.8566;
   const lng = params.lng ? Number(params.lng) : 2.3522;
+
+  const handleFavorite = () => {
+    const id = params.id ?? `${title}-${location}`;
+    addFavorite({ id, title, location, price, image });
+  };
 
   const handleBack = useCallback(() => {
     if (router.canGoBack?.()) {
@@ -312,7 +318,7 @@ export default function PropertyDetail() {
             </TouchableOpacity>
 
             <View style={styles.navRight}>
-              <TouchableOpacity style={styles.navBtn}>
+              <TouchableOpacity style={styles.navBtn} onPress={handleFavorite}>
                 <Text style={styles.navIcon}>♡</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.navBtn}>

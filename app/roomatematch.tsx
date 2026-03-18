@@ -2,17 +2,18 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Image,
-    PanResponder,
-    Pressable,
-    StatusBar,
-    StyleSheet,
-    Text,
-    View,
+  Animated,
+  Dimensions,
+  Image,
+  PanResponder,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { addMatch } from "../store/matchStore";
 
 const { width } = Dimensions.get("window");
 const SWIPE_THRESHOLD = width * 0.25;
@@ -113,6 +114,17 @@ export default function RoomateMatch() {
 
   const forceSwipe = (direction: "left" | "right") => {
     if (!currentProfile) return;
+    if (direction === "right") {
+      addMatch({
+        id: currentProfile.id,
+        name: currentProfile.name,
+        age: currentProfile.age,
+        role: currentProfile.role,
+        location: currentProfile.location,
+        image: currentProfile.image,
+        match: currentProfile.match,
+      });
+    }
     const destX = direction === "right" ? width * 1.2 : -width * 1.2;
     Animated.timing(pan, {
       toValue: { x: destX, y: 0 },
