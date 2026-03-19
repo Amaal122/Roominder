@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LocationStep() {
   const router = useRouter();
+  const { flow } = useLocalSearchParams<{ flow?: string }>();
   const [location, setLocation] = useState("");
   const [radius, setRadius] = useState(10);
   const [sliderWidth, setSliderWidth] = useState(0);
@@ -30,7 +31,11 @@ export default function LocationStep() {
   }, [radius]);
 
   const handleContinue = () => {
-    router.push("/completeprofile");
+    if (flow === "housing") {
+      router.push("/homescreen");
+      return;
+    }
+    router.push("/form");
   };
 
   const handleUseLocation = async () => {
@@ -80,10 +85,17 @@ export default function LocationStep() {
           </TouchableOpacity>
 
           <View style={styles.progressTrack}>
-            <View style={styles.progressFill} />
+            <View
+              style={[
+                styles.progressFill,
+                flow === "housing" && styles.progressFillFull,
+              ]}
+            />
           </View>
 
-          <Text style={styles.stepLabel}>Step 2 of 5</Text>
+          <Text style={styles.stepLabel}>
+            {flow === "housing" ? "Step 3 of 3" : "Step 3 of 5"}
+          </Text>
           <Text style={styles.title}>Where do you want to live?</Text>
           <Text style={styles.subtitle}>
             Set your preferred location and search radius
@@ -195,10 +207,11 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   progressFill: {
-    width: "44%",
+    width: "66%",
     height: "100%",
     backgroundColor: "#36b37e",
   },
+  progressFillFull: { width: "100%" },
   stepLabel: { color: "#5c7a6a", fontSize: 13, fontWeight: "600" },
   title: { fontSize: 26, fontWeight: "800", color: "#0f3d2a" },
   subtitle: { color: "#4f6a5b", fontSize: 15 },

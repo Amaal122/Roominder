@@ -3,12 +3,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import {
-    Animated,
-    Pressable,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -109,7 +109,9 @@ export default function LookingFor() {
 
   const handleContinue = () => {
     if (!hasSelection) return;
-    router.push("/location");
+    const flow =
+      selected.housing && !selected.roommate ? "housing" : "roommate";
+    router.push({ pathname: "/completeprofile", params: { flow } });
   };
 
   return (

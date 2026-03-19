@@ -220,12 +220,12 @@ export default function RoomateMatch() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       <LinearGradient
-        colors={["#7B2FBE", "#9D42FF"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        colors={["#78CFC7", "white", "#f4a183"]}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
         style={styles.header}
       >
         <View style={styles.headerRow}>
@@ -239,10 +239,6 @@ export default function RoomateMatch() {
           <View>
             <Text style={styles.headerTitle}>Roommatch</Text>
             <Text style={styles.headerSubtitle}>3 potential matches</Text>
-          </View>
-
-          <View style={styles.infoBubble}>
-            <Text style={styles.infoIcon}>ℹ️</Text>
           </View>
         </View>
         <Text style={styles.headerHint}>Swipe right to save, left to pass</Text>
@@ -322,13 +318,18 @@ export default function RoomateMatch() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F4F2FA" },
+  safeArea: { flex: 1, backgroundColor: "white" },
   header: {
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 24,
     borderBottomLeftRadius: 26,
     borderBottomRightRadius: 26,
+    shadowColor: "#78CFC7",
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
   },
   headerRow: {
     flexDirection: "row",
@@ -339,23 +340,23 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.24)",
     alignItems: "center",
     justifyContent: "center",
   },
-  headerIcon: { fontSize: 18, color: "#FFF" },
-  headerTitle: { fontSize: 24, fontWeight: "800", color: "#FFF" },
-  headerSubtitle: { fontSize: 14, color: "#F2E8FF", marginTop: 2 },
-  headerHint: { color: "#F5EFFF", marginTop: 10, fontSize: 12 },
+  headerIcon: { fontSize: 18, color: "#2b2b33" },
+  headerTitle: { fontSize: 24, fontWeight: "800", color: "#1e1f2b" },
+  headerSubtitle: { fontSize: 14, color: "#4f6a5b", marginTop: 2 },
+  headerHint: { color: "#4f6a5b", marginTop: 10, fontSize: 12 },
   infoBubble: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.24)",
     alignItems: "center",
     justifyContent: "center",
   },
-  infoIcon: { fontSize: 18 },
+  infoIcon: { fontSize: 18, color: "#2b2b33" },
 
   deckArea: {
     flex: 1,
@@ -366,7 +367,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: "#FFF",
-    borderRadius: 20,
+    borderRadius: 16,
     overflow: "hidden",
   },
   shadow: {
@@ -382,7 +383,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   imageWrapper: { position: "relative" },
-  photo: { width: "100%", height: 360 },
+  photo: { width: "100%", height: 280 },
   matchBadge: {
     position: "absolute",
     top: 16,
@@ -396,8 +397,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  matchText: { fontSize: 18, fontWeight: "800", color: "#7B2FBE" },
-  cardBody: { padding: 16 },
+  matchText: { fontSize: 18, fontWeight: "800", color: "#78CFC7" },
+  cardBody: { padding: 14 },
   nameRow: { flexDirection: "row", alignItems: "baseline", gap: 8 },
   name: { fontSize: 22, fontWeight: "800", color: "#1A1A2E" },
   metaRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
@@ -415,13 +416,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 10,
-    paddingVertical: 8,
-    backgroundColor: "#F6F1FF",
-    borderRadius: 14,
+    paddingVertical: 7,
+    backgroundColor: "#e9fdf1",
+    borderRadius: 12,
     gap: 6,
   },
   chipIcon: { fontSize: 13 },
-  chipText: { fontSize: 12, color: "#5A3671", fontWeight: "700" },
+  chipText: { fontSize: 12, color: "#2f5a48", fontWeight: "700" },
 
   actionsRow: {
     flexDirection: "row",
@@ -438,8 +439,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   skipButton: { backgroundColor: "#F2F2F7" },
-  likeButton: { backgroundColor: "#7B2FBE" },
-  buttonIcon: { fontSize: 24, color: "#1A1A2E" },
+  likeButton: { backgroundColor: "#e9fdf1" },
+  buttonIcon: { fontSize: 24, color: "#2f5a48" },
 
   stamp: {
     position: "absolute",

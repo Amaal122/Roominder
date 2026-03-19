@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Image,
@@ -15,8 +15,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CompleteProfile() {
   const router = useRouter();
-  const [fullName, setFullName] = useState("");
+  const { flow } = useLocalSearchParams<{ flow?: string }>();
   const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
   const [occupation, setOccupation] = useState("");
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -39,11 +40,15 @@ export default function CompleteProfile() {
   };
 
   const handleContinue = () => {
-    if (!fullName.trim() || !age.trim() || !occupation.trim() || !avatarUri) {
+    if (!age.trim() || !gender.trim() || !occupation.trim() || !avatarUri) {
       setError("Please add a photo and fill in all fields.");
       return;
     }
-    router.push("/form");
+    if (flow === "roommate") {
+      router.push({ pathname: "/form", params: { flow } });
+      return;
+    }
+    router.push({ pathname: "/location", params: { flow } });
   };
 
   return (
@@ -66,7 +71,7 @@ export default function CompleteProfile() {
             <View style={styles.progressFill} />
           </View>
 
-          <Text style={styles.stepLabel}>Step 3 of 5</Text>
+          <Text style={styles.stepLabel}>Step 2 of 5</Text>
           <Text style={styles.title}>Tell us about yourself</Text>
           <Text style={styles.subtitle}>
             This helps us find your perfect match
@@ -87,17 +92,6 @@ export default function CompleteProfile() {
           </View>
 
           <View style={styles.inputWrapper}>
-            <Feather name="user" size={18} color="#9CA3AF" />
-            <TextInput
-              style={styles.input}
-              placeholder="Full Name"
-              placeholderTextColor="#9CA3AF"
-              value={fullName}
-              onChangeText={setFullName}
-            />
-          </View>
-
-          <View style={styles.inputWrapper}>
             <Feather name="gift" size={18} color="#9CA3AF" />
             <TextInput
               style={styles.input}
@@ -106,6 +100,17 @@ export default function CompleteProfile() {
               keyboardType="numeric"
               value={age}
               onChangeText={setAge}
+            />
+          </View>
+
+          <View style={styles.inputWrapper}>
+            <Feather name="users" size={18} color="#9CA3AF" />
+            <TextInput
+              style={styles.input}
+              placeholder="Gender"
+              placeholderTextColor="#9CA3AF"
+              value={gender}
+              onChangeText={setGender}
             />
           </View>
 
@@ -162,7 +167,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   progressFill: {
-    width: "66%",
+    width: "44%",
     height: "100%",
     backgroundColor: "#36b37e",
   },

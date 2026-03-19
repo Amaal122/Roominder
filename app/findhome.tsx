@@ -53,7 +53,7 @@ export default function RoleSelection() {
             onPressOut={() => animatePress(housingScale, 1)}
             onPress={() =>
               router.push({
-                pathname: "/register",
+                pathname: "/signIn",
                 params: { role: "housing" },
               })
             }
@@ -86,7 +86,7 @@ export default function RoleSelection() {
             onPressIn={() => animatePress(ownerScale, 0.95)}
             onPressOut={() => animatePress(ownerScale, 1)}
             onPress={() =>
-              router.push({ pathname: "/register", params: { role: "owner" } })
+              router.push({ pathname: "/signIn", params: { role: "owner" } })
             }
           >
             <LinearGradient

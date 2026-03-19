@@ -1,6 +1,6 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import {
   ImageBackground,
   StyleSheet,
@@ -44,7 +44,7 @@ export default function SafeSecureScreen() {
 
         <TouchableOpacity
           style={styles.sliderButton}
-          onPress={() => router.push("/findhome")}
+          onPress={() => router.push("/findhome" as Href)}
         >
           <View style={styles.sliderThumb}>
             <AntDesign name="right" size={20} color="#6D28D9" />
