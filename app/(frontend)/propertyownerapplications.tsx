@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { incrementPending } from "./state/ownerDashboard";
+import { incrementPending } from "../state/ownerDashboard";
 
 type Params = {
   id?: string;

@@ -10,10 +10,10 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFavoritesStore } from "../store/favoriteStore";
+import { useMatchesStore } from "../../store/matchStore";
 
-export default function Favorite() {
-  const favorites = useFavoritesStore();
+export default function Match() {
+  const matches = useMatchesStore();
   const router = useRouter();
   const tabs: { icon: string; label: string; route: Href }[] = [
     { icon: "🏠", label: "Home", route: "/homescreen" },
@@ -22,19 +22,23 @@ export default function Favorite() {
     { icon: "❤️", label: "Favorites", route: "/favorite" },
     { icon: "👤", label: "Profile", route: "/homescreen" },
   ];
-  const [activeTab, setActiveTab] = useState("Favorites");
+  const [activeTab, setActiveTab] = useState("Match");
+
+  const handleContact = (id: string, name: string) => {
+    router.push({ pathname: "/chat/[id]", params: { id, name } });
+  };
 
   const handleTabPress = (tabLabel: string, route: Href) => {
     setActiveTab(tabLabel);
-    if (tabLabel === "Favorites") return;
+    if (tabLabel === "Match") return;
     router.push(route);
   };
 
   return (
     <LinearGradient
-      colors={["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]}
+      colors={["#F4896B", "#F7B89A", "#78CFC7"]}
       start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
+      end={{ x: 1, y: 1 }}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -46,27 +50,34 @@ export default function Favorite() {
             <Text style={styles.iconText}>←</Text>
           </TouchableOpacity>
           <View>
-            <Text style={styles.title}>Favorites</Text>
+            <Text style={styles.title}>Your Matches</Text>
             <Text style={styles.subtitle}>
-              {favorites.length} saved{" "}
-              {favorites.length === 1 ? "place" : "places"}
+              {matches.length === 1
+                ? "1 person you saved"
+                : `${matches.length} people you saved`}
             </Text>
           </View>
-          <View style={styles.iconPlaceholder} />
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={() => router.push("/roomatematch")}
+          >
+            <Text style={styles.iconText}>✨</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.sheet}>
-          {favorites.length === 0 ? (
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No favorites yet</Text>
+          {matches.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>No matches yet</Text>
               <Text style={styles.emptyCopy}>
-                Tap the heart on a property to add it here.
+                Swipe right or tap the heart in Roommate Match to add someone
+                here.
               </Text>
               <TouchableOpacity
                 style={styles.primaryBtn}
-                onPress={() => router.push("/homescreen")}
+                onPress={() => router.push("/roomatematch")}
               >
-                <Text style={styles.primaryLabel}>Browse homes</Text>
+                <Text style={styles.primaryLabel}>Find roommates</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -74,41 +85,27 @@ export default function Favorite() {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 100 }}
             >
-              {favorites.map((item) => (
-                <View key={item.id} style={styles.card}>
-                  {item.image ? (
-                    <Image
-                      source={{ uri: item.image }}
-                      style={styles.cardImage}
-                      resizeMode="cover"
-                    />
-                  ) : null}
-                  <View style={styles.cardText}>
-                    <Text style={styles.cardTitle}>{item.title}</Text>
-                    {item.location ? (
-                      <Text style={styles.cardMeta}>{item.location}</Text>
-                    ) : null}
-                    {item.price ? (
-                      <Text style={styles.cardMeta}>{item.price}</Text>
-                    ) : null}
+              {matches.map((profile) => (
+                <View key={profile.id} style={styles.card}>
+                  <Image source={{ uri: profile.image }} style={styles.photo} />
+                  <View style={styles.cardBody}>
+                    <View style={styles.rowBetween}>
+                      <Text style={styles.name}>
+                        {profile.name}, {profile.age}
+                      </Text>
+                      <View style={styles.badge}>
+                        <Text style={styles.badgeText}>{profile.match}%</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.meta}>{profile.role}</Text>
+                    <Text style={styles.meta}>{profile.location}</Text>
+                    <TouchableOpacity
+                      style={styles.contactBtn}
+                      onPress={() => handleContact(profile.id, profile.name)}
+                    >
+                      <Text style={styles.contactLabel}>Contact</Text>
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    style={styles.contactBtn}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/screens/PropertyDetail",
-                        params: {
-                          id: item.id,
-                          title: item.title,
-                          location: item.location,
-                          price: item.price,
-                          image: item.image,
-                        },
-                      })
-                    }
-                  >
-                    <Text style={styles.contactLabel}>Property details</Text>
-                  </TouchableOpacity>
                 </View>
               ))}
             </ScrollView>
@@ -152,19 +149,18 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   iconBtn: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
-    backgroundColor: "rgba(255,255,255,0.7)",
+    borderColor: "rgba(255,255,255,0.35)",
+    backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
-  iconText: { fontSize: 16, fontWeight: "700", color: "#2b2b33" },
-  title: { fontSize: 22, fontWeight: "800", color: "#2b2b33" },
-  subtitle: { color: "#6c6f7d", fontSize: 12, marginTop: 2 },
-  iconPlaceholder: { width: 40, height: 40 },
+  iconText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  title: { color: "#fff", fontSize: 22, fontWeight: "800" },
+  subtitle: { color: "#f5e9ff", fontSize: 12, marginTop: 4 },
   sheet: {
     flex: 1,
     backgroundColor: "#f6fef9",
@@ -174,7 +170,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 18,
   },
-  empty: { alignItems: "center", paddingTop: 40, paddingHorizontal: 16 },
+  emptyState: {
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingTop: 40,
+  },
   emptyTitle: { fontSize: 20, fontWeight: "800", color: "#2b2b33" },
   emptyCopy: {
     color: "#6c6f7d",
@@ -192,24 +192,31 @@ const styles = StyleSheet.create({
   primaryLabel: { color: "#fff", fontWeight: "700" },
   card: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 12,
-    shadowColor: "#78CFC7",
-    shadowOpacity: 0.22,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
+    borderRadius: 18,
+    overflow: "hidden",
+    marginBottom: 14,
+    shadowColor: "#7ECEC4",
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
   },
-  cardImage: {
-    width: "100%",
-    height: 140,
+  photo: { width: "100%", height: 160 },
+  cardBody: { padding: 14 },
+  rowBetween: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  name: { fontSize: 18, fontWeight: "800", color: "#1e1f2b" },
+  badge: {
+    backgroundColor: "#7ECEC4",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 12,
-    marginBottom: 10,
   },
-  cardText: { gap: 4 },
-  cardTitle: { fontSize: 16, fontWeight: "800", color: "#1e1f2b" },
-  cardMeta: { color: "#6c6f7d", fontSize: 13 },
+  badgeText: { color: "#fff", fontWeight: "800" },
+  meta: { color: "#6c6f7d", marginTop: 4 },
   contactBtn: {
     marginTop: 12,
     backgroundColor: "#78CFC7",

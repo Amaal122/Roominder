@@ -69,7 +69,9 @@ export default function Register() {
           <Text style={styles.btnText}>Create Account</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push("/login")}>
+        <TouchableOpacity
+          onPress={() => router.push({ pathname: "/login", params: { role } })}
+        >
           <Text style={styles.footerText}>
             Already have an account? <Text style={styles.link}>Sign In</Text>
           </Text>

@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-import { addProperty, getPropertyById, updateProperty } from "./state/properties";
+import { addProperty, getPropertyById, updateProperty } from "../state/properties";
 
 export default function NewProperty() {
   const router = useRouter();

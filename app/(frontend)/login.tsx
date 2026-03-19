@@ -1,7 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import React from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ScrollView,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
 
 export default function Login() {
   const router = useRouter();
+  const { role } = useLocalSearchParams<{ role?: string }>();
 
   const handleContinue = () => {
     router.push("/homescreen");
@@ -29,9 +29,9 @@ export default function Login() {
         <TouchableOpacity onPress={() => router.back()}>
           <Feather name="arrow-left" size={24} color="white" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Welcome Back</Text>
+        <Text style={styles.headerTitle}>Welcome to Roominder</Text>
         <Text style={styles.headerSubtitle}>
-          Sign in to continue your Roominder journey
+          Sign in to start your Roominder journey
         </Text>
       </LinearGradient>
 
@@ -52,7 +52,11 @@ export default function Login() {
           <Text style={styles.btnText}>Sign In</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push("/register")}>
+        <TouchableOpacity
+          onPress={() =>
+            router.push({ pathname: "/register", params: { role } })
+          }
+        >
           <Text style={styles.footerText}>
             New here? <Text style={styles.link}>Create Account</Text>
           </Text>
@@ -86,10 +90,14 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: "#FFF7F3" },
   header: { padding: 40, paddingTop: 60 },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
+    fontSize: 32,
+    fontWeight: "800",
     color: "white",
     marginTop: 20,
+    letterSpacing: 0.4,
+    textShadowColor: "rgba(0,0,0,0.18)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
   },
   headerSubtitle: { color: "rgba(255,255,255,0.85)", marginTop: 5 },
   formCard: {

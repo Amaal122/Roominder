@@ -2,11 +2,11 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
-import { AppLanguage, updateSettings, useSettings } from "./state/settings";
+import { AppTheme, updateSettings, useSettings } from "../state/settings";
 
-const LANGS: AppLanguage[] = ["English", "French", "Arabic"];
+const THEMES: AppTheme[] = ["Light", "Dark", "System"];
 
-export default function Language() {
+export default function Theme() {
   const router = useRouter();
   const settings = useSettings();
 
@@ -22,20 +22,20 @@ export default function Language() {
           <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
             <Feather name="arrow-left" size={20} color="#2B2B33" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Language</Text>
+          <Text style={styles.headerTitle}>Theme</Text>
         </View>
 
         <View style={styles.card}>
-          {LANGS.map((lang) => {
-            const active = settings.language === lang;
+          {THEMES.map((theme) => {
+            const active = settings.theme === theme;
             return (
               <TouchableOpacity
-                key={lang}
+                key={theme}
                 style={[styles.row, active && styles.rowActive]}
-                onPress={() => updateSettings({ language: lang })}
+                onPress={() => updateSettings({ theme })}
               >
                 <Text style={[styles.rowLabel, active && styles.rowLabelActive]}>
-                  {lang}
+                  {theme}
                 </Text>
                 {active ? <Text style={styles.check}>✓</Text> : null}
               </TouchableOpacity>

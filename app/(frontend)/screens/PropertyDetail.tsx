@@ -15,8 +15,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import PropertyMap from "../../components/PropertyMap";
-import { addFavorite } from "../../store/favoriteStore";
+import PropertyMap from "../../../components/PropertyMap";
+import { addFavorite } from "../../../store/favoriteStore";
 
 const { width } = Dimensions.get("window");
 

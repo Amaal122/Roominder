@@ -24,6 +24,11 @@ const LISTINGS = [
     price: "€1 200",
     rooms: "2 bedrooms",
     match: 95,
+    ownerName: "Amina Diallo",
+    ownerAvatar:
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
+    ownerRating: "4.9",
+    ownerResponse: "2h response",
     image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600",
   },
   {
@@ -33,6 +38,11 @@ const LISTINGS = [
     price: "€950",
     rooms: "1 bedroom",
     match: 88,
+    ownerName: "Clara Moreau",
+    ownerAvatar:
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200",
+    ownerRating: "4.7",
+    ownerResponse: "4h response",
     image: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=600",
   },
   {
@@ -42,6 +52,11 @@ const LISTINGS = [
     price: "€850",
     rooms: "1 bedroom",
     match: 82,
+    ownerName: "Marc Dupont",
+    ownerAvatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200",
+    ownerRating: "4.8",
+    ownerResponse: "3h response",
     image: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600",
   },
   {
@@ -51,6 +66,11 @@ const LISTINGS = [
     price: "€1 050",
     rooms: "2 bedrooms",
     match: 79,
+    ownerName: "Nora Benali",
+    ownerAvatar:
+      "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=200",
+    ownerRating: "4.6",
+    ownerResponse: "5h response",
     image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=600",
   },
   {
@@ -60,6 +80,11 @@ const LISTINGS = [
     price: "€1 600",
     rooms: "3 bedrooms",
     match: 74,
+    ownerName: "Lea Martin",
+    ownerAvatar:
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200",
+    ownerRating: "4.5",
+    ownerResponse: "6h response",
     image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600",
   },
   {
@@ -69,6 +94,11 @@ const LISTINGS = [
     price: "€780",
     rooms: "1 bedroom",
     match: 70,
+    ownerName: "Sami Azizi",
+    ownerAvatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200",
+    ownerRating: "4.4",
+    ownerResponse: "7h response",
     image: "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=600",
   },
 ];
@@ -214,6 +244,10 @@ export default function HomeScreen() {
         rooms: item.rooms,
         match: String(item.match),
         image: item.image,
+        ownerName: item.ownerName,
+        ownerAvatar: item.ownerAvatar,
+        ownerRating: item.ownerRating,
+        ownerResponse: item.ownerResponse,
       },
     });
   };
@@ -252,9 +286,12 @@ export default function HomeScreen() {
                   </View>
                 </View>
               </View>
-              <TouchableOpacity style={styles.bellButton}>
-                <Text style={styles.bellIcon}>🔔</Text>
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.bellButton}
+              onPress={() => router.push("/notifications")}
+            >
+              <Text style={styles.bellIcon}>🔔</Text>
+            </TouchableOpacity>
             </View>
 
             <View style={styles.toggleContainer}>
@@ -313,10 +350,10 @@ export default function HomeScreen() {
               icon={tab.icon}
               label={tab.label}
               active={activeTab === tab.label}
-              onPress={() => handleTabPress(tab.label, tab.route)}
-            />
-          ))}
-        </View>
+            onPress={() => handleTabPress(tab.label, tab.route)}
+          />
+        ))}
+      </View>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -496,7 +533,6 @@ const styles = StyleSheet.create({
   locationText: { fontSize: 12, color: "#7A6D6A" },
   cardFooter: {
     flexDirection: "row",
-
     justifyContent: "space-between",
     alignItems: "center",
   },

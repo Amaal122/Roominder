@@ -1,17 +1,12 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  SafeAreaView,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
-import { updateSettings, useSettings } from "./state/settings";
+import { AppLanguage, updateSettings, useSettings } from "../state/settings";
 
-export default function TwoFactor() {
+const LANGS: AppLanguage[] = ["English", "French", "Arabic"];
+
+export default function Language() {
   const router = useRouter();
   const settings = useSettings();
 
@@ -27,21 +22,25 @@ export default function TwoFactor() {
           <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
             <Feather name="arrow-left" size={20} color="#2B2B33" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Two‑Factor Authentication</Text>
+          <Text style={styles.headerTitle}>Language</Text>
         </View>
 
         <View style={styles.card}>
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>Enable 2FA</Text>
-            <Switch
-              value={settings.twoFactorEnabled}
-              onValueChange={(value) => updateSettings({ twoFactorEnabled: value })}
-            />
-          </View>
-          <Text style={styles.helper}>
-            When enabled, you’ll confirm sign‑ins with a one‑time code from your
-            authenticator app.
-          </Text>
+          {LANGS.map((lang) => {
+            const active = settings.language === lang;
+            return (
+              <TouchableOpacity
+                key={lang}
+                style={[styles.row, active && styles.rowActive]}
+                onPress={() => updateSettings({ language: lang })}
+              >
+                <Text style={[styles.rowLabel, active && styles.rowLabelActive]}>
+                  {lang}
+                </Text>
+                {active ? <Text style={styles.check}>✓</Text> : null}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </SafeAreaView>
     </LinearGradient>
@@ -69,13 +68,17 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "rgba(255,255,255,0.95)",
     borderRadius: 18,
-    padding: 16,
+    padding: 8,
   },
   row: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
   },
-  rowLabel: { fontSize: 14, fontWeight: "800", color: "#2B2B33" },
-  helper: { fontSize: 12, color: "#7A6D6A", marginTop: 8, lineHeight: 18 },
+  rowActive: { backgroundColor: "#F9D4C2" },
+  rowLabel: { fontSize: 14, fontWeight: "700", color: "#2B2B33" },
+  rowLabelActive: { color: "#F4896B" },
+  check: { fontSize: 14, fontWeight: "800", color: "#F4896B" },
 });

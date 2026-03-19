@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { updateSettings, useSettings } from "./state/settings";
+import { updateSettings, useSettings } from "../state/settings";
 
 export default function BlockedUsers() {
   const router = useRouter();

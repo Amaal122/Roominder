@@ -10,8 +10,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { usePendingCount } from "./state/ownerDashboard";
-import { useProperties } from "./state/properties";
+import { usePendingCount } from "../state/ownerDashboard";
+import { useProperties } from "../state/properties";
 
 const STATS = [
   {

@@ -10,34 +10,34 @@ export default function Layout() {
           headerShown: false,
           contentStyle: { backgroundColor: "#F5F5F5" },
         }}
-        initialRouteName="index"
+        initialRouteName="(frontend)/index"
       >
-        <Stack.Screen name="newproperty" />
-        <Stack.Screen name="propertyowner" />
-        <Stack.Screen name="propertyownerdetail" />
-        <Stack.Screen name="sweethome" />
-        <Stack.Screen name="onboarding" />
-        <Stack.Screen name="findhome" />
-        <Stack.Screen name="lookingfor" />
-        <Stack.Screen name="location" />
-        <Stack.Screen name="completeprofile" />
-        <Stack.Screen name="form" />
-        <Stack.Screen name="roomatematch" />
-        <Stack.Screen name="index" />
-        <Stack.Screen name="register" />
-        <Stack.Screen name="homescreen" />
-        <Stack.Screen name="match" />
-        <Stack.Screen name="favorite" />
-        <Stack.Screen name="chat" />
-        <Stack.Screen name="chat/[id]" />
-        <Stack.Screen name="notifications" />
-        <Stack.Screen name="settings" />
-        <Stack.Screen name="change-password" />
-        <Stack.Screen name="two-factor" />
-        <Stack.Screen name="blocked-users" />
-        <Stack.Screen name="language" />
-        <Stack.Screen name="theme" />
-        <Stack.Screen name="about" />
+        <Stack.Screen name="(frontend)/newproperty" />
+        <Stack.Screen name="(frontend)/propertyowner" />
+        <Stack.Screen name="(frontend)/propertyownerdetail" />
+        <Stack.Screen name="(frontend)/sweethome" />
+        <Stack.Screen name="(frontend)/onboarding" />
+        <Stack.Screen name="(frontend)/findhome" />
+        <Stack.Screen name="(frontend)/lookingfor" />
+        <Stack.Screen name="(frontend)/location" />
+        <Stack.Screen name="(frontend)/completeprofile" />
+        <Stack.Screen name="(frontend)/form" />
+        <Stack.Screen name="(frontend)/roomatematch" />
+        <Stack.Screen name="(frontend)/index" />
+        <Stack.Screen name="(frontend)/register" />
+        <Stack.Screen name="(frontend)/homescreen" />
+        <Stack.Screen name="(frontend)/match" />
+        <Stack.Screen name="(frontend)/favorite" />
+        <Stack.Screen name="(frontend)/chat" />
+        <Stack.Screen name="(frontend)/chat/[id]" />
+        <Stack.Screen name="(frontend)/notifications" />
+        <Stack.Screen name="(frontend)/settings" />
+        <Stack.Screen name="(frontend)/change-password" />
+        <Stack.Screen name="(frontend)/two-factor" />
+        <Stack.Screen name="(frontend)/blocked-users" />
+        <Stack.Screen name="(frontend)/language" />
+        <Stack.Screen name="(frontend)/theme" />
+        <Stack.Screen name="(frontend)/about" />
       </Stack>
     </>
   );
