@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -12,18 +13,53 @@ import {
 
 export default function Register() {
   const router = useRouter();
-  const { role } = useLocalSearchParams<{ role?: string }>();
+  const { role } = useLocalSearchParams();
 
-  const handleContinue = () => {
-    if (role === "housing") {
-      router.push("/lookingfor");
-    } else if (role === "owner") {
-      router.push("/propertyowner");
-    } else {
-      router.push("/sweethome");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const handleContinue = async () => {
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:8001/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          full_name: name,
+          email,
+          password,
+          role, // 👈 from RoleSelection
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || "Registration failed");
+        return;
+      }
+
+      alert("Account created successfully 🎉");
+
+      // redirect after register
+      if (role === "owner") {
+        router.push("/propertyowner");
+      } else {
+        router.push("/homescreen");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Network error");
     }
   };
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <LinearGradient
@@ -46,22 +82,29 @@ export default function Register() {
           label="Full Name"
           icon="user"
           placeholder="hanine hamrouni"
+          value={name}
+          onChangeText={setName}
         />
         <InputField
           label="Email Address"
           icon="mail"
           placeholder="hanine.hamrouni@supcom.tn"
+          value={email}
+          onChangeText={setEmail}
         />
         <InputField
           label="Password"
           icon="lock"
           placeholder="........"
-          secure
+          value={password}
+          onChangeText={setPassword}
         />
         <InputField
           label="Confirm Password"
           icon="lock"
           placeholder="Confirm Password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
           secure
         />
 
@@ -87,7 +130,14 @@ export default function Register() {
 }
 
 // Reusable input field for form entries.
-const InputField = ({ label, icon, placeholder, secure = false }: any) => (
+const InputField = ({
+  label,
+  icon,
+  placeholder,
+  secure = false,
+  value,
+  onChangeText,
+}: any) => (
   <View style={styles.inputWrapper}>
     <Text style={styles.label}>{label}</Text>
     <View style={styles.inputContainer}>
@@ -97,6 +147,8 @@ const InputField = ({ label, icon, placeholder, secure = false }: any) => (
         placeholder={placeholder}
         secureTextEntry={secure}
         placeholderTextColor="#CCC"
+        value={value}
+        onChangeText={onChangeText}
       />
     </View>
   </View>

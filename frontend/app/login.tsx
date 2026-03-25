@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -12,10 +13,49 @@ import {
 
 export default function Login() {
   const router = useRouter();
-  const { role } = useLocalSearchParams<{ role?: string }>();
+  const { role } = useLocalSearchParams();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleContinue = () => {
-    router.push("/homescreen");
+  const handleContinue = async () => {
+    try {
+      const response = await fetch("http://localhost:8001/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          role,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || "Login failed");
+
+        if (data.correct_role) {
+          alert("You should login as: " + data.correct_role);
+        }
+
+        return;
+      }
+
+      console.log("Login success:", data);
+
+      const resolvedRole = data.role || role;
+
+      if (resolvedRole === "owner") {
+        router.push("/propertyowner");
+      } else {
+        router.push("/homescreen");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Network error");
+    }
   };
 
   return (
@@ -40,12 +80,16 @@ export default function Login() {
           label="Email Address"
           icon="mail"
           placeholder="hanine.hamrouni@supcom.tn"
+          value={email}
+          onChangeText={setEmail}
         />
         <InputField
           label="Password"
           icon="lock"
           placeholder="........"
           secure
+          value={password}
+          onChangeText={setPassword}
         />
 
         <TouchableOpacity style={styles.btnPrimary} onPress={handleContinue}>
@@ -71,7 +115,14 @@ export default function Login() {
 }
 
 // Reusable input field for form entries.
-const InputField = ({ label, icon, placeholder, secure = false }: any) => (
+const InputField = ({
+  label,
+  icon,
+  placeholder,
+  secure = false,
+  value,
+  onChangeText,
+}: any) => (
   <View style={styles.inputWrapper}>
     <Text style={styles.label}>{label}</Text>
     <View style={styles.inputContainer}>
@@ -81,6 +132,8 @@ const InputField = ({ label, icon, placeholder, secure = false }: any) => (
         placeholder={placeholder}
         secureTextEntry={secure}
         placeholderTextColor="#CCC"
+        value={value}
+        onChangeText={onChangeText}
       />
     </View>
   </View>
