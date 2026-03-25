@@ -12,8 +12,8 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import Boolean, Column, DateTime, Integer, String
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from ..config import settings
-from ..db import Base, engine, get_db
+from config import settings
+from db import Base, engine, get_db
 import bcrypt
 
 

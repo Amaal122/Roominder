@@ -13,7 +13,7 @@ class Settings(BaseSettings):
 
 	# Default to Postgres using psycopg3 driver. Accept both ROOMINDER_DATABASE_URL and DATABASE_URL.
 	database_url: str = Field(
-		default="postgresql+psycopg://postgres:postgres@localhost:5432/Roominderdb",
+		default="postgresql+psycopg://postgres:postgres@localhost:5432/roominderdb",
 		description="SQLAlchemy connection string",
 		validation_alias=AliasChoices("ROOMINDER_DATABASE_URL", "DATABASE_URL"),
 	)
