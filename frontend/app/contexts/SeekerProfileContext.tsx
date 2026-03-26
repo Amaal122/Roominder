@@ -8,11 +8,11 @@ type SeekerProfile = {
   gender?: string;
   occupation?: string;
   image_url?: string;
-  sleep_schedule?: "early" | "late";
-  cleanliness?: boolean;
-  social_life?: boolean;
-  guests?: boolean;
-  work_style?: boolean;
+  sleep_schedule?: string;
+  cleanliness?: string;
+  social_life?: string;
+  guests?: string;
+  work_style?: string;
 };
 
 type SeekerProfileContextType = {

@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Platform,
   ScrollView,
@@ -67,6 +67,14 @@ export default function Form() {
   const { profile, updateProfile } = useSeekerProfile();
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    console.log("[Form] profile snapshot", profile);
+  }, [profile]);
+
+  useEffect(() => {
+    console.log("[Form] answers", answers);
+  }, [answers]);
+
   const allAnswered = useMemo(
     () => QUESTIONS.every((q) => !!answers[q.key]),
     [answers],
@@ -79,13 +87,13 @@ export default function Form() {
   const handleContinue = async () => {
     if (!allAnswered) return;
 
-    // merge lifestyle answers into profile context
+    // merge lifestyle answers into profile context (store as strings)
     updateProfile({
-      sleep_schedule: answers.sleep as any,
-      cleanliness: answers.cleanliness === "tidy",
-      social_life: answers.social === "party",
-      guests: answers.guests === "often",
-      work_style: answers.work === "home",
+      sleep_schedule: answers.sleep,
+      cleanliness: answers.cleanliness,
+      social_life: answers.social,
+      guests: answers.guests,
+      work_style: answers.work,
     });
 
     const profileData = {

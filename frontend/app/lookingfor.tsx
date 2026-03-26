@@ -1,7 +1,7 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Pressable,
@@ -94,6 +94,7 @@ const OptionCard = ({ option, isActive, onPress }: OptionCardProps) => {
 
 export default function LookingFor() {
   const router = useRouter();
+  const { profile, updateProfile } = useSeekerProfile();
   const [selected, setSelected] = useState<SelectedState>({
     housing: false,
     roommate: false,
@@ -114,7 +115,9 @@ export default function LookingFor() {
     setSelected((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const { updateProfile } = useSeekerProfile();
+  useEffect(() => {
+    console.log("[LookingFor] profile snapshot", profile);
+  }, [profile]);
 
   const handleContinue = () => {
     if (!hasSelection) return;

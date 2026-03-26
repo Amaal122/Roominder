@@ -5,29 +5,43 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from .db import Base, engine
-from .backend_user import auth
+from .backend_user.auth import auth_router, seeker_router
 
 
 # Create tables on startup; checkfirst avoids errors on reload if tables already exist.
 Base.metadata.create_all(bind=engine, checkfirst=True)
 
+# Quick, in-place migrations for dev: align DB column types with current models.
+with engine.connect() as conn:
+	conn.execute(text(
+		"""
+		ALTER TABLE seeker_profiles
+		ALTER COLUMN sleep_schedule TYPE VARCHAR USING sleep_schedule::VARCHAR,
+		ALTER COLUMN cleanliness TYPE VARCHAR USING cleanliness::VARCHAR,
+		ALTER COLUMN social_life TYPE VARCHAR USING social_life::VARCHAR,
+		ALTER COLUMN guests TYPE VARCHAR USING guests::VARCHAR,
+		ALTER COLUMN work_style TYPE VARCHAR USING work_style::VARCHAR,
+		ALTER COLUMN looking_for TYPE VARCHAR USING looking_for::VARCHAR;
+		"""
+	))
+	conn.commit()
+
 app = FastAPI(title="Roominder API")
 
+# DEV: permit all origins to unblock Expo/web fetches; tighten in prod.
 app.add_middleware(
 	CORSMiddleware,
-	allow_origins=[
-		"http://localhost:8080",  # Expo web dev server
-		"http://localhost:8081",  # Metro bundler / Expo web
-		"http://10.0.2.2:8001",  # Android emulator
-		"http://localhost:19006",  # Expo go
-		"http://localhost:3000",   # fallback dev port
-	],
+	allow_origins=["*"],
+	allow_origin_regex=".*",
 	allow_credentials=True,
 	allow_methods=["*"],
 	allow_headers=["*"],
 )
 
-app.include_router(auth.router)
+# Auth routes
+app.include_router(auth_router)
+# Seeker profile routes
+app.include_router(seeker_router)
 
 
 @app.get("/health")

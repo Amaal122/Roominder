@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   ImageBackground,
@@ -26,6 +26,10 @@ export default function LocationStep() {
     "idle" | "loading" | "error" | "success"
   >("idle");
   const [locError, setLocError] = useState("");
+
+  useEffect(() => {
+    console.log("[Location] profile snapshot", profile);
+  }, [profile]);
 
   const radiusPercent = useMemo(() => {
     const clamped = Math.max(1, Math.min(50, radius));

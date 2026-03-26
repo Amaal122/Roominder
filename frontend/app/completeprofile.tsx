@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
   StyleSheet,
@@ -25,6 +25,10 @@ export default function CompleteProfile() {
     profile.image_url ?? null,
   );
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    console.log("[CompleteProfile] profile snapshot", profile);
+  }, [profile]);
 
   const pickImage = async () => {
     setError("");
