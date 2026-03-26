@@ -1,11 +1,13 @@
 """Configuration and defaults for the backend services."""
 
 from functools import lru_cache
+from pathlib import Path
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
-load_dotenv()
+_ENV_FILE = Path(__file__).resolve().parent / ".env"
+load_dotenv(_ENV_FILE)
 
 
 class Settings(BaseSettings):
@@ -13,7 +15,7 @@ class Settings(BaseSettings):
 
 	# Default to Postgres using psycopg3 driver. Accept both ROOMINDER_DATABASE_URL and DATABASE_URL.
 	database_url: str = Field(
-		default="postgresql+psycopg://postgres:postgres@localhost:5432/roominderdb",
+		default="postgresql+psycopg://postgres:amalamal@localhost:5432/Roominderdb",
 		description="SQLAlchemy connection string",
 		validation_alias=AliasChoices("ROOMINDER_DATABASE_URL", "DATABASE_URL"),
 	)
@@ -25,7 +27,6 @@ class Settings(BaseSettings):
 	model_config = SettingsConfigDict(
 		env_prefix="",
 		case_sensitive=False,
-		env_file=".env",
 		env_file_encoding="utf-8",
 	)
 

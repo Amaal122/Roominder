@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Platform,
   ScrollView,
@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 type Question = {
   key: string;
   title: string;
@@ -64,7 +64,16 @@ export const QUESTIONS: Question[] = [
 
 export default function Form() {
   const router = useRouter();
+  const { profile, updateProfile } = useSeekerProfile();
   const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    console.log("[Form] profile snapshot", profile);
+  }, [profile]);
+
+  useEffect(() => {
+    console.log("[Form] answers", answers);
+  }, [answers]);
 
   const allAnswered = useMemo(
     () => QUESTIONS.every((q) => !!answers[q.key]),
@@ -75,14 +84,46 @@ export default function Form() {
     setAnswers((prev) => ({ ...prev, [qKey]: optionId }));
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!allAnswered) return;
-    router.push({
-      pathname: "/reviewprofile",
-      params: { answers: JSON.stringify(answers) },
-    });
-  };
 
+    // merge lifestyle answers into profile context (store as strings)
+    updateProfile({
+      sleep_schedule: answers.sleep,
+      cleanliness: answers.cleanliness,
+      social_life: answers.social,
+      guests: answers.guests,
+      work_style: answers.work,
+    });
+
+    const profileData = {
+      ...profile,
+      answers,
+    };
+
+    try {
+      const response = await fetch("http://localhost:8001/seeker/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save profile");
+      }
+
+      const result = await response.json();
+      console.log("Profile saved successfully:", result);
+
+      router.push({
+        pathname: "/reviewprofile",
+        params: { profileData: JSON.stringify(profileData) },
+      });
+    } catch (error) {
+      console.error("Error submitting profile:", error);
+      alert("There was an error submitting your profile. Please try again.");
+    }
+  };
   return (
     <LinearGradient
       colors={["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]}

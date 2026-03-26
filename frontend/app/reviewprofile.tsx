@@ -3,17 +3,18 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { QUESTIONS } from "./form";
 
 type ParsedAnswers = Record<string, string>;
+type ParsedProfileData = { answers?: ParsedAnswers };
 type Selection = {
   key: string;
   title: string;
@@ -23,21 +24,31 @@ type Selection = {
 
 export default function ReviewProfile() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ answers?: string }>();
+  const params = useLocalSearchParams<{
+    profileData?: string;
+    answers?: string;
+  }>();
 
-  const answersParam = Array.isArray(params.answers)
-    ? params.answers[0]
-    : params.answers;
+  // Accept either legacy `answers` param or the newer `profileData.answers`
+  const rawPayload = Array.isArray(params.profileData)
+    ? params.profileData[0]
+    : (params.profileData ??
+      (Array.isArray(params.answers) ? params.answers[0] : params.answers));
 
   const parsedAnswers = useMemo<ParsedAnswers>(() => {
-    if (!answersParam) return {};
+    if (!rawPayload) return {};
     try {
-      const data = JSON.parse(answersParam);
-      return typeof data === "object" && data ? data : {};
+      const data = JSON.parse(rawPayload) as ParsedProfileData | ParsedAnswers;
+      if (data && typeof data === "object") {
+        // If payload already is answers, use it; otherwise prefer embedded answers
+        if ("answers" in data && data.answers) return data.answers;
+        return data as ParsedAnswers;
+      }
+      return {};
     } catch {
       return {};
     }
-  }, [answersParam]);
+  }, [rawPayload]);
 
   const selections = useMemo<Selection[]>(
     () =>

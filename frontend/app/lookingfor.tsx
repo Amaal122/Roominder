@@ -1,16 +1,17 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-    Animated,
-    Pressable,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSeekerProfile } from "../app/contexts/SeekerProfileContext";
 
 const OPTIONS = [
   {
@@ -93,10 +94,17 @@ const OptionCard = ({ option, isActive, onPress }: OptionCardProps) => {
 
 export default function LookingFor() {
   const router = useRouter();
+  const { profile, updateProfile } = useSeekerProfile();
   const [selected, setSelected] = useState<SelectedState>({
     housing: false,
     roommate: false,
   });
+  const getLookingFor = () => {
+    if (selected.housing && selected.roommate) return "both";
+    if (selected.housing) return "house";
+    if (selected.roommate) return "roommate";
+    return null;
+  };
 
   const hasSelection = useMemo(
     () => Object.values(selected).some(Boolean),
@@ -107,8 +115,19 @@ export default function LookingFor() {
     setSelected((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  useEffect(() => {
+    console.log("[LookingFor] profile snapshot", profile);
+  }, [profile]);
+
   const handleContinue = () => {
     if (!hasSelection) return;
+    const looking_for = getLookingFor();
+    if (!looking_for) return;
+
+    // Save to context
+    updateProfile({ looking_for });
+
+    // Go to next screen
     router.push("/location");
   };
 

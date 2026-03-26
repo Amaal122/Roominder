@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from db import Base, engine
-from .auth import router as auth_router
+from .auth import router as auth_router, seeker_router
 
 
 app = FastAPI(title="Roominder API")
@@ -26,12 +26,27 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(seeker_router)
 
 
 @app.on_event("startup")
 def _create_tables_on_startup() -> None:
 	"""Create tables when the app starts, not during import."""
 	Base.metadata.create_all(bind=engine, checkfirst=True)
+	# Quick, in-place migrations for dev: align DB column types with current models.
+	with engine.connect() as conn:
+		conn.execute(text(
+			"""
+			ALTER TABLE IF EXISTS seeker_profiles
+			ALTER COLUMN sleep_schedule TYPE VARCHAR USING sleep_schedule::VARCHAR,
+			ALTER COLUMN cleanliness TYPE VARCHAR USING cleanliness::VARCHAR,
+			ALTER COLUMN social_life TYPE VARCHAR USING social_life::VARCHAR,
+			ALTER COLUMN guests TYPE VARCHAR USING guests::VARCHAR,
+			ALTER COLUMN work_style TYPE VARCHAR USING work_style::VARCHAR,
+			ALTER COLUMN looking_for TYPE VARCHAR USING looking_for::VARCHAR;
+			"""
+		))
+		conn.commit()
 
 
 @app.get("/health")

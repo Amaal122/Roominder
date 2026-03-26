@@ -54,7 +54,7 @@ export default function RoleSelection() {
             onPress={() =>
               router.push({
                 pathname: "/login",
-                params: { role: "housing" },
+                params: { role: "seeker" },
               })
             }
           >

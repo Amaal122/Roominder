@@ -2,27 +2,34 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    ImageBackground,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 
 export default function LocationStep() {
   const router = useRouter();
-  const [location, setLocation] = useState("");
-  const [radius, setRadius] = useState(10);
+  const { profile, updateProfile } = useSeekerProfile();
+
+  const [location, setLocation] = useState(profile.location ?? "");
+  const [radius, setRadius] = useState(profile.radius ?? 10);
   const [sliderWidth, setSliderWidth] = useState(0);
   const [locStatus, setLocStatus] = useState<
     "idle" | "loading" | "error" | "success"
   >("idle");
   const [locError, setLocError] = useState("");
+
+  useEffect(() => {
+    console.log("[Location] profile snapshot", profile);
+  }, [profile]);
 
   const radiusPercent = useMemo(() => {
     const clamped = Math.max(1, Math.min(50, radius));
@@ -30,6 +37,9 @@ export default function LocationStep() {
   }, [radius]);
 
   const handleContinue = () => {
+    // Save location and radius to context before moving to next step
+    updateProfile({ location, radius });
+
     router.push("/completeprofile");
   };
 
@@ -48,6 +58,10 @@ export default function LocationStep() {
       });
       const label = `${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)}`;
       setLocation(label);
+
+      // ✅ Update context immediately
+      updateProfile({ location: label });
+
       setLocStatus("success");
     } catch (error: any) {
       setLocStatus("error");
@@ -215,9 +229,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
   },
-  mapImage: {
-    borderRadius: 20,
-  },
+  mapImage: { borderRadius: 20 },
   mapOverlay: {
     width: 46,
     height: 46,
@@ -249,11 +261,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.8)",
     gap: 8,
   },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    color: "#0f3d2a",
-  },
+  input: { flex: 1, fontSize: 15, color: "#0f3d2a" },
   sliderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -268,11 +276,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
   },
-  sliderThumb: {
-    height: "100%",
-    backgroundColor: "#36b37e",
-    borderRadius: 6,
-  },
+  sliderThumb: { height: "100%", backgroundColor: "#36b37e", borderRadius: 6 },
   sliderHandle: {
     position: "absolute",
     top: -6,

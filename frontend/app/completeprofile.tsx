@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
   StyleSheet,
@@ -12,14 +12,23 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 
 export default function CompleteProfile() {
   const router = useRouter();
-  const [fullName, setFullName] = useState("");
-  const [age, setAge] = useState("");
-  const [occupation, setOccupation] = useState("");
-  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const { profile, updateProfile } = useSeekerProfile();
+
+  const [gender, setGender] = useState(profile.gender ?? "");
+  const [age, setAge] = useState(profile.age ? String(profile.age) : "");
+  const [occupation, setOccupation] = useState(profile.occupation ?? "");
+  const [avatarUri, setAvatarUri] = useState<string | null>(
+    profile.image_url ?? null,
+  );
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    console.log("[CompleteProfile] profile snapshot", profile);
+  }, [profile]);
 
   const pickImage = async () => {
     setError("");
@@ -39,10 +48,27 @@ export default function CompleteProfile() {
   };
 
   const handleContinue = () => {
-    if (!fullName.trim() || !age.trim() || !occupation.trim() || !avatarUri) {
-      setError("Please add a photo and fill in all fields.");
+    const ageNumber = Number(age.trim());
+    if (
+      !gender ||
+      !age.trim() ||
+      Number.isNaN(ageNumber) ||
+      ageNumber <= 0 ||
+      !occupation.trim() ||
+      !avatarUri
+    ) {
+      setError("Please select gender, add a photo, and fill in all fields.");
       return;
     }
+
+    // Save data to context
+    updateProfile({
+      gender,
+      age: ageNumber,
+      occupation,
+      image_url: avatarUri,
+    });
+
     router.push("/form");
   };
 
@@ -86,15 +112,27 @@ export default function CompleteProfile() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.inputWrapper}>
-            <Feather name="user" size={18} color="#9CA3AF" />
-            <TextInput
-              style={styles.input}
-              placeholder="Full Name"
-              placeholderTextColor="#9CA3AF"
-              value={fullName}
-              onChangeText={setFullName}
-            />
+          <Text style={styles.label}>Select Gender</Text>
+          <View style={styles.genderOptions}>
+            {["Male", "Female", "Other"].map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.genderButton,
+                  gender === option && styles.genderSelected,
+                ]}
+                onPress={() => setGender(option)}
+              >
+                <Text
+                  style={[
+                    styles.genderText,
+                    gender === option && styles.genderTextSelected,
+                  ]}
+                >
+                  {option}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           <View style={styles.inputWrapper}>
@@ -198,6 +236,37 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 3,
     borderColor: "#fff",
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 6,
+    color: "#0f3d2a",
+  },
+  genderOptions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  genderButton: {
+    flex: 1,
+    marginHorizontal: 4,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#36b37e",
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  genderSelected: {
+    backgroundColor: "#36b37e",
+  },
+  genderText: {
+    color: "#36b37e",
+    fontWeight: "600",
+  },
+  genderTextSelected: {
+    color: "#fff",
   },
   inputWrapper: {
     flexDirection: "row",
