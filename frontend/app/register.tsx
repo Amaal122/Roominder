@@ -13,7 +13,10 @@ import {
 
 export default function Register() {
   const router = useRouter();
-  const { role } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  // useLocalSearchParams can return string | string[]; normalise and default to known role
+  const rawRole = params.role;
+  const role = Array.isArray(rawRole) ? rawRole[0] : (rawRole ?? "seeker");
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -43,7 +46,7 @@ export default function Register() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.error || "Registration failed");
+        alert(data.detail || data.error || "Registration failed");
         return;
       }
 
@@ -53,7 +56,7 @@ export default function Register() {
       if (role === "owner") {
         router.push("/propertyowner");
       } else {
-        router.push("/homescreen");
+        router.push("/lookingfor");
       }
     } catch (error) {
       console.error(error);
@@ -81,14 +84,14 @@ export default function Register() {
         <InputField
           label="Full Name"
           icon="user"
-          placeholder="hanine hamrouni"
+          placeholder="user name "
           value={name}
           onChangeText={setName}
         />
         <InputField
           label="Email Address"
           icon="mail"
-          placeholder="hanine.hamrouni@supcom.tn"
+          placeholder="user.email@supcom.tn"
           value={email}
           onChangeText={setEmail}
         />

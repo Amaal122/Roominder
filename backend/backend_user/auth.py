@@ -9,9 +9,9 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, relationship
 from ..config import settings
 from ..db import Base, engine, get_db
 import bcrypt
@@ -62,7 +62,7 @@ class Token(BaseModel):
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-router = APIRouter(prefix="/auth", tags=["auth"])
+auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 # ADD THESE
@@ -118,7 +118,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 	return user
 
 
-@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+@auth_router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def register_user(payload: UserCreate, db: Session = Depends(get_db)):
 	existing = get_user_by_email(db, payload.email)
 	if existing:
@@ -143,7 +143,7 @@ def register_user(payload: UserCreate, db: Session = Depends(get_db)):
 	return user
 
 
-@router.post("/login", response_model=Token)
+@auth_router.post("/login", response_model=Token)
 def login_user(payload: UserLogin, db: Session = Depends(get_db)):
 	_ensure_password_len(payload.password)
 	user = get_user_by_email(db, payload.email)
@@ -168,6 +168,109 @@ def login_user(payload: UserLogin, db: Session = Depends(get_db)):
 	return {"access_token": token, "token_type": "bearer", "role": user.role}
 
 
-@router.get("/me", response_model=UserRead)
+@auth_router.get("/me", response_model=UserRead)
 def read_me(current_user: User = Depends(get_current_user)):
 	return current_user
+
+seeker_router = APIRouter(prefix="/seeker", tags=["seeker"])
+
+# ------------------ SQLAlchemy Model ------------------
+
+class SeekerProfile(Base):
+    __tablename__ = "seeker_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    
+    looking_for = Column(String, nullable=False)  # roommate / house / both
+
+    # If house only
+    location = Column(String, nullable=True)
+    radius = Column(Integer, nullable=True)
+
+    # Common
+    age = Column(Integer, nullable=True)
+    gender = Column(String, nullable=True)
+    occupation = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)
+
+    # If roommate only
+    sleep_schedule = Column(String, nullable=True)  # early/late
+    cleanliness = Column(Boolean, nullable=True)
+    social_life = Column(Boolean, nullable=True)
+    guests = Column(Boolean, nullable=True)
+    work_style = Column(Boolean, nullable=True)
+
+    user = relationship("User", back_populates="seeker_profile")
+
+
+User.seeker_profile = relationship(
+    "SeekerProfile", back_populates="user", uselist=False
+)
+
+# ------------------ Pydantic Schemas ------------------
+
+class SeekerProfileCreate(BaseModel):
+    looking_for: str  # roommate, house, both
+
+    # House fields
+    location: Optional[str] = None
+    radius: Optional[int] = None
+
+    # Common
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    occupation: Optional[str] = None
+    image_url: Optional[str] = None
+
+    # Roommate fields
+    sleep_schedule: Optional[str] = None
+    cleanliness: Optional[bool] = None
+    social_life: Optional[bool] = None
+    guests: Optional[bool] = None
+    work_style: Optional[bool] = None
+
+
+class SeekerProfileRead(SeekerProfileCreate):
+    id: int
+    user_id: int
+
+    class Config:
+        orm_mode = True
+
+
+# ------------------ ROUTES ------------------
+
+@seeker_router.post("/", response_model=SeekerProfileRead)
+def create_seeker_profile(
+    profile: SeekerProfileCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+
+    # Ensure the user is allowed to create a seeker profile
+    if current_user.role not in ["seeker", "both"]:
+        raise HTTPException(status_code=403, detail="User is not a seeker")
+
+    # Prevent duplicate profile
+    existing = db.query(SeekerProfile).filter(SeekerProfile.user_id == current_user.id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Profile already exists")
+
+    new_profile = SeekerProfile(user_id=current_user.id, **profile.dict())
+    db.add(new_profile)
+    db.commit()
+    db.refresh(new_profile)
+    return new_profile
+
+
+@seeker_router.get("/me", response_model=SeekerProfileRead)
+def get_my_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(SeekerProfile).filter(SeekerProfile.user_id == current_user.id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return profile
+
+
+# Keep a default export for backward compatibility if callers still import `router`.
+router = auth_router

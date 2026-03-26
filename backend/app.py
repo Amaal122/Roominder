@@ -16,7 +16,9 @@ app = FastAPI(title="Roominder API")
 app.add_middleware(
 	CORSMiddleware,
 	allow_origins=[
-		"http://localhost:8081",  # Expo web dev server
+		"http://localhost:8080",  # Expo web dev server
+		"http://localhost:8081",  # Metro bundler / Expo web
+		"http://10.0.2.2:8001",  # Android emulator
 		"http://localhost:19006",  # Expo go
 		"http://localhost:3000",   # fallback dev port
 	],
