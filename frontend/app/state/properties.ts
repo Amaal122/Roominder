@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getAuthToken } from "./auth";
 
 export type Property = {
   id: string;
@@ -15,76 +16,134 @@ export type Property = {
   applications?: number;
 };
 
-const seed: Property[] = [
-  {
-    id: "1",
-    title: "Modern Loft in Marais",
-    location: "Le Marais, Paris",
-    price: "€1200",
-    tenants: "2 tenants",
-    status: "Occupied",
-    beds: 2,
-    baths: 1,
-    size: 65,
-    views: 247,
-    applications: 2,
-    image:
-      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "2",
-    title: "Bright Flat near Canal",
-    location: "Canal Saint-Martin, Paris",
-    price: "€980",
-    tenants: "Available",
-    status: "Available",
-    beds: 1,
-    baths: 1,
-    size: 48,
-    views: 180,
-    applications: 1,
-    image:
-      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "3",
-    title: "Cozy Studio in Bastille",
-    location: "Bastille, Paris",
-    price: "€850",
-    tenants: "1 tenant",
-    status: "Occupied",
-    beds: 1,
-    baths: 1,
-    size: 32,
-    views: 132,
-    applications: 0,
-    image:
-      "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=1200&q=80",
-  },
-];
+const API_BASE = "http://127.0.0.1:8000";
 
-let properties: Property[] = [...seed];
+type BackendProperty = {
+  id: number;
+  owner_id: number;
+  title: string;
+  address: string;
+  city: string;
+  price: number;
+  rooms: number;
+  description?: string | null;
+  status: string;
+  image_url?: string | null;
+  created_at: string;
+};
+
+let properties: Property[] = [];
 const listeners = new Set<() => void>();
 
 export const getProperties = () => properties;
 
-export const addProperty = (property: Property) => {
-  properties = [property, ...properties];
-  listeners.forEach((l) => l());
+const notify = () => listeners.forEach((l) => l());
+
+const toUiProperty = (p: BackendProperty): Property => {
+  const status =
+    p.status?.toLowerCase() === "occupied" ? "Occupied" : "Available";
+  return {
+    id: String(p.id),
+    title: p.title,
+    location: `${p.address}${p.city ? `, ${p.city}` : ""}`,
+    price: `€${p.price}`,
+    tenants: status === "Available" ? "Available" : "Occupied",
+    status,
+    beds: p.rooms ?? 1,
+    baths: 1,
+    size: 0,
+    views: 0,
+    applications: 0,
+    image:
+      p.image_url ||
+      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80",
+  };
 };
 
-export const removeProperty = (id: string) => {
-  properties = properties.filter((p) => p.id !== id);
-  listeners.forEach((l) => l());
-};
-
-export const updateProperty = (id: string, patch: Partial<Property>) => {
-  properties = properties.map((p) => (p.id === id ? { ...p, ...patch } : p));
-  listeners.forEach((l) => l());
+export const loadMyProperties = async () => {
+  const token = getAuthToken();
+  if (!token) return;
+  const response = await fetch(`${API_BASE}/properties/mine`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    return;
+  }
+  const data: BackendProperty[] = await response.json();
+  properties = data.map(toUiProperty);
+  notify();
 };
 
 export const getPropertyById = (id: string) =>
   properties.find((p) => p.id === id);
+
+export const addProperty = async (payload: {
+  title: string;
+  address: string;
+  city: string;
+  price: number;
+  rooms: number;
+  description?: string;
+  image_url?: string;
+}) => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+  const response = await fetch(`${API_BASE}/properties`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.detail || "Failed to create property");
+  }
+  const created = toUiProperty(data as BackendProperty);
+  properties = [created, ...properties];
+  notify();
+  return created;
+};
+
+export const updateProperty = async (
+  id: string,
+  patch: Partial<Property> & {
+    title?: string;
+    address?: string;
+    city?: string;
+    price?: number;
+    rooms?: number;
+    description?: string;
+    status?: string;
+    image_url?: string;
+  },
+) => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+  const response = await fetch(`${API_BASE}/properties/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(patch),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.detail || "Failed to update property");
+  }
+  const updated = toUiProperty(data as BackendProperty);
+  properties = properties.map((p) => (p.id === id ? updated : p));
+  notify();
+  return updated;
+};
 
 export const subscribeProperties = (listener: () => void) => {
   listeners.add(listener);
@@ -95,6 +154,7 @@ export const useProperties = () => {
   const [list, setList] = useState(getProperties());
 
   useEffect(() => {
+    loadMyProperties();
     return subscribeProperties(() => setList(getProperties()));
   }, []);
 

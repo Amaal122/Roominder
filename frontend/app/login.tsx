@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { setAuthToken } from "./state/auth";
 
 export default function Login() {
   const router = useRouter();
@@ -44,6 +45,9 @@ export default function Login() {
       }
 
       console.log("Login success:", data);
+      if (data.access_token) {
+        setAuthToken(data.access_token);
+      }
 
       const resolvedRole = data.role || role;
 
