@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-from db import get_db
-from backend_user.auth import get_current_user
+from backend.db import get_db
+from backend.backend_user.auth import get_current_user
 
-from backend_propertyowner.models  import Message
-from backend_propertyowner.schemas import MessageCreate, MessageOut
+from backend.backend_propertyowner.models  import Message
+from backend.backend_propertyowner.schemas import MessageCreate, MessageOut
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
 

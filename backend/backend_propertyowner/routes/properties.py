@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-from db import get_db
-from backend_user.auth import get_current_user   # retourne l'utilisateur connecté via JWT
+from backend.db import get_db
+from backend.backend_user.auth import get_current_user   # retourne l'utilisateur connecté via JWT
 
-from backend_propertyowner.models  import Property
-from backend_propertyowner.schemas import PropertyCreate, PropertyUpdate, PropertyOut
+from backend.backend_propertyowner.models  import Property
+from backend.backend_propertyowner.schemas import PropertyCreate, PropertyUpdate, PropertyOut
 
 router = APIRouter(prefix="/properties", tags=["Properties"])
 

@@ -12,9 +12,9 @@ from .auth import router as auth_router, seeker_router
 
 
 
-from backend_propertyowner.routes.properties   import router as properties_router
-from backend_propertyowner.routes.applications import router as applications_router
-from backend_propertyowner.routes.messages     import router as messages_router
+from backend.backend_propertyowner.routes.properties   import router as properties_router
+from backend.backend_propertyowner.routes.applications import router as applications_router
+from backend.backend_propertyowner.routes.messages     import router as messages_router
 # ──────────────────────────────────────────────────────────────────────────────
 
 

@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-from db import get_db
-from backend_user.auth import get_current_user
+from backend.db import get_db
+from backend.backend_user.auth import get_current_user
 
-from backend_propertyowner.models  import Application, Property
-from backend_propertyowner.schemas import ApplicationCreate, ApplicationUpdate, ApplicationOut
+from backend.backend_propertyowner.models  import Application, Property
+from backend.backend_propertyowner.schemas import ApplicationCreate, ApplicationUpdate, ApplicationOut
 
 router = APIRouter(prefix="/applications", tags=["Applications"])
 
