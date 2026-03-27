@@ -9,24 +9,13 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, relationship
 from ..config import settings
-from ..db import Base, engine, get_db
+from ..db import Base, get_db
+from .models import User
 import bcrypt
-
-
-
-class User(Base):
-    __tablename__ = "users"
-    id              = Column(Integer, primary_key=True, index=True)
-    email           = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    full_name       = Column(String, nullable=True)
-    role            = Column(String, nullable=True)  # add this
-    is_active       = Column(Boolean, default=True)
-    created_at      = Column(DateTime, default=datetime.utcnow)
 
 
 class UserCreate(BaseModel):

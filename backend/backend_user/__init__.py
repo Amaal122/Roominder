@@ -1,1 +1,1 @@
-"""User-related backend package."""
+"""Backend user package."""

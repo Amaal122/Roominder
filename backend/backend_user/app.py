@@ -1,5 +1,8 @@
 """Entry point for the Roominder FastAPI application."""
 
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
@@ -8,13 +11,20 @@ from ..db import Base, engine
 from .auth import router as auth_router, seeker_router
 
 
+
+from backend_propertyowner.routes.properties   import router as properties_router
+from backend_propertyowner.routes.applications import router as applications_router
+from backend_propertyowner.routes.messages     import router as messages_router
+# ──────────────────────────────────────────────────────────────────────────────
+
+
 app = FastAPI(title="Roominder API")
 
 app.add_middleware(
 	CORSMiddleware,
 	allow_origins=[
-		"http://localhost:8081",  # Expo web dev server
-		"http://127.0.0.1:8081",  # Expo web dev server (IP)
+		"http://localhost:8081",   # Expo web dev server
+		"http://127.0.0.1:8081",   # Expo web dev server (IP)
 		"http://localhost:19006",  # Expo go
 		"http://127.0.0.1:19006",  # Expo go (IP)
 		"http://localhost:3000",   # fallback dev port
@@ -25,8 +35,13 @@ app.add_middleware(
 	allow_headers=["*"],
 )
 
+# ── Enregistrement des routes ──────────────────────────────────────────────────
 app.include_router(auth_router)
 app.include_router(seeker_router)
+app.include_router(properties_router)
+app.include_router(applications_router)
+app.include_router(messages_router)
+# ──────────────────────────────────────────────────────────────────────────────
 
 
 @app.on_event("startup")
@@ -66,7 +81,6 @@ def health_check():
 
 @app.get("/test-db")
 def test_db():
-	# Simple DB connectivity check returning current database name
 	with engine.connect() as conn:
 		result = conn.execute(text("SELECT current_database();")).scalar()
 	return {"database": result}
@@ -74,7 +88,6 @@ def test_db():
 
 @app.get("/tables")
 def list_tables():
-	# List public tables using the SQLAlchemy engine
 	with engine.connect() as conn:
 		rows = conn.execute(text(
 			"""

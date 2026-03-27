@@ -4,19 +4,19 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-    addProperty,
-    getPropertyById,
-    updateProperty,
+  addProperty,
+  getPropertyById,
+  updateProperty,
 } from "./state/properties";
 
 export default function NewProperty() {
@@ -46,40 +46,51 @@ export default function NewProperty() {
     [title, address, rent, beds, baths, size, description],
   );
 
-  const handlePublish = () => {
+  const inferCity = (value: string) => {
+    const parts = value
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (parts.length > 0) {
+      return parts[parts.length - 1];
+    }
+    return "Unknown";
+  };
+
+  const parseRent = (value: string) => {
+    const normalized = value.replace(",", ".").replace(/[^\d.]/g, "");
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const handlePublish = async () => {
     if (!formComplete) return;
     const image =
       photos[0] ||
       editingProperty?.image ||
       "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80";
 
-    if (editingId) {
-      updateProperty(editingId, {
-        title,
-        location: address,
-        price: `€${rent}`,
-        beds: Number(beds),
-        baths: Number(baths),
-        size: Number(size),
-        image,
-      });
-    } else {
-      addProperty({
-        id: String(Date.now()),
-        title,
-        location: address,
-        price: `€${rent}`,
-        tenants: "Available",
-        status: "Available",
-        beds: Number(beds),
-        baths: Number(baths),
-        size: Number(size),
-        views: 0,
-        applications: 0,
-        image,
-      });
+    const payload = {
+      title,
+      address,
+      city: inferCity(address),
+      price: parseRent(rent),
+      rooms: Number(beds) || 1,
+      description,
+      image_url: image,
+    };
+
+    try {
+      if (editingId) {
+        await updateProperty(editingId, payload);
+      } else {
+        await addProperty(payload);
+      }
+      router.replace("/propertyowner");
+    } catch (error) {
+      console.error(error);
+      alert("Error while saving property. Please login again and retry.");
     }
-    router.replace("/propertyowner");
   };
 
   const handlePickPhotos = async () => {
@@ -241,120 +252,100 @@ export default function NewProperty() {
   );
 }
 
-type InputFieldProps = {
-  label: string;
-  icon: keyof typeof Feather.glyphMap;
-  placeholder: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  keyboardType?: "default" | "numeric";
-};
+const styles = StyleSheet.create({
+  gradient: { flex: 1 },
+  safeArea: { flex: 1 },
+  cardWrapper: {
+    flex: 1,
+    backgroundColor: "#FFF7F3",
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  backBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "#FEE7DD",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  stepLabel: { color: "#F4896B", fontWeight: "700", marginBottom: 4 },
+  title: { fontSize: 20, fontWeight: "800", color: "#2B2B33" },
+  scroll: { flex: 1, marginTop: 12 },
+  scrollContent: { paddingBottom: 20, gap: 14 },
+  uploadCard: {
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#F5B39D",
+    borderRadius: 16,
+    padding: 20,
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#FFF5F1",
+  },
+  uploadTitle: { fontWeight: "700", color: "#2B2B33" },
+  uploadHint: { color: "#9CA3AF", fontSize: 12 },
+  previewRow: { gap: 10, paddingTop: 8 },
+  previewImg: { width: 80, height: 80, borderRadius: 12 },
+  inputWrapper: { width: "100%", marginBottom: 4 },
+  label: {
+    color: "#F4896B",
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 5,
+    marginLeft: 10,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#EEE",
+    borderRadius: 15,
+    paddingHorizontal: 15,
+    height: 55,
+    backgroundColor: "white",
+  },
+  input: { flex: 1, marginLeft: 10, color: "#333" },
+  textArea: { height: 120, alignItems: "flex-start", paddingTop: 12 },
+  textAreaInput: { height: 100, textAlignVertical: "top" },
+  inlineRow: { flexDirection: "row", gap: 10 },
+  inlineThird: { flex: 1 },
+  cta: {
+    backgroundColor: "#7ECEC4",
+    paddingVertical: 16,
+    borderRadius: 18,
+    margin: 20,
+    alignItems: "center",
+  },
+  ctaDisabled: { opacity: 0.5 },
+  ctaText: { color: "white", fontWeight: "800", fontSize: 16 },
+});
 
 const InputField = ({
   label,
   icon,
   placeholder,
+  secure = false,
   value,
   onChangeText,
-  keyboardType = "default",
-}: InputFieldProps) => {
-  return (
-    <View style={styles.inputWrapper}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.inputContainer}>
-        <Feather name={icon} size={18} color="#9CA3AF" />
-        <TextInput
-          style={styles.input}
-          placeholder={placeholder}
-          placeholderTextColor="#9CA3AF"
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-        />
-      </View>
+  keyboardType,
+}: any) => (
+  <View style={styles.inputWrapper}>
+    <Text style={styles.label}>{label}</Text>
+    <View style={styles.inputContainer}>
+      <Feather name={icon} size={18} color="#999" />
+      <TextInput
+        style={styles.input}
+        placeholder={placeholder}
+        secureTextEntry={secure}
+        placeholderTextColor="#CCC"
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+      />
     </View>
-  );
-};
-
-const styles = StyleSheet.create({
-  gradient: { flex: 1 },
-  safeArea: { flex: 1, justifyContent: "space-between" },
-  cardWrapper: {
-    marginTop: 16,
-    marginHorizontal: 16,
-    backgroundColor: "#FFF7F3",
-    borderRadius: 24,
-    padding: 20,
-    gap: 14,
-    flex: 1,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.85)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  stepLabel: { color: "#7A6D6A", fontSize: 13, fontWeight: "700" },
-  title: { fontSize: 24, fontWeight: "800", color: "#2B2B33" },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 18, gap: 14 },
-  uploadCard: {
-    borderWidth: 1,
-    borderColor: "#F1E3DC",
-    borderRadius: 18,
-    backgroundColor: "#FFFFFF",
-    padding: 18,
-    alignItems: "center",
-    gap: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  uploadTitle: { fontWeight: "700", color: "#2B2B33", fontSize: 15 },
-  uploadHint: { color: "#7A6D6A", fontSize: 13 },
-  previewRow: { gap: 10 },
-  previewImg: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#F1E3DC",
-  },
-  inputWrapper: { gap: 8 },
-  label: { color: "#F4896B", fontSize: 13, fontWeight: "700" },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#F1E3DC",
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    height: 52,
-    backgroundColor: "#FFFFFF",
-  },
-  input: { flex: 1, marginLeft: 10, color: "#2B2B33", fontSize: 15 },
-  inlineRow: { flexDirection: "row", gap: 10 },
-  inlineThird: { flex: 1 },
-  textArea: { height: 120, alignItems: "flex-start", paddingVertical: 12 },
-  textAreaInput: { height: "100%", textAlignVertical: "top" },
-  cta: {
-    marginHorizontal: 16,
-    marginBottom: 24,
-    backgroundColor: "#7ECEC4",
-    borderRadius: 16,
-    height: 56,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#7ECEC4",
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
-  },
-  ctaDisabled: { opacity: 0.6 },
-  ctaText: { color: "#FFF", fontSize: 16, fontWeight: "700" },
-});
+  </View>
+);
