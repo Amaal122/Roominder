@@ -2,7 +2,7 @@
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, type Href } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Pressable,
@@ -14,96 +14,34 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { getAuthToken } from "../state/auth";
 
-// ─── Data ────────────────────────────────────────────────────────────────────
-const LISTINGS = [
-  {
-    id: "1",
-    title: "Modern Loft in Marais",
-    location: "Le Marais, Paris",
-    price: "€1 200",
-    rooms: "2 bedrooms",
-    match: 95,
-    ownerName: "Amina Diallo",
-    ownerAvatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
-    ownerRating: "4.9",
-    ownerResponse: "2h response",
-    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600",
-  },
-  {
-    id: "2",
-    title: "Luxury Studio with Terrace",
-    location: "Saint-Germain, Paris",
-    price: "€950",
-    rooms: "1 bedroom",
-    match: 88,
-    ownerName: "Clara Moreau",
-    ownerAvatar:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200",
-    ownerRating: "4.7",
-    ownerResponse: "4h response",
-    image: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=600",
-  },
-  {
-    id: "3",
-    title: "Cozy Apartment Near Metro",
-    location: "Bastille, Paris",
-    price: "€850",
-    rooms: "1 bedroom",
-    match: 82,
-    ownerName: "Marc Dupont",
-    ownerAvatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200",
-    ownerRating: "4.8",
-    ownerResponse: "3h response",
-    image: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600",
-  },
-  {
-    id: "4",
-    title: "Bright Flat with Garden",
-    location: "Montmartre, Paris",
-    price: "€1 050",
-    rooms: "2 bedrooms",
-    match: 79,
-    ownerName: "Nora Benali",
-    ownerAvatar:
-      "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=200",
-    ownerRating: "4.6",
-    ownerResponse: "5h response",
-    image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=600",
-  },
-  {
-    id: "5",
-    title: "Chic Penthouse Oberkampf",
-    location: "Oberkampf, Paris",
-    price: "€1 600",
-    rooms: "3 bedrooms",
-    match: 74,
-    ownerName: "Lea Martin",
-    ownerAvatar:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200",
-    ownerRating: "4.5",
-    ownerResponse: "6h response",
-    image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600",
-  },
-  {
-    id: "6",
-    title: "Quiet Studio Near Louvre",
-    location: "Châtelet, Paris",
-    price: "€780",
-    rooms: "1 bedroom",
-    match: 70,
-    ownerName: "Sami Azizi",
-    ownerAvatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200",
-    ownerRating: "4.4",
-    ownerResponse: "7h response",
-    image: "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=600",
-  },
-];
+// ─── Types ─────────────────────────────────────────────────────
+type Listing = {
+  id: string;
+  title: string;
+  location: string;
+  price: string;
+  rooms: string;
+  match: number;
+  image: string;
+  ownerName?: string;
+  ownerAvatar?: string;
+  ownerRating?: string;
+  ownerResponse?: string;
+};
 
-type Listing = (typeof LISTINGS)[0];
+type DashboardResponse = {
+  houses?: Array<{
+    id: number;
+    title: string;
+    address?: string | null;
+    city?: string | null;
+    price: number;
+    rooms?: number | null;
+    image_url?: string | null;
+  }>;
+};
 
 // ─── AnimatedTabIcon ──────────────────────────────────────────────────────────
 const AnimatedTabIcon = ({
@@ -165,29 +103,20 @@ const ListingCard = ({
 }: Listing & { onPress: () => void }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  const handleHoverIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1.05,
-      useNativeDriver: true,
-    }).start();
-  };
-  const handleHoverOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
-  };
+
 
   return (
     <Pressable
       style={styles.listingCard}
-      onPress={onPress}
-      onHoverIn={handleHoverIn}
-      onHoverOut={handleHoverOut}
-    >
+      onPress={onPress}>
       <View style={styles.imageWrapper}>
-        <Animated.Image
-          source={{ uri: image }}
-          style={[styles.listingImage, { transform: [{ scale: scaleAnim }] }]}
-          resizeMode="cover"
-        />
+        {image && !image.startsWith('blob:') && (
+          <Animated.Image
+            source={{ uri: image }}
+            style={[styles.listingImage, { transform: [{ scale: scaleAnim }] }]}
+            resizeMode="cover"
+          />
+        )}
         <View style={styles.matchBadge}>
           <Text style={styles.matchBadgeText}>✨ {match}%</Text>
         </View>
@@ -218,7 +147,65 @@ const ListingCard = ({
 export default function HomeScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("Home");
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  
+  // 🔥 FETCH DATA FROM BACKEND
+  useEffect(() => {
+    fetchListings();
+  }, []);
+  const fetchListings = async () => {
+    setLoading(true);
+    try {
+      const token = await getAuthToken();
+      if (!token) {
+        setError("You must be logged in to view the dashboard. Please log in.");
+        setListings([]);
+        setLoading(false);
+        return;
+      }
+      const res = await fetch(`http://localhost:8001/dashboard/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 401) {
+        setError("Session expired or unauthorized. Please log in again.");
+        setListings([]);
+        setLoading(false);
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch dashboard (${res.status})`);
+      }
+
+      const data: DashboardResponse = await res.json();
+
+      const formatted = (data.houses ?? []).map((item) => ({
+        id: String(item.id),
+        title: item.title,
+        location: `${item.address ?? ""}${
+          item.city ? `, ${item.city}` : ""
+        }`.trim() || "Unknown location",
+        price: `€${item.price}`,
+        rooms: `${item.rooms ?? 1} rooms`,
+        match: Math.floor(Math.random() * 30) + 70,
+        image: item.image_url
+        ? `http://localhost:8001${item.image_url}`
+        : "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
+            }));
+
+      setListings(formatted);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching listings:", error);
+      setError("Unable to load recommendations. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
   const tabs: { icon: string; label: string; route: Href }[] = [
     { icon: "🏠", label: "Home", route: "/homescreen" },
     { icon: "👥", label: "Match", route: "/match" },
@@ -251,6 +238,24 @@ export default function HomeScreen() {
       },
     });
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="light-content" backgroundColor={CORAL} />
+        <View style={styles.container}>
+          <Text style={{ textAlign: "center", marginTop: 24, color: INK }}>
+            Loading recommendations...
+          </Text>
+          {error ? (
+            <Text style={{ textAlign: "center", marginTop: 8, color: CORAL }}>
+              {error}
+            </Text>
+          ) : null}
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <LinearGradient
@@ -331,7 +336,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {LISTINGS.map((item) => (
+          {listings.map((item) => (
             <ListingCard
               key={item.id}
               {...item}

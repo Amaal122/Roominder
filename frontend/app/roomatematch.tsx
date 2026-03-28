@@ -181,7 +181,9 @@ export default function RoomateMatch() {
   const renderProfile = (profile: Profile) => (
     <>
       <View style={styles.imageWrapper}>
-        <Image source={{ uri: profile.image }} style={styles.photo} />
+        {profile.image && !profile.image.startsWith('blob:') && (
+          <Image source={{ uri: profile.image }} style={styles.photo} />
+        )}
         <View style={styles.matchBadge}>
           <Text style={styles.matchText}>{profile.match}%</Text>
         </View>

@@ -79,7 +79,7 @@ const OptionCard = ({ option, isActive, onPress }: OptionCardProps) => {
         onPressIn={() => animateTo(1)}
         onPressOut={() => animateTo(0)}
       >
-        <View style={styles.optionIcon}>{option.icon}</View>
+        <View style={styles.optionIcon}>{typeof option.icon === 'string' ? <Text>{option.icon}</Text> : option.icon}</View>
         <View style={styles.optionTextBox}>
           <Text style={styles.optionTitle}>{option.title}</Text>
           <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
