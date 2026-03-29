@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSeekerProfile } from "./contexts/SeekerProfileContext";
+import { getAuthToken } from "./state/auth";
 
 export default function CompleteProfile() {
   const router = useRouter();
@@ -47,7 +48,7 @@ export default function CompleteProfile() {
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const ageNumber = Number(age.trim());
     if (
       !gender ||
@@ -69,6 +70,7 @@ export default function CompleteProfile() {
       image_url: avatarUri,
     });
 
+    // If user is housing only, skip form and go to review profile (old logic: go to form)
     router.push("/form");
   };
 

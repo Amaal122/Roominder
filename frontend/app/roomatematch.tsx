@@ -1,5 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
+import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 import { useMemo, useRef, useState } from "react";
 import {
     Animated,
@@ -14,9 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { addMatch } from "../store/matchStore";
-
-const { width } = Dimensions.get("window");
-const SWIPE_THRESHOLD = width * 0.25;
+import { TouchableOpacity } from "react-native";
 
 const PROFILES = [
   {
@@ -73,7 +72,7 @@ const PROFILES = [
 
 type Profile = (typeof PROFILES)[number];
 
-const formatLifestyleIcon = (label: string) => {
+function formatLifestyleIcon(label: string) {
   if (label.toLowerCase().includes("cook")) return "🍳";
   if (label.toLowerCase().includes("organized")) return "🧹";
   if (label.toLowerCase().includes("early")) return "🌅";
@@ -83,244 +82,6 @@ const formatLifestyleIcon = (label: string) => {
   if (label.toLowerCase().includes("coffee")) return "☕";
   if (label.toLowerCase().includes("run")) return "🏃";
   return "✨";
-};
-
-export default function RoomateMatch() {
-  const router = useRouter();
-  const profiles = useMemo(() => PROFILES, []);
-  const [index, setIndex] = useState(0);
-  const pan = useRef(new Animated.ValueXY()).current;
-
-  const currentProfile = profiles[index];
-  const nextProfile = profiles[index + 1];
-
-  const resetPosition = () => {
-    Animated.spring(pan, {
-      toValue: { x: 0, y: 0 },
-      useNativeDriver: false,
-      bounciness: 10,
-    }).start();
-  };
-
-  const handleSwipeComplete = () => {
-    const nextIndex = index + 1;
-    pan.setValue({ x: 0, y: 0 });
-    if (nextIndex >= profiles.length) {
-      setIndex(0);
-    } else {
-      setIndex(nextIndex);
-    }
-  };
-
-  const forceSwipe = (direction: "left" | "right") => {
-    if (!currentProfile) return;
-    if (direction === "right") {
-      addMatch({
-        id: currentProfile.id,
-        name: currentProfile.name,
-        age: currentProfile.age,
-        role: currentProfile.role,
-        location: currentProfile.location,
-        image: currentProfile.image,
-        match: currentProfile.match,
-      });
-    }
-    const destX = direction === "right" ? width * 1.2 : -width * 1.2;
-    Animated.timing(pan, {
-      toValue: { x: destX, y: 0 },
-      duration: 240,
-      useNativeDriver: false,
-    }).start(handleSwipeComplete);
-  };
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) =>
-        Math.abs(gesture.dx) > 4 || Math.abs(gesture.dy) > 4,
-      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
-        useNativeDriver: false,
-      }),
-      onPanResponderRelease: (_, gesture) => {
-        if (gesture.dx > SWIPE_THRESHOLD) {
-          forceSwipe("right");
-          return;
-        }
-        if (gesture.dx < -SWIPE_THRESHOLD) {
-          forceSwipe("left");
-          return;
-        }
-        resetPosition();
-      },
-    }),
-  ).current;
-
-  const rotate = pan.x.interpolate({
-    inputRange: [-width, 0, width],
-    outputRange: ["-12deg", "0deg", "12deg"],
-    extrapolate: "clamp",
-  });
-
-  const likeOpacity = pan.x.interpolate({
-    inputRange: [0, SWIPE_THRESHOLD],
-    outputRange: [0, 1],
-    extrapolate: "clamp",
-  });
-
-  const nopeOpacity = pan.x.interpolate({
-    inputRange: [-SWIPE_THRESHOLD, 0],
-    outputRange: [1, 0],
-    extrapolate: "clamp",
-  });
-
-  const nextCardScale = pan.x.interpolate({
-    inputRange: [-width, 0, width],
-    outputRange: [0.95, 0.93, 0.95],
-    extrapolate: "clamp",
-  });
-
-  const renderProfile = (profile: Profile) => (
-    <>
-      <View style={styles.imageWrapper}>
-        {profile.image && !profile.image.startsWith('blob:') && (
-          <Image source={{ uri: profile.image }} style={styles.photo} />
-        )}
-        <View style={styles.matchBadge}>
-          <Text style={styles.matchText}>{profile.match}%</Text>
-        </View>
-      </View>
-
-      <View style={styles.cardBody}>
-        <View style={styles.nameRow}>
-          <Text style={styles.name}>
-            {profile.name}, {profile.age}
-          </Text>
-        </View>
-        <View style={styles.metaRow}>
-          <Text style={styles.metaIcon}>💼</Text>
-          <Text style={styles.metaText}>{profile.role}</Text>
-        </View>
-        <View style={styles.metaRow}>
-          <Text style={styles.metaIcon}>📍</Text>
-          <Text style={styles.metaText}>{profile.location}</Text>
-        </View>
-
-        <Text style={styles.sectionTitle}>About</Text>
-        <Text style={styles.about}>{profile.about}</Text>
-
-        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Lifestyle</Text>
-        <View style={styles.chipRow}>
-          {profile.lifestyle.map((item) => (
-            <View key={item} style={styles.chip}>
-              <Text style={styles.chipIcon}>{formatLifestyleIcon(item)}</Text>
-              <Text style={styles.chipText}>{item}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    </>
-  );
-
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
-
-      <LinearGradient
-        colors={["#7B2FBE", "#9D42FF"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
-        <View style={styles.headerRow}>
-          <Pressable
-            style={styles.headerIconButton}
-            onPress={() => router.push("/homescreen")}
-          >
-            <Text style={styles.headerIcon}>←</Text>
-          </Pressable>
-
-          <View>
-            <Text style={styles.headerTitle}>Roommatch</Text>
-            <Text style={styles.headerSubtitle}>3 potential matches</Text>
-          </View>
-
-          <View style={styles.infoBubble}>
-            <Text style={styles.infoIcon}>ℹ️</Text>
-          </View>
-        </View>
-        <Text style={styles.headerHint}>Swipe right to save, left to pass</Text>
-      </LinearGradient>
-
-      <View style={styles.deckArea}>
-        {nextProfile && (
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.card,
-              styles.shadow,
-              styles.nextCard,
-              { transform: [{ scale: nextCardScale }, { translateY: 12 }] },
-            ]}
-          >
-            {renderProfile(nextProfile)}
-          </Animated.View>
-        )}
-
-        {currentProfile ? (
-          <Animated.View
-            style={[
-              styles.card,
-              styles.shadow,
-              {
-                transform: [
-                  { translateX: pan.x },
-                  { translateY: pan.y },
-                  { rotate },
-                ],
-              },
-            ]}
-            {...panResponder.panHandlers}
-          >
-            <View
-              style={[styles.stamp, styles.passStamp, { opacity: nopeOpacity }]}
-            >
-              <Text style={styles.stampText}>PASS</Text>
-            </View>
-            <View
-              style={[styles.stamp, styles.saveStamp, { opacity: likeOpacity }]}
-            >
-              <Text style={styles.stampText}>SAVE</Text>
-            </View>
-            {renderProfile(currentProfile)}
-          </Animated.View>
-        ) : (
-          <View style={[styles.card, styles.shadow, styles.emptyCard]}>
-            <Text style={styles.emptyTitle}>All caught up</Text>
-            <Text style={styles.emptySubtitle}>
-              You have seen everyone for now. We will refresh suggestions soon.
-            </Text>
-            <Pressable style={styles.primaryButton} onPress={() => setIndex(0)}>
-              <Text style={styles.primaryLabel}>Restart</Text>
-            </Pressable>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.actionsRow}>
-        <Pressable
-          style={[styles.circleButton, styles.skipButton]}
-          onPress={() => forceSwipe("left")}
-        >
-          <Text style={styles.buttonIcon}>✕</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.circleButton, styles.likeButton]}
-          onPress={() => forceSwipe("right")}
-        >
-          <Text style={styles.buttonIcon}>❤️</Text>
-        </Pressable>
-      </View>
-    </SafeAreaView>
-  );
 }
 
 const styles = StyleSheet.create({
@@ -349,16 +110,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 24, fontWeight: "800", color: "#FFF" },
   headerSubtitle: { fontSize: 14, color: "#F2E8FF", marginTop: 2 },
   headerHint: { color: "#F5EFFF", marginTop: 10, fontSize: 12 },
-  infoBubble: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  infoIcon: { fontSize: 18 },
-
+  infoBubble: {},
   deckArea: {
     flex: 1,
     paddingHorizontal: 18,
@@ -384,12 +136,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   imageWrapper: { position: "relative" },
-  photo: { width: "100%", height: 360 },
+  photo: { width: "100%", height: 270 },
   matchBadge: {
     position: "absolute",
     top: 16,
     right: 16,
-    borderWidth: 3,
+    borderWidth: 4,
     borderColor: "#FFF",
     backgroundColor: "rgba(255,255,255,0.85)",
     width: 68,
@@ -398,7 +150,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  matchText: { fontSize: 18, fontWeight: "800", color: "#7B2FBE" },
+  matchText: { fontSize: 18, fontWeight: "800", color: "#7ECEC4" },
   cardBody: { padding: 16 },
   nameRow: { flexDirection: "row", alignItems: "baseline", gap: 8 },
   name: { fontSize: 22, fontWeight: "800", color: "#1A1A2E" },
@@ -423,8 +175,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   chipIcon: { fontSize: 13 },
-  chipText: { fontSize: 12, color: "#5A3671", fontWeight: "700" },
-
+  chipText: { fontSize: 12, color: "#7ECEC4", fontWeight: "700" },
   actionsRow: {
     flexDirection: "row",
     justifyContent: "center",
@@ -440,9 +191,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   skipButton: { backgroundColor: "#F2F2F7" },
-  likeButton: { backgroundColor: "#7B2FBE" },
+  likeButton: { backgroundColor: "#7ECEC4" },
   buttonIcon: { fontSize: 24, color: "#1A1A2E" },
-
   stamp: {
     position: "absolute",
     top: 28,
@@ -462,7 +212,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(76,175,80,0.14)",
   },
   stampText: { fontSize: 14, fontWeight: "800", color: "#1A1A2E" },
-
   emptyCard: {
     alignItems: "center",
     padding: 28,
@@ -472,10 +221,324 @@ const styles = StyleSheet.create({
   emptySubtitle: { color: "#6B7280", textAlign: "center", lineHeight: 20 },
   primaryButton: {
     marginTop: 6,
-    backgroundColor: "#7B2FBE",
+    backgroundColor: "#7ECEC4",
     paddingHorizontal: 22,
     paddingVertical: 12,
     borderRadius: 14,
   },
   primaryLabel: { color: "#FFF", fontWeight: "700" },
+  tabItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+  },
+  tabIcon: {
+    fontSize: 22,
+    color: "#7ECEC4",
+  },
+  tabLabel: {
+    fontSize: 12,
+    color: "#61677A",
+    marginTop: 2,
+  },
+  tabLabelActive: {
+    color: "#F4896B",
+    fontWeight: "700",
+  },
+  tabBar: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    height: 60,
+    backgroundColor: "#FFF",
+    borderTopWidth: 1,
+    borderTopColor: "#EEE",
+  },
 });
+
+export default function RoomateMatch() {
+  const { width } = Dimensions.get("window");
+  const SWIPE_THRESHOLD = width * 0.25;
+  const router = useRouter();
+  const { profile } = useSeekerProfile();
+  let showRoommates = true;
+  if (profile.looking_for === "house") {
+    showRoommates = false;
+  }
+  const tabs: { icon: string; label: string; route: Href }[] = [
+    { icon: "🏠", label: "Home", route: "/roomatematch" as Href },
+    ...(showRoommates ? [{ icon: "👥", label: "Match", route: "/match" as Href }] : []),
+    { icon: "💬", label: "Chat", route: "/chat" as Href },
+    { icon: "👤", label: "Profile", route: "/profile" as Href },
+  ];
+  const profiles = useMemo(() => PROFILES, []);
+  const [index, setIndex] = useState(0);
+  const pan = useRef(new Animated.ValueXY()).current;
+  const currentProfile = profiles[index];
+  const nextProfile = profiles[index + 1];
+  const resetPosition = () => {
+    Animated.spring(pan, {
+      toValue: { x: 0, y: 0 },
+      useNativeDriver: false,
+      bounciness: 10,
+    }).start();
+  };
+  const handleSwipeComplete = () => {
+    const nextIndex = index + 1;
+    pan.setValue({ x: 0, y: 0 });
+    if (nextIndex >= profiles.length) {
+      setIndex(0);
+    } else {
+      setIndex(nextIndex);
+    }
+  };
+  const forceSwipe = (direction: "left" | "right") => {
+    if (!currentProfile) return;
+    if (direction === "right") {
+      addMatch({
+        id: currentProfile.id,
+        name: currentProfile.name,
+        age: currentProfile.age,
+        role: currentProfile.role,
+        location: currentProfile.location,
+        image: currentProfile.image,
+        match: currentProfile.match,
+      });
+    }
+    const destX = direction === "right" ? width * 1.2 : -width * 1.2;
+    Animated.timing(pan, {
+      toValue: { x: destX, y: 0 },
+      duration: 240,
+      useNativeDriver: false,
+    }).start(handleSwipeComplete);
+  };
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) =>
+        Math.abs(gesture.dx) > 4 || Math.abs(gesture.dy) > 4,
+      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
+        useNativeDriver: false,
+      }),
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dx > SWIPE_THRESHOLD) {
+          forceSwipe("right");
+          return;
+        }
+        if (gesture.dx < -SWIPE_THRESHOLD) {
+          forceSwipe("left");
+          return;
+        }
+        resetPosition();
+      },
+    }),
+  ).current;
+  const rotate = pan.x.interpolate({
+    inputRange: [-width, 0, width],
+    outputRange: ["-12deg", "0deg", "12deg"],
+    extrapolate: "clamp",
+  });
+  const likeOpacity = pan.x.interpolate({
+    inputRange: [0, SWIPE_THRESHOLD],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
+  const nopeOpacity = pan.x.interpolate({
+    inputRange: [-SWIPE_THRESHOLD, 0],
+    outputRange: [1, 0],
+    extrapolate: "clamp",
+  });
+  const nextCardScale = pan.x.interpolate({
+    inputRange: [-width, 0, width],
+    outputRange: [0.95, 0.93, 0.95],
+    extrapolate: "clamp",
+  });
+  const renderProfile = (profile: Profile) => (
+    <>
+      <View style={styles.imageWrapper}>
+        {profile.image && !profile.image.startsWith('blob:') && (
+          <Image source={{ uri: profile.image }} style={styles.photo} />
+        )}
+        <View style={styles.matchBadge}>
+          <Text style={styles.matchText}>{profile.match}%</Text>
+        </View>
+      </View>
+      <View style={styles.cardBody}>
+        <View style={styles.nameRow}>
+          <Text style={styles.name}>
+            {profile.name}, {profile.age}
+          </Text>
+        </View>
+        <View style={styles.metaRow}>
+          <Text style={styles.metaIcon}>💼</Text>
+          <Text style={styles.metaText}>{profile.role}</Text>
+        </View>
+        <View style={styles.metaRow}>
+          <Text style={styles.metaIcon}>📍</Text>
+          <Text style={styles.metaText}>{profile.location}</Text>
+        </View>
+        <Text style={styles.sectionTitle}>About</Text>
+        <Text style={styles.about}>{profile.about}</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Lifestyle</Text>
+        <View style={styles.chipRow}>
+          {profile.lifestyle.map((item: string) => (
+            <View key={item} style={styles.chip}>
+              <Text style={styles.chipIcon}>{formatLifestyleIcon(item)}</Text>
+              <Text style={styles.chipText}>{item}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </>
+  );
+  const [activeTab, setActiveTab] = useState("Match");
+  const handleTabPress = (label: string, route: Href) => {
+    setActiveTab(label);
+    if (label === "Match") return;
+    router.push(route);
+  };
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient
+        colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <View style={styles.headerRow}>
+          <Pressable
+            style={styles.headerIconButton}
+            onPress={() => router.push("/homescreen")}
+          >
+            <Text style={styles.headerIcon}>←</Text>
+          </Pressable>
+          <View>
+            <Text style={styles.headerTitle}>matchs                                                    </Text>
+            <Text style={styles.headerSubtitle}>3 potential matches      </Text>
+          </View>
+        </View>
+        <Text style={styles.headerHint}>Swipe right to save, left to pass</Text>
+      </LinearGradient>
+      <View style={styles.deckArea}>
+        {nextProfile && (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.card,
+              styles.shadow,
+              styles.nextCard,
+              { transform: [{ scale: nextCardScale }, { translateY: 12 }] },
+            ]}
+          >
+            {renderProfile(nextProfile)}
+          </Animated.View>
+        )}
+        {currentProfile ? (
+          <Animated.View
+            style={[
+              styles.card,
+              styles.shadow,
+              {
+                transform: [
+                  { translateX: pan.x },
+                  { translateY: pan.y },
+                  { rotate },
+                ],
+              },
+            ]}
+            {...panResponder.panHandlers}
+          >
+            <View
+              style={[styles.stamp, styles.passStamp, { opacity: nopeOpacity }]}>
+              <Text style={styles.stampText}>PASS</Text>
+            </View>
+            <View
+              style={[styles.stamp, styles.saveStamp, { opacity: likeOpacity }]}>
+              <Text style={styles.stampText}>SAVE</Text>
+            </View>
+            {renderProfile(currentProfile)}
+          </Animated.View>
+        ) : (
+          <View style={[styles.card, styles.shadow, styles.emptyCard]}>
+            <Text style={styles.emptyTitle}>All caught up</Text>
+            <Text style={styles.emptySubtitle}>
+              You have seen everyone for now. We will refresh suggestions soon.
+            </Text>
+            <Pressable style={styles.primaryButton} onPress={() => setIndex(0)}>
+              <Text style={styles.primaryLabel}>Restart</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+      <View style={styles.actionsRow}>
+        <Pressable
+          style={[styles.circleButton, styles.skipButton]}
+          onPress={() => forceSwipe("left")}
+        >
+          <Text style={styles.buttonIcon}>✕</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.circleButton, styles.likeButton]}
+          onPress={() => forceSwipe("right")}
+        >
+          <Text style={styles.buttonIcon}>❤️</Text>
+        </Pressable>
+      </View>
+      {/* BOTTOM TAB BAR */}
+      <View style={styles.tabBar}>
+        {tabs.map((tab) => (
+          <AnimatedTabIcon
+            key={tab.label}
+            icon={tab.icon}
+            label={tab.label}
+            active={activeTab === tab.label}
+            onPress={() => handleTabPress(tab.label, tab.route)}
+          />
+        ))}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function AnimatedTabIcon({
+  icon,
+  label,
+  active,
+  onPress,
+}: {
+  icon: string;
+  label: string;
+  active: boolean;
+  onPress?: () => void;
+}) {
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  const handlePress = () => {
+    Animated.sequence([
+      Animated.timing(translateY, {
+        toValue: -7,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        friction: 4,
+        tension: 160,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    onPress?.();
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.tabItem}
+      onPress={handlePress}
+      activeOpacity={0.8}
+    >
+      <Animated.Text style={[styles.tabIcon, { transform: [{ translateY }] }]}>{icon}</Animated.Text>
+      <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}

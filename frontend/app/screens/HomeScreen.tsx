@@ -3,6 +3,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, type Href } from "expo-router";
 import { useEffect, useRef, useState } from "react";
+import { useSeekerProfile } from "../contexts/SeekerProfileContext";
 import {
   Animated,
   Pressable,
@@ -206,12 +207,18 @@ export default function HomeScreen() {
       setLoading(false);
     }
   };
+  // Use SeekerProfile context to determine if Roommates tab/toggle should show
+  const { profile } = useSeekerProfile();
+  let showRoommates = true;
+  if (profile.looking_for === "house") {
+    showRoommates = false;
+  }
   const tabs: { icon: string; label: string; route: Href }[] = [
-    { icon: "🏠", label: "Home", route: "/homescreen" },
-    { icon: "👥", label: "Match", route: "/match" },
-    { icon: "💬", label: "Chat", route: "/chat" },
-    { icon: "❤️", label: "Favorites", route: "/favorite" },
-    { icon: "👤", label: "Profile", route: "/profile" },
+    { icon: "🏠", label: "Home", route: "/homescreen" as Href },
+    ...(showRoommates ? [{ icon: "👥", label: "Match", route: "/match" as Href }] : []),
+    { icon: "💬", label: "Chat", route: "/chat" as Href },
+    { icon: "❤️", label: "Favorites", route: "/favorite" as Href },
+    { icon: "👤", label: "Profile", route: "/profile" as Href },
   ];
 
   const handleTabPress = (label: string, route: Href) => {
@@ -299,19 +306,28 @@ export default function HomeScreen() {
             </TouchableOpacity>
             </View>
 
-            <View style={styles.toggleContainer}>
-              <TouchableOpacity style={[styles.toggleBtn, styles.toggleActive]}>
-                <Text style={styles.toggleIconActive}>🏠</Text>
-                <Text style={styles.toggleTextActive}>Housing</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.toggleBtn}
-                onPress={() => router.push("/roomatematch")}
-              >
-                <Text style={styles.toggleIcon}>👥</Text>
-                <Text style={styles.toggleText}>Roommates</Text>
-              </TouchableOpacity>
-            </View>
+            {showRoommates ? (
+              <View style={styles.toggleContainer}>
+                <TouchableOpacity style={[styles.toggleBtn, styles.toggleActive]}>
+                  <Text style={styles.toggleIconActive}>🏠</Text>
+                  <Text style={styles.toggleTextActive}>Housing</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.toggleBtn}
+                  onPress={() => router.push("/roomatematch")}
+                >
+                  <Text style={styles.toggleIcon}>👥</Text>
+                  <Text style={styles.toggleText}>Roommates</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.toggleContainer}>
+                <TouchableOpacity style={[styles.toggleBtn, styles.toggleActive]}>
+                  <Text style={styles.toggleIconActive}>🏠</Text>
+                  <Text style={styles.toggleTextActive}>Housing</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </LinearGradient>
 
           {/* ── STATS ── */}

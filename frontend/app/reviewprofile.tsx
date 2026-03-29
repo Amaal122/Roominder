@@ -3,6 +3,7 @@ import { QUESTIONS } from "./form";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo } from "react";
+import LookingFor from "./lookingfor";
 import {
   ScrollView,
   StyleSheet,
@@ -65,7 +66,7 @@ export default function ReviewProfile() {
   }, [rawPayload]);
 
   // For lifestyle fields, get the label from QUESTIONS
-  function getLifestyleLabel(key, value) {
+  function getLifestyleLabel(key: string, value: string) {
     const q = QUESTIONS.find(q => q.key === key);
     if (!q) return value;
     const opt = q.options.find(o => o.id === value);
@@ -83,6 +84,28 @@ export default function ReviewProfile() {
   });
 
   const handleConfirm = () => {
+    // Route based on looking_for (handle string, array, or comma-separated)
+    let lookingFor = parsedProfile.looking_for;
+    if (Array.isArray(lookingFor)) {
+      lookingFor = lookingFor.join(",");
+    }
+    if (typeof lookingFor === "string") {
+      const values = lookingFor.split(",").map(v => v.trim());
+      if (values.length === 1 && values[0] === "roommate") {
+        router.replace("/roomatematch");
+        return;
+      }
+      if (values.length === 1 && values[0] === "house") {
+        router.replace("/homescreen");
+        return;
+      }
+      if (values.includes("roommate") && values.includes("house")) {
+        // Both selected, go to homescreen (or change as needed)
+        router.replace("/homescreen");
+        return;
+      }
+    }
+    // Fallback
     router.replace("/homescreen");
   };
 

@@ -127,7 +127,25 @@ export default function LookingFor() {
     // Save to context
     updateProfile({ looking_for });
 
-    // Go to next screen
+    // If only housing, skip form and set form data null, go to location
+    if (looking_for === "house") {
+      updateProfile({
+        sleep_schedule: undefined,
+        cleanliness: undefined,
+        social_life: undefined,
+        guests: undefined,
+        work_style: undefined,
+      });
+      router.push("/location");
+      return;
+    }
+    // If only roommate, skip location and set location data undefined, go to form
+    if (looking_for === "roommate") {
+      updateProfile({ location: undefined, radius: undefined });
+      router.push("/completeprofile");
+      return;
+    }
+    // If both, proceed as normal (location first)
     router.push("/location");
   };
 
