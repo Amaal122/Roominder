@@ -65,11 +65,13 @@ export default function PropertyDetails() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.heroWrapper}>
-            <Image
-              source={{ uri: details.image }}
-              style={styles.heroImage}
-              resizeMode="cover"
-            />
+            {details.image && !details.image.startsWith('blob:') && (
+              <Image
+                source={{ uri: details.image }}
+                style={styles.heroImage}
+                resizeMode="cover"
+              />
+            )}
             <View style={styles.heroActions}>
               <TouchableOpacity
                 style={styles.roundBtn}

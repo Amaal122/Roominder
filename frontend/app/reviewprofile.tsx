@@ -1,7 +1,9 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
+import { QUESTIONS } from "./form";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo } from "react";
+import LookingFor from "./lookingfor";
 import {
   ScrollView,
   StyleSheet,
@@ -11,7 +13,23 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { QUESTIONS } from "./form";
+
+// List of all profile fields to display
+const PROFILE_FIELDS = [
+  { key: "user_id", label: "User ID" },
+  { key: "looking_for", label: "Looking For" },
+  { key: "location", label: "Location" },
+  { key: "radius", label: "Radius" },
+  { key: "age", label: "Age" },
+  { key: "gender", label: "Gender" },
+  { key: "occupation", label: "Occupation" },
+  { key: "image_url", label: "Image URL" },
+  { key: "sleep_schedule", label: "Sleep Schedule" },
+  { key: "cleanliness", label: "Cleanliness" },
+  { key: "social_life", label: "Social Life" },
+  { key: "guests", label: "Guests" },
+  { key: "work_style", label: "Work Style" },
+];
 
 type ParsedAnswers = Record<string, string>;
 type ParsedProfileData = { answers?: ParsedAnswers };
@@ -35,39 +53,59 @@ export default function ReviewProfile() {
     : (params.profileData ??
       (Array.isArray(params.answers) ? params.answers[0] : params.answers));
 
-  const parsedAnswers = useMemo<ParsedAnswers>(() => {
+
+  // Parse the full profileData object
+  const parsedProfile = useMemo(() => {
     if (!rawPayload) return {};
     try {
-      const data = JSON.parse(rawPayload) as ParsedProfileData | ParsedAnswers;
-      if (data && typeof data === "object") {
-        // If payload already is answers, use it; otherwise prefer embedded answers
-        if ("answers" in data && data.answers) return data.answers;
-        return data as ParsedAnswers;
-      }
-      return {};
+      const data = JSON.parse(rawPayload);
+      return data && typeof data === "object" ? data : {};
     } catch {
       return {};
     }
   }, [rawPayload]);
 
-  const selections = useMemo<Selection[]>(
-    () =>
-      QUESTIONS.map((question) => {
-        const selectedId = parsedAnswers[question.key];
-        const option = question.options.find((item) => item.id === selectedId);
-        return {
-          key: question.key,
-          title: question.title,
-          label: option?.label ?? "Not selected",
-          icon: option?.icon ?? "help-circle",
-        };
-      }),
-    [parsedAnswers],
-  );
+  // For lifestyle fields, get the label from QUESTIONS
+  function getLifestyleLabel(key: string, value: string) {
+    const q = QUESTIONS.find(q => q.key === key);
+    if (!q) return value;
+    const opt = q.options.find(o => o.id === value);
+    return opt ? opt.label : value;
+  }
 
-  const allAnswered = selections.every((item) => item.label !== "Not selected");
+  // Build display list
+  const displayFields = PROFILE_FIELDS.map(field => {
+    let value = parsedProfile[field.key];
+    // For lifestyle fields, show label
+    if (["sleep_schedule","cleanliness","social_life","guests","work_style"].includes(field.key)) {
+      value = getLifestyleLabel(field.key, value);
+    }
+    return { label: field.label, value: value ?? "Not provided" };
+  });
 
   const handleConfirm = () => {
+    // Route based on looking_for (handle string, array, or comma-separated)
+    let lookingFor = parsedProfile.looking_for;
+    if (Array.isArray(lookingFor)) {
+      lookingFor = lookingFor.join(",");
+    }
+    if (typeof lookingFor === "string") {
+      const values = lookingFor.split(",").map(v => v.trim());
+      if (values.length === 1 && values[0] === "roommate") {
+        router.replace("/roomatematch");
+        return;
+      }
+      if (values.length === 1 && values[0] === "house") {
+        router.replace("/homescreen");
+        return;
+      }
+      if (values.includes("roommate") && values.includes("house")) {
+        // Both selected, go to homescreen (or change as needed)
+        router.replace("/homescreen");
+        return;
+      }
+    }
+    // Fallback
     router.replace("/homescreen");
   };
 
@@ -98,7 +136,7 @@ export default function ReviewProfile() {
             <Text style={styles.stepLabel}>Step 5 of 5</Text>
             <Text style={styles.title}>Review your profile</Text>
             <Text style={styles.subtitle}>
-              Confirm your lifestyle details before matching with roommates
+              Confirm your details before matching with roommates
             </Text>
 
             <View style={styles.statusCard}>
@@ -107,75 +145,32 @@ export default function ReviewProfile() {
                   <Feather name="shield" size={14} color="#36b37e" />
                   <Text style={styles.statusPillText}>Profile check</Text>
                 </View>
-                <View
-                  style={[
-                    styles.badge,
-                    allAnswered ? styles.badgeReady : styles.badgePending,
-                  ]}
-                >
-                  <Text style={styles.badgeText}>
-                    {allAnswered ? "Ready" : "Missing info"}
-                  </Text>
+                <View style={[styles.badge, styles.badgeReady]}>
+                  <Text style={styles.badgeText}>Ready</Text>
                 </View>
               </View>
               <Text style={styles.statusTitle}>Everything look correct?</Text>
               <Text style={styles.statusDesc}>
-                Validate your selections or go back to adjust them.
+                Validate your details or go back to adjust them.
               </Text>
             </View>
             <View style={styles.summaryList}>
-              {selections.map((item) => {
-                const complete = item.label !== "Not selected";
-                return (
-                  <View key={item.key} style={styles.summaryRow}>
-                    <View style={styles.iconWrap}>
-                      <Feather
-                        name={item.icon}
-                        size={18}
-                        color={complete ? "#36b37e" : "#9CA3AF"}
-                      />
-                    </View>
-                    <View style={styles.summaryTextBox}>
-                      <Text style={styles.summaryTitle}>{item.title}</Text>
-                      <Text
-                        style={[
-                          styles.summaryValue,
-                          !complete && styles.summaryValueMissing,
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.checkCircle,
-                        complete
-                          ? styles.checkCircleDone
-                          : styles.checkCircleMissing,
-                      ]}
-                    >
-                      {complete ? (
-                        <AntDesign name="check" size={14} color="#fff" />
-                      ) : (
-                        <Feather
-                          name="alert-circle"
-                          size={14}
-                          color="#F43F5E"
-                        />
-                      )}
-                    </View>
+              {displayFields.map((item) => (
+                <View key={item.label} style={styles.summaryRow}>
+                  <View style={styles.summaryTextBox}>
+                    <Text style={styles.summaryTitle}>{item.label}</Text>
+                    <Text style={styles.summaryValue}>{item.value}</Text>
                   </View>
-                );
-              })}
+                </View>
+              ))}
             </View>
           </View>
 
           <View style={styles.actions}>
             <TouchableOpacity
-              style={[styles.cta, !allAnswered && styles.ctaDisabled]}
+              style={styles.cta}
               activeOpacity={0.9}
               onPress={handleConfirm}
-              disabled={!allAnswered}
             >
               <Text style={styles.ctaText}>Confirm profile</Text>
             </TouchableOpacity>

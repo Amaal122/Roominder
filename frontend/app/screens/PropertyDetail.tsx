@@ -409,7 +409,7 @@ export default function PropertyDetail() {
                   style={styles.amenityCard}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.amenityIcon}>{icon}</View>
+                  <View style={styles.amenityIcon}>{typeof icon === 'string' ? <Text>{icon}</Text> : icon}</View>
                   <Text style={styles.amenityLabel}>{label}</Text>
                 </TouchableOpacity>
               ))}

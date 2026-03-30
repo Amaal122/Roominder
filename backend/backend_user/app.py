@@ -6,9 +6,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+from fastapi.staticfiles import StaticFiles
 
 from ..db import Base, engine
 from .auth import router as auth_router, seeker_router
+from .dashbord import router as dashboard_router
+
 
 
 
@@ -18,7 +21,13 @@ from backend.backend_propertyowner.routes.messages     import router as messages
 # ──────────────────────────────────────────────────────────────────────────────
 
 
+
 app = FastAPI(title="Roominder API")
+
+# Serve static files for property images
+import os
+os.makedirs("backend/static", exist_ok=True)
+app.mount("/static", StaticFiles(directory="backend/static"), name="static")
 
 app.add_middleware(
 	CORSMiddleware,
@@ -38,6 +47,7 @@ app.add_middleware(
 # ── Enregistrement des routes ──────────────────────────────────────────────────
 app.include_router(auth_router)
 app.include_router(seeker_router)
+app.include_router(dashboard_router)
 app.include_router(properties_router)
 app.include_router(applications_router)
 app.include_router(messages_router)
