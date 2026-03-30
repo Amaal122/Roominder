@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session, relationship
 from ..config import settings
 from ..db import Base, get_db
 from .models import User
+from .export_excel import export_seeker_profile_to_excel
 import bcrypt
 
 
@@ -134,7 +135,7 @@ def get_current_user_optional(
 	return user
 
 
-@auth_router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+@auth_router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 def register_user(payload: UserCreate, db: Session = Depends(get_db)):
 	existing = get_user_by_email(db, payload.email)
 	if existing:
@@ -156,7 +157,13 @@ def register_user(payload: UserCreate, db: Session = Depends(get_db)):
 		db.rollback()
 		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 	db.refresh(user)
-	return user
+
+	# Issue token after registration
+	claims = {"sub": str(user.id)}
+	if user.role:
+		claims["role"] = user.role
+	token = create_access_token(claims)
+	return {"access_token": token, "token_type": "bearer", "role": user.role}
 
 
 @auth_router.post("/login", response_model=Token)
@@ -276,6 +283,10 @@ def create_seeker_profile(
 	db.add(new_profile)
 	db.commit()
 	db.refresh(new_profile)
+
+	# Export to Excel after creation
+	export_seeker_profile_to_excel(db, new_profile)
+
 	return new_profile
 
 

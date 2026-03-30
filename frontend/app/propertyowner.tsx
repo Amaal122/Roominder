@@ -149,11 +149,13 @@ export default function PropertyOwner() {
                   })
                 }
               >
-                <Image
-                  source={{ uri: property.image }}
-                  style={styles.propertyImage}
-                  resizeMode="cover"
-                />
+                {property.image && !property.image.startsWith('blob:') && (
+                  <Image
+                    source={{ uri: property.image }}
+                    style={styles.propertyImage}
+                    resizeMode="cover"
+                  />
+                )}
                 <View style={styles.statusBadgeWrapper}>
                   <View
                     style={[

@@ -1,8 +1,11 @@
 """Endpoints pour la gestion des logements."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
+import shutil
+import uuid
+import os
 
 from backend.db import get_db
 from backend.backend_user.auth import get_current_user   # retourne l'utilisateur connecté via JWT
@@ -35,7 +38,20 @@ def get_my_properties(
     properties = db.query(Property).filter(Property.owner_id == current_user.id).all()
     return properties
 
-
+#staic routes 
+@router.post("/upload-image")
+async def upload_image(file: UploadFile = File(...)):
+    # Only allow image files
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Invalid file type")
+    # Generate a unique filename
+    ext = os.path.splitext(file.filename)[1]
+    filename = f"{uuid.uuid4()}{ext}"
+    file_path = os.path.join("backend/static", filename)
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    url = f"/static/{filename}"
+    return {"url": url}
 # ─────────────────────────────────────────────
 #  GET /properties/{id}  →  un seul logement
 # ─────────────────────────────────────────────
@@ -119,3 +135,5 @@ def delete_property(
     db.delete(prop)
     db.commit()
     return None
+
+

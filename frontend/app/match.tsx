@@ -87,7 +87,9 @@ export default function Match() {
             >
               {matches.map((profile) => (
                 <View key={profile.id} style={styles.card}>
-                  <Image source={{ uri: profile.image }} style={styles.photo} />
+                  {profile.image && !profile.image.startsWith('blob:') && (
+                    <Image source={{ uri: profile.image }} style={styles.photo} />
+                  )}
                   <View style={styles.cardBody}>
                     <View style={styles.rowBetween}>
                       <Text style={styles.name}>

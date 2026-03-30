@@ -79,7 +79,7 @@ const OptionCard = ({ option, isActive, onPress }: OptionCardProps) => {
         onPressIn={() => animateTo(1)}
         onPressOut={() => animateTo(0)}
       >
-        <View style={styles.optionIcon}>{option.icon}</View>
+        <View style={styles.optionIcon}>{typeof option.icon === 'string' ? <Text>{option.icon}</Text> : option.icon}</View>
         <View style={styles.optionTextBox}>
           <Text style={styles.optionTitle}>{option.title}</Text>
           <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
@@ -127,7 +127,25 @@ export default function LookingFor() {
     // Save to context
     updateProfile({ looking_for });
 
-    // Go to next screen
+    // If only housing, skip form and set form data null, go to location
+    if (looking_for === "house") {
+      updateProfile({
+        sleep_schedule: undefined,
+        cleanliness: undefined,
+        social_life: undefined,
+        guests: undefined,
+        work_style: undefined,
+      });
+      router.push("/location");
+      return;
+    }
+    // If only roommate, skip location and set location data undefined, go to form
+    if (looking_for === "roommate") {
+      updateProfile({ location: undefined, radius: undefined });
+      router.push("/completeprofile");
+      return;
+    }
+    // If both, proceed as normal (location first)
     router.push("/location");
   };
 

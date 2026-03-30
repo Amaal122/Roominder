@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSeekerProfile } from "./contexts/SeekerProfileContext";
+import { getAuthToken } from "./state/auth";
 type Question = {
   key: string;
   title: string;
@@ -96,15 +97,50 @@ export default function Form() {
       work_style: answers.work,
     });
 
+    // Get auth token
+
+    let token = await getAuthToken();
+    console.log("[Form] getAuthToken() returned:", token);
+    if (!token) {
+      alert("You must be logged in to complete your profile.");
+      return;
+    }
+
+    // Fetch user info to get user_id
+    let user_id = null;
+    try {
+      const meRes = await fetch("http://localhost:8001/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (meRes.ok) {
+        const me = await meRes.json();
+        user_id = me.id;
+      }
+    } catch (e) {
+      // ignore, will fail below if user_id is missing
+    }
+    if (!user_id) {
+      alert("Could not determine user ID. Please log in again.");
+      return;
+    }
+
     const profileData = {
       ...profile,
-      answers,
+      user_id,
+      sleep_schedule: answers.sleep,
+      cleanliness: answers.cleanliness,
+      social_life: answers.social,
+      guests: answers.guests,
+      work_style: answers.work,
     };
 
     try {
       const response = await fetch("http://localhost:8001/seeker/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(profileData),
       });
 

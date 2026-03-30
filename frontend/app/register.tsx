@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { setAuthToken } from "./state/auth";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
@@ -48,6 +49,10 @@ export default function Register() {
       if (!response.ok) {
         alert(data.detail || data.error || "Registration failed");
         return;
+      }
+
+      if (data.access_token) {
+        await setAuthToken(data.access_token);
       }
 
       alert("Account created successfully 🎉");

@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
+import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 import {
   ScrollView,
   StyleSheet,
@@ -18,6 +19,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const { updateProfile } = useSeekerProfile();
   const handleContinue = async () => {
     try {
       const response = await fetch("http://127.0.0.1:8001/auth/login", {
@@ -36,25 +38,40 @@ export default function Login() {
 
       if (!response.ok) {
         alert(data.error || "Login failed");
-
         if (data.correct_role) {
           alert("You should login as: " + data.correct_role);
         }
-
         return;
       }
 
-      console.log("Login success:", data);
       if (data.access_token) {
-        setAuthToken(data.access_token);
+        await setAuthToken(data.access_token);
       }
 
       const resolvedRole = data.role || role;
 
       if (resolvedRole === "owner") {
         router.push("/propertyowner");
+        return;
+      }
+
+      // Fetch seeker profile after login
+      const seekerRes = await fetch("http://127.0.0.1:8001/seeker/me", {
+        headers: { Authorization: `Bearer ${data.access_token}` },
+      });
+      if (seekerRes.ok) {
+        const seekerProfile = await seekerRes.json();
+        updateProfile(seekerProfile);
+        if (seekerProfile.looking_for === "roommate") {
+          router.replace("/roomatematch");
+          return;
+        }
+        // If house or both, go to homescreen (Roommates tab logic handled in HomeScreen)
+        router.replace("/homescreen");
+        return;
       } else {
-        router.push("/homescreen");
+        // If no profile found, fallback to homescreen
+        router.replace("/homescreen");
       }
     } catch (error) {
       console.error(error);

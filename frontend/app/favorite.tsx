@@ -76,7 +76,7 @@ export default function Favorite() {
             >
               {favorites.map((item) => (
                 <View key={item.id} style={styles.card}>
-                  {item.image ? (
+                  {item.image && !item.image.startsWith('blob:') ? (
                     <Image
                       source={{ uri: item.image }}
                       style={styles.cardImage}

@@ -55,13 +55,16 @@ const toUiProperty = (p: BackendProperty): Property => {
     views: 0,
     applications: 0,
     image:
-      p.image_url ||
-      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80",
+      p.image_url
+        ? (p.image_url.startsWith("/static/")
+            ? `${API_BASE}${p.image_url}`
+            : p.image_url)
+        : "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80",
   };
 };
 
 export const loadMyProperties = async () => {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   if (!token) return;
   const response = await fetch(`${API_BASE}/properties/mine`, {
     headers: {
@@ -88,7 +91,7 @@ export const addProperty = async (payload: {
   description?: string;
   image_url?: string;
 }) => {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   if (!token) {
     throw new Error("Not authenticated");
   }
@@ -123,7 +126,7 @@ export const updateProperty = async (
     image_url?: string;
   },
 ) => {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   if (!token) {
     throw new Error("Not authenticated");
   }
