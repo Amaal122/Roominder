@@ -12,53 +12,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const MESSAGES = [
-  {
-    id: "1",
-    name: "Sarah Mitchell",
-    time: "2m ago",
-    preview: "Great! I'll be moving in o...",
-    initials: "SM",
-    unread: 2,
-    online: true,
-  },
-  {
-    id: "2",
-    name: "James Anderson",
-    time: "1h ago",
-    preview: "Thanks for signing the contract!",
-    initials: "JA",
-    unread: 1,
-    online: true,
-  },
-  {
-    id: "3",
-    name: "Emily Davis",
-    time: "3h ago",
-    preview: "Can we schedule a viewi...",
-    initials: "ED",
-    unread: 1,
-    online: true,
-  },
-  {
-    id: "4",
-    name: "Michael Brown",
-    time: "Yesterday",
-    preview: "The apartment looks amazing!",
-    initials: "MB",
-    unread: 0,
-    online: false,
-  },
-  {
-    id: "5",
-    name: "Lisa Thompson",
-    time: "2 days ago",
-    preview: "Is the place still available?",
-    initials: "LT",
-    unread: 0,
-    online: false,
-  },
-];
+const MESSAGES: {
+  id: string;
+  name: string;
+  time: string;
+  preview: string;
+  initials: string;
+  unread: number;
+  online: boolean;
+}[] = [];
 
 export default function Chat() {
   const router = useRouter();
@@ -110,44 +72,54 @@ export default function Chat() {
         </View>
 
         {/* Messages list */}
-        <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-          {MESSAGES.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.card}
-              activeOpacity={0.9}
-              onPress={() =>
-                router.push({
-                  pathname: "/chat/[id]",
-                  params: { id: item.id, name: item.name },
-                })
-              }
-            >
-              <View style={styles.avatarWrap}>
-                <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarText}>{item.initials}</Text>
+        <ScrollView contentContainerStyle={styles.listContent} style={styles.list} showsVerticalScrollIndicator={false}>
+          {MESSAGES.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="chatbubble-ellipses-outline" size={56} color="#b7bdd1" />
+              <Text style={styles.emptyTitle}>No messages yet</Text>
+              <Text style={styles.emptySubtitle}>
+                Your conversations will appear here.
+              </Text>
+            </View>
+          ) : (
+            MESSAGES.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.card}
+                activeOpacity={0.9}
+                onPress={() =>
+                  router.push({
+                    pathname: "/chat/[id]",
+                    params: { id: item.id, name: item.name },
+                  })
+                }
+              >
+                <View style={styles.avatarWrap}>
+                  <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarText}>{item.initials}</Text>
+                  </View>
+                  {item.online ? <View style={styles.onlineDot} /> : null}
                 </View>
-                {item.online ? <View style={styles.onlineDot} /> : null}
-              </View>
 
-              <View style={styles.cardBody}>
-                <View style={styles.cardTopRow}>
-                  <Text style={styles.name}>{item.name}</Text>
-                  <Text style={styles.time}>{item.time}</Text>
+                <View style={styles.cardBody}>
+                  <View style={styles.cardTopRow}>
+                    <Text style={styles.name}>{item.name}</Text>
+                    <Text style={styles.time}>{item.time}</Text>
+                  </View>
+                  <View style={styles.cardBottomRow}>
+                    <Text style={styles.preview} numberOfLines={1}>
+                      {item.preview}
+                    </Text>
+                    {item.unread > 0 ? (
+                      <View style={styles.unreadBadge}>
+                        <Text style={styles.unreadText}>{item.unread}</Text>
+                      </View>
+                    ) : null}
+                  </View>
                 </View>
-                <View style={styles.cardBottomRow}>
-                  <Text style={styles.preview} numberOfLines={1}>
-                    {item.preview}
-                  </Text>
-                  {item.unread > 0 ? (
-                    <View style={styles.unreadBadge}>
-                      <Text style={styles.unreadText}>{item.unread}</Text>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            ))
+          )}
         </ScrollView>
 
         {/* Bottom nav */}
@@ -223,6 +195,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f8fb",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
+  },
+  listContent: {
+    flexGrow: 1,
     paddingTop: 16,
     paddingBottom: 100,
   },
@@ -270,6 +245,31 @@ const styles = StyleSheet.create({
   name: { color: "#2b2b33", fontSize: 15, fontWeight: "800" },
   time: { color: "#9a9fb2", fontSize: 12, fontWeight: "700" },
   cardBottomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  preview: { color: "#7a7d8a", fontSize: 13, flex: 1 },
+  unreadBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#ff5f6d",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  unreadText: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  emptyState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    marginTop: 16,
+    fontSize: 22,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
