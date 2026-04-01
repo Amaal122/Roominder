@@ -6,12 +6,16 @@ from typing import List
 import shutil
 import uuid
 import os
+import cloudinary
+import cloudinary.uploader
+from dotenv import load_dotenv
 
 from backend.db import get_db
 from backend.backend_user.auth import get_current_user   # retourne l'utilisateur connecté via JWT
 
 from backend.backend_propertyowner.models  import Property
 from backend.backend_propertyowner.schemas import PropertyCreate, PropertyUpdate, PropertyOut
+
 
 router = APIRouter(prefix="/properties", tags=["Properties"])
 
@@ -39,19 +43,20 @@ def get_my_properties(
     return properties
 
 #staic routes 
+load_dotenv()
+
+cloudinary.config(
+    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key    = os.getenv("CLOUDINARY_API_KEY"),
+    api_secret = os.getenv("CLOUDINARY_API_SECRET"),
+)
 @router.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
-    # Only allow image files
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Invalid file type")
-    # Generate a unique filename
-    ext = os.path.splitext(file.filename)[1]
-    filename = f"{uuid.uuid4()}{ext}"
-    file_path = os.path.join("backend/static", filename)
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    url = f"/static/{filename}"
-    return {"url": url}
+    contents = await file.read()
+    result = cloudinary.uploader.upload(contents)
+    return {"url": result["secure_url"]}
 # ─────────────────────────────────────────────
 #  GET /properties/{id}  →  un seul logement
 # ─────────────────────────────────────────────

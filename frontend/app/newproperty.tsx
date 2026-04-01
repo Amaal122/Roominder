@@ -19,6 +19,24 @@ import {
   updateProperty,
 } from "./state/properties";
 
+const resolveImageUrl = (value?: string | null) => {
+  if (!value) return null;
+
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("data:")
+  ) {
+    return value;
+  }
+
+  if (value.startsWith("/")) {
+    return `http://localhost:8001${value}`;
+  }
+
+  return `http://localhost:8001/${value}`;
+};
+
 export default function NewProperty() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
@@ -69,50 +87,49 @@ export default function NewProperty() {
       editingProperty?.image ||
       "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80";
 
-    // If a new photo is selected, upload it to the backend
-
     if (photos[0]) {
-  const uri = photos[0];
-  const filename = uri.split('/').pop()?.split('?')[0] || 'property.jpg';
-  const match = /\.(\w+)$/.exec(filename);
-  const mimeType = match ? `image/${match[1].toLowerCase()}` : 'image/jpeg';
+      const uri = photos[0];
+      const filename = uri.split("/").pop()?.split("?")[0] || "property.jpg";
+      const match = /\.(\w+)$/.exec(filename);
+      const mimeType = match ? `image/${match[1].toLowerCase()}` : "image/jpeg";
 
-  try {
-    const formData = new FormData();
+      try {
+        const formData = new FormData();
 
-    if (uri.startsWith('blob:') || uri.startsWith('data:')) {
-      // Web: fetch the blob URL and append as a real Blob
-      const blobResponse = await fetch(uri);
-      const blob = await blobResponse.blob();
-      formData.append('file', blob, filename);
-    } else {
-      // Native (iOS / Android): append the file:// URI directly
-      formData.append('file', {
-        uri,
-        name: filename,
-        type: mimeType,
-      } as any);
-    }
+        if (uri.startsWith("blob:") || uri.startsWith("data:")) {
+          const blobResponse = await fetch(uri);
+          const blob = await blobResponse.blob();
+          formData.append("file", blob, filename);
+        } else {
+          formData.append(
+            "file",
+            {
+              uri,
+              name: filename,
+              type: mimeType,
+            } as any,
+          );
+        }
 
-    const uploadRes = await fetch('http://127.0.0.1:8001/properties/upload-image', {
-      method: 'POST',
-      body: formData,
-      // ⚠️ Do NOT set Content-Type manually — let fetch set the boundary automatically
-    });
+        const uploadRes = await fetch(
+          "http://127.0.0.1:8001/properties/upload-image",
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
 
-    if (uploadRes.ok) {
-      const uploadData = await uploadRes.json();
-      if (uploadData.url) {
-        imageUrl = uploadData.url;
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          imageUrl = resolveImageUrl(uploadData.image_url ?? uploadData.url) ?? imageUrl;
+        } else {
+          console.error("Upload failed with status:", uploadRes.status);
+        }
+      } catch (e) {
+        console.error("Image upload failed", e);
       }
-    } else {
-      console.error('Upload failed with status:', uploadRes.status);
     }
-  } catch (e) {
-    console.error('Image upload failed', e);
-  }
-}
-    console.log('[DEBUG] Final imageUrl for property:', imageUrl);
+    console.log("[DEBUG] Final imageUrl for property:", imageUrl);
 
     const payload = {
       title,
@@ -199,16 +216,16 @@ export default function NewProperty() {
               </Text>
             </TouchableOpacity>
             {photos.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.previewRow}
-            >
-              {photos.map((uri) => (
-                <Image key={uri} source={{ uri }} style={styles.previewImg} />
-              ))}
-            </ScrollView>
-          ) : null}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.previewRow}
+              >
+                {photos.map((uri) => (
+                  <Image key={uri} source={{ uri }} style={styles.previewImg} />
+                ))}
+              </ScrollView>
+            ) : null}
 
             <InputField
               label="Property Title"
