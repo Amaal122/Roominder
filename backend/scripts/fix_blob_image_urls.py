@@ -7,7 +7,7 @@ import re
 from sqlalchemy import create_engine, MetaData, Table, select, update
 
 # Update this to your actual database URL
-db_url = os.environ.get("ROOMINDER_DATABASE_URL") or "postgresql+psycopg2://postgres:amalamal@localhost:5432/Roominderdb"
+db_url = os.environ.get("ROOMINDER_DATABASE_URL") 
 engine = create_engine(db_url)
 metadata = MetaData()
 metadata.reflect(bind=engine)
