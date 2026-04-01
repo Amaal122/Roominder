@@ -27,21 +27,26 @@ def get_dashboard(
 
     # 🏠 GET HOUSES FROM LOCAL DB
     if profile.looking_for in ["house", "both"]:
-        houses = db.query(Property).all()
+        houses = (
+            db.query(Property, User)
+            .join(User, User.id == Property.owner_id)
+            .all()
+        )
         result["houses"] = [
             {
-                "id": h.id,
-                "owner_id": h.owner_id,
-                "title": h.title,
-                "address": h.address,
-                "city": h.city,
-                "rooms": h.rooms,
-                "price": h.price,
-                "description": h.description,
-                "image_url": h.image_url,
-                "created_at": h.created_at,
+                "id": property_item.id,
+                "owner_id": property_item.owner_id,
+                "owner_name": owner.full_name or owner.email,
+                "title": property_item.title,
+                "address": property_item.address,
+                "city": property_item.city,
+                "rooms": property_item.rooms,
+                "price": property_item.price,
+                "description": property_item.description,
+                "image_url": property_item.image_url,
+                "created_at": property_item.created_at,
             }
-            for h in houses
+            for property_item, owner in houses
         ]
 
     # 👥 GET ROOMMATES FROM LOCAL DB (other seekers)
