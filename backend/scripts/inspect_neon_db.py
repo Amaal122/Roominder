@@ -2,7 +2,7 @@ from sqlalchemy import create_engine, text
 
 from backend.config import settings
 
-engine = create_engine(settings.database_url)
+engine = create_engine(settings.sqlalchemy_database_url, pool_pre_ping=True)
 
 queries = {
     "database_and_user": "select current_database(), current_user, current_schema()",
