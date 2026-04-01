@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from ..db import Base, engine
 from .auth import router as auth_router, seeker_router
 from .dashbord import router as dashboard_router
+from ..config import settings
 
 
 
@@ -93,7 +94,7 @@ def health_check():
 def test_db():
 	with engine.connect() as conn:
 		result = conn.execute(text("SELECT current_database();")).scalar()
-	return {"database": result}
+	return {"database": result, "database_url": settings.database_url}
 
 
 @app.get("/tables")
