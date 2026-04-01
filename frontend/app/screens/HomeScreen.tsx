@@ -35,6 +35,8 @@ type Listing = {
 type DashboardResponse = {
   houses?: Array<{
     id: number;
+    owner_id: number;
+    owner_name?: string | null;
     title: string;
     address?: string | null;
     city?: string | null;
@@ -145,6 +147,15 @@ const ListingCard = ({
 };
 
 // ─── HomeScreen ───────────────────────────────────────────────────────────────
+const API_BASE = "http://127.0.0.1:8001";
+
+const resolveImageUrl = (imageUrl?: string | null) => {
+  if (!imageUrl) return null;
+  if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
+  if (imageUrl.startsWith("/")) return `${API_BASE}${imageUrl}`;
+  return `${API_BASE}/${imageUrl}`;
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("Home");
@@ -167,7 +178,7 @@ export default function HomeScreen() {
         setLoading(false);
         return;
       }
-      const res = await fetch(`http://localhost:8001/dashboard/`, {
+      const res = await fetch(`${API_BASE}/dashboard/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -193,10 +204,11 @@ export default function HomeScreen() {
         price: `€${item.price}`,
         rooms: `${item.rooms ?? 1} rooms`,
         match: Math.floor(Math.random() * 30) + 70,
-        image: item.image_url
-        ? `http://localhost:8001${item.image_url}`
-        : "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
-            }));
+        image:
+          resolveImageUrl(item.image_url) ??
+          "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
+        ownerName: item.owner_name ?? undefined,
+      }));
 
       setListings(formatted);
       setError(null);
