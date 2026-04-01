@@ -10,9 +10,14 @@ def _is_sqlite(url: str) -> bool:
 	return url.startswith("sqlite:")
 
 
+database_url = settings.sqlalchemy_database_url
+
 engine = create_engine(
-	settings.database_url,
-	connect_args={"check_same_thread": False} if _is_sqlite(settings.database_url) else {},
+	database_url,
+	pool_pre_ping=True,
+	pool_recycle=300,
+	pool_use_lifo=True,
+	connect_args={"check_same_thread": False} if _is_sqlite(database_url) else {},
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

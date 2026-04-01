@@ -6,9 +6,11 @@ import os
 import re
 from sqlalchemy import create_engine, MetaData, Table, select, update
 
+from backend.config import settings
+
 # Update this to your actual database URL
-db_url = os.environ.get("ROOMINDER_DATABASE_URL") 
-engine = create_engine(db_url)
+db_url = os.environ.get("ROOMINDER_DATABASE_URL") or settings.sqlalchemy_database_url
+engine = create_engine(db_url, pool_pre_ping=True)
 metadata = MetaData()
 metadata.reflect(bind=engine)
 

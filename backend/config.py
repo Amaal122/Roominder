@@ -10,6 +10,19 @@ _ENV_FILE = Path(__file__).resolve().parent / ".env"
 load_dotenv(_ENV_FILE)
 
 
+def normalize_sqlalchemy_database_url(url: str) -> str:
+	"""Ensure SQLAlchemy uses psycopg3 for PostgreSQL URLs.
+
+	SQLAlchemy treats bare ``postgresql://`` URLs as the default PostgreSQL
+	driver, which on this machine resolves to psycopg2. The project depends on
+	psycopg3, so we normalize ambiguous PostgreSQL URLs here.
+	"""
+
+	if url.startswith(("postgresql://", "postgres://")):
+		return "postgresql+psycopg://" + url.split("://", 1)[1]
+	return url
+
+
 class Settings(BaseSettings):
 	"""Runtime settings for the API layer."""
 
@@ -29,6 +42,12 @@ class Settings(BaseSettings):
 		case_sensitive=False,
 		env_file_encoding="utf-8",
 	)
+
+	@property
+	def sqlalchemy_database_url(self) -> str:
+		"""Return the database URL normalized for SQLAlchemy/psycopg3."""
+
+		return normalize_sqlalchemy_database_url(self.database_url)
 
 
 @lru_cache()
