@@ -17,6 +17,8 @@ class Property(Base):
     city       = Column(String(100), nullable=False)
     price      = Column(Float, nullable=False)
     rooms      = Column(Integer, default=1)
+    bathrooms  = Column(Integer, default=1)
+    space      = Column(Float, default=0)
     description= Column(Text, nullable=True)
     status     = Column(String(20), default="available")  # available / occupied
     image_url  = Column(String(500), nullable=True)

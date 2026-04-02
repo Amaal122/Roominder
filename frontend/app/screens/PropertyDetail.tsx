@@ -269,7 +269,7 @@ export default function PropertyDetail() {
 
   const propertyId = getSingleParam(params.id);
   const title = getSingleParam(params.title) ?? "Modern Loft\nin Marais";
-  const price = getSingleParam(params.price) ?? "€1200";
+  const price = getSingleParam(params.price) ?? "DT 1200";
   const location = getSingleParam(params.location) ?? "Le Marais, Paris";
   const rooms = getSingleParam(params.rooms) ?? "2 Beds";
   const match = getSingleParam(params.match) ?? "95";
