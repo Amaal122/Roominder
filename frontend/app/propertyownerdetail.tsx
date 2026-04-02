@@ -1,9 +1,11 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
+    Alert,
     Image,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -32,6 +34,7 @@ export default function PropertyDetails() {
   const router = useRouter();
   const params = useLocalSearchParams<Params>();
   const propertyId = params.id ?? "";
+  const [deleting, setDeleting] = useState(false);
 
   const details = useMemo(() => {
     return {
@@ -50,6 +53,65 @@ export default function PropertyDetails() {
       applications: Number(params.applications || "2"),
     };
   }, [params]);
+
+  const showDeleteError = (message: string) => {
+    if (Platform.OS === "web" && typeof globalThis.alert === "function") {
+      globalThis.alert(message);
+      return;
+    }
+
+    Alert.alert("Delete failed", message);
+  };
+
+  const deletePropertyAndExit = async () => {
+    if (!propertyId || deleting) {
+      return;
+    }
+
+    setDeleting(true);
+
+    try {
+      await removeProperty(propertyId);
+      router.replace("/propertyowner");
+    } catch (error) {
+      setDeleting(false);
+      console.error("Failed to delete property:", error);
+      showDeleteError(
+        error instanceof Error ? error.message : "Could not delete this property.",
+      );
+    }
+  };
+
+  const handleDelete = () => {
+    if (!propertyId || deleting) {
+      return;
+    }
+
+    if (Platform.OS === "web" && typeof globalThis.confirm === "function") {
+      const confirmed = globalThis.confirm(
+        "Delete this property and all its related requests?",
+      );
+      if (confirmed) {
+        void deletePropertyAndExit();
+      }
+      return;
+    }
+
+    Alert.alert(
+      "Delete property",
+      "This will permanently remove this property and its related requests.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            void deletePropertyAndExit();
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <LinearGradient
@@ -92,13 +154,9 @@ export default function PropertyDetails() {
                   <Feather name="edit-2" size={16} color="#111827" />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.roundBtn}
-                  onPress={() => {
-                    if (propertyId) {
-                      removeProperty(propertyId);
-                    }
-                    router.back();
-                  }}
+                  style={[styles.roundBtn, deleting && styles.roundBtnDisabled]}
+                  disabled={deleting}
+                  onPress={handleDelete}
                 >
                   <Feather name="trash-2" size={16} color="#DC2626" />
                 </TouchableOpacity>
@@ -211,6 +269,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
+  },
+  roundBtnDisabled: {
+    opacity: 0.6,
   },
   tabsCard: {
     marginHorizontal: 18,

@@ -14,6 +14,8 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
+import { getAuthToken } from "../state/auth";
+
 type DocKey = "id" | "income" | "employment" | "guarantor";
 
 export default function ApplicationRequest() {
@@ -34,10 +36,11 @@ export default function ApplicationRequest() {
     employment: null,
     guarantor: null,
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const canSubmit = useMemo(() => {
-    return email.includes("@");
-  }, [email]);
+    return email.includes("@") && !submitting;
+  }, [email, submitting]);
 
   const pickImage = async (key: DocKey) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -159,14 +162,60 @@ export default function ApplicationRequest() {
           style={[styles.primaryBtn, !canSubmit && styles.btnDisabled]}
           activeOpacity={0.85}
           disabled={!canSubmit}
-          onPress={() =>
-            router.replace({
-              pathname: "/screens/ApplicationConfirmation",
-              params: { title, location },
-            })
-          }
+          onPress={async () => {
+            if (!canSubmit || submitting) return;
+
+            const propertyId = Number(params.id);
+            if (!Number.isFinite(propertyId)) {
+              Alert.alert("Property error", "Unable to identify the property.");
+              return;
+            }
+
+            setSubmitting(true);
+
+            try {
+              const token = await getAuthToken();
+              if (!token) {
+                Alert.alert("Login required", "Please sign in before submitting your application.");
+                setSubmitting(false);
+                return;
+              }
+
+              const response = await fetch(`${API_BASE}/applications/`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  property_id: propertyId,
+                  message: `Contact: ${email}. Notes: ${notes}`,
+                }),
+              });
+
+              if (!response.ok) {
+                const content = await response.text();
+                Alert.alert("Submission failed", `code ${response.status}: ${content}`);
+                console.warn("Application submission error", response.status, content);
+                return;
+              }
+
+              // Redirection seulement après succès d’enregistrement
+              router.replace({
+                pathname: "/screens/ApplicationConfirmation",
+                params: { title, location },
+              });
+            } catch (error) {
+              console.error("Application submission network error:", error);
+              Alert.alert("Network error", "Could not submit application at this time.");
+            } finally {
+              setSubmitting(false);
+            }
+          }}
         >
-          <Text style={styles.primaryText}>Submit Application</Text>
+          <Text style={styles.primaryText}>
+            {submitting ? "Submitting..." : "Submit Application"}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
