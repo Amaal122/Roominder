@@ -2,6 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import {
+  Alert,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -11,6 +12,13 @@ import {
   View,
 } from "react-native";
 
+import { getAuthToken } from "../state/auth";
+
+const API_BASE = "http://127.0.0.1:8001";
+
+const getSingleParam = (value?: string | string[]) =>
+  Array.isArray(value) ? value[0] : value;
+
 export default function VisitRequest() {
   const params = useLocalSearchParams<{
     id?: string;
@@ -18,19 +26,92 @@ export default function VisitRequest() {
     location?: string;
   }>();
 
-  const title = params.title ?? "Modern Loft in Marais";
-  const location = params.location ?? "Le Marais, Paris";
+  const propertyId = getSingleParam(params.id);
+  const title = getSingleParam(params.title) ?? "Modern Loft in Marais";
+  const location = getSingleParam(params.location) ?? "Le Marais, Paris";
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [dateOption, setDateOption] = useState<"Today" | "Tomorrow" | "Weekend">(
-    "Tomorrow"
+    "Tomorrow",
   );
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const canContinue = useMemo(() => {
-    return fullName.trim().length > 1 && phone.trim().length > 5;
-  }, [fullName, phone]);
+    return (
+      Boolean(propertyId) &&
+      fullName.trim().length > 1 &&
+      phone.trim().length > 5 &&
+      !submitting
+    );
+  }, [fullName, phone, propertyId, submitting]);
+
+  const handleSubmit = async () => {
+    if (!propertyId) {
+      Alert.alert("Missing property", "This property could not be identified.");
+      return;
+    }
+
+    const numericPropertyId = Number(propertyId);
+    if (!Number.isFinite(numericPropertyId)) {
+      Alert.alert("Invalid property", "This property id is not valid.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const token = await getAuthToken();
+      if (!token) {
+        Alert.alert("Login required", "Please log in before sending a visit request.");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE}/visits/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          property_id: numericPropertyId,
+          full_name: fullName.trim(),
+          phone: phone.trim(),
+          preferred_time: dateOption,
+          message: message.trim() || null,
+        }),
+      });
+
+      const raw = await response.text();
+      let data: unknown = null;
+      if (raw) {
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          data = raw;
+        }
+      }
+
+      if (!response.ok) {
+        const detail =
+          (data && typeof data === "object" && "detail" in data && data.detail) ||
+          "Unable to send visit request.";
+        Alert.alert("Visit request failed", String(detail));
+        return;
+      }
+
+      router.push({
+        pathname: "/screens/VisitConfirmation",
+        params: { id: propertyId, title, location },
+      });
+    } catch (error) {
+      console.error("Visit request error:", error);
+      Alert.alert("Network error", "Could not contact the server.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -45,10 +126,7 @@ export default function VisitRequest() {
           end={{ x: 1, y: 1 }}
           style={styles.header}
         >
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Visit Request</Text>
@@ -120,14 +198,11 @@ export default function VisitRequest() {
           style={[styles.primaryBtn, !canContinue && styles.btnDisabled]}
           activeOpacity={0.85}
           disabled={!canContinue}
-          onPress={() =>
-            router.push({
-              pathname: "/screens/VisitConfirmation",
-              params: { id: params.id, title, location },
-            })
-          }
+          onPress={handleSubmit}
         >
-          <Text style={styles.primaryText}>Send Visit Request</Text>
+          <Text style={styles.primaryText}>
+            {submitting ? "Sending..." : "Send Visit Request"}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -135,7 +210,6 @@ export default function VisitRequest() {
 }
 
 const CORAL = "#F4896B";
-const CORAL_PASTEL = "#F9D4C2";
 const TEAL = "#7ECEC4";
 const BG = "#FFF7F3";
 const TEXT = "#2B2B33";

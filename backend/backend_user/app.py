@@ -1,7 +1,6 @@
 """Entry point for the Roominder FastAPI application."""
 
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,24 +10,24 @@ from fastapi.staticfiles import StaticFiles
 from ..db import Base, engine
 from .auth import router as auth_router, seeker_router
 from .dashbord import router as dashboard_router
+from .notifications import router as notifications_router
+from .users import router as users_router
+
+from ..backend_propertyowner.routes.applications import router as applications_router
+from ..backend_propertyowner.routes.messages import router as messages_router
+from ..backend_propertyowner.routes.properties import router as properties_router
+from ..backend_propertyowner.routes.visits import router as visits_router
 from ..config import settings
 
 
-
-
-from backend.backend_propertyowner.routes.properties   import router as properties_router
-from backend.backend_propertyowner.routes.applications import router as applications_router
-from backend.backend_propertyowner.routes.messages     import router as messages_router
 # ──────────────────────────────────────────────────────────────────────────────
-
-
 
 app = FastAPI(title="Roominder API")
 
 # Serve static files for property images
-import os
-os.makedirs("backend/static", exist_ok=True)
-app.mount("/static", StaticFiles(directory="backend/static"), name="static")
+static_dir = Path(__file__).resolve().parent.parent / "static"
+static_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 app.add_middleware(
 	CORSMiddleware,
@@ -49,9 +48,13 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(seeker_router)
 app.include_router(dashboard_router)
+app.include_router(notifications_router)
+app.include_router(users_router)
 app.include_router(properties_router)
 app.include_router(applications_router)
 app.include_router(messages_router)
+app.include_router(visits_router)
+
 # ──────────────────────────────────────────────────────────────────────────────
 
 

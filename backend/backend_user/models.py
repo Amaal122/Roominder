@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 
 from ..db import Base
 
@@ -17,3 +17,17 @@ class User(Base):
     role            = Column(String(50), nullable=True)
     is_active       = Column(Boolean, default=True)
     created_at      = Column(DateTime, default=datetime.utcnow)
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    user_id    = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    type       = Column(String(50), nullable=False, index=True)
+    title      = Column(String(255), nullable=False)
+    body       = Column(Text, nullable=False)
+    data       = Column(JSON, nullable=True)
+    is_read    = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+

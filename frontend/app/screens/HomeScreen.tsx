@@ -26,6 +26,7 @@ type Listing = {
   rooms: string;
   match: number;
   image: string;
+  description?: string;
   ownerName?: string;
   ownerAvatar?: string;
   ownerRating?: string;
@@ -33,7 +34,7 @@ type Listing = {
 };
 
 type DashboardResponse = {
-  houses?: Array<{
+  houses?: {
     id: number;
     owner_id: number;
     owner_name?: string | null;
@@ -42,8 +43,9 @@ type DashboardResponse = {
     city?: string | null;
     price: number;
     rooms?: number | null;
+    description?: string | null;
     image_url?: string | null;
-  }>;
+  }[];
 };
 
 // ─── AnimatedTabIcon ──────────────────────────────────────────────────────────
@@ -207,6 +209,7 @@ export default function HomeScreen() {
         image:
           resolveImageUrl(item.image_url) ??
           "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
+        description: item.description ?? undefined,
         ownerName: item.owner_name ?? undefined,
       }));
 
@@ -250,6 +253,7 @@ export default function HomeScreen() {
         rooms: item.rooms,
         match: String(item.match),
         image: item.image,
+        description: item.description,
         ownerName: item.ownerName,
         ownerAvatar: item.ownerAvatar,
         ownerRating: item.ownerRating,
@@ -394,7 +398,6 @@ export default function HomeScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const CORAL = "#F4896B";
-const CORAL_LIGHT = "#F7B89A";
 const CORAL_PASTEL = "#F9D4C2";
 const TEAL = "#78CFC7";
 const INK = "#2B2B33";

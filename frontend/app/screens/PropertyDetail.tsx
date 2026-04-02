@@ -1,20 +1,21 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    BackHandler,
-    Dimensions,
-    Image,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  BackHandler,
+  Dimensions,
+  Image,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 import PropertyMap from "../../components/PropertyMap";
 import { addFavorite } from "../../store/favoriteStore";
 
@@ -27,8 +28,17 @@ const INK = "#2B2B33";
 const MUTED = "#7A6D6A";
 const BG = "#FFF7F3";
 const BORDER = "#F1E3DC";
+const API_BASE = "http://127.0.0.1:8001";
 
-// ── Icons (inline SVG-like with View shapes) ──────────────────────────────────
+const getSingleParam = (value?: string | string[]) =>
+  Array.isArray(value) ? value[0] : value;
+
+const parseNumberOrFallback = (value: string | undefined, fallback: number) => {
+  if (!value) return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 const IconWifi = () => (
   <View style={{ alignItems: "center", gap: 3 }}>
     {[20, 14, 8].map((w, i) => (
@@ -53,6 +63,7 @@ const IconWifi = () => (
     />
   </View>
 );
+
 const IconTV = () => (
   <View
     style={{
@@ -68,6 +79,7 @@ const IconTV = () => (
     <View style={{ width: 10, height: 1.5, backgroundColor: TEAL }} />
   </View>
 );
+
 const IconKitchen = () => (
   <View
     style={{
@@ -84,6 +96,7 @@ const IconKitchen = () => (
     <View style={{ width: 12, height: 1.5, backgroundColor: TEAL }} />
   </View>
 );
+
 const IconElevator = () => (
   <View
     style={{
@@ -123,6 +136,7 @@ const IconElevator = () => (
     />
   </View>
 );
+
 const IconParking = () => (
   <View
     style={{
@@ -138,6 +152,7 @@ const IconParking = () => (
     <Text style={{ fontSize: 13, fontWeight: "700", color: TEAL }}>P</Text>
   </View>
 );
+
 const IconPeople = () => (
   <View style={{ flexDirection: "row", gap: -6 }}>
     {[0, 1].map((i) => (
@@ -180,7 +195,6 @@ const SCORES = [
   { label: "Lifestyle", value: 95 },
 ];
 
-// ── Animated Progress Bar ─────────────────────────────────────────────────────
 function ProgressBar({ value }: { value: number }) {
   const anim = useRef(new Animated.Value(0)).current;
 
@@ -209,7 +223,6 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
-// ── Room Illustration ─────────────────────────────────────────────────────────
 function RoomIllustration() {
   return (
     <View style={styles.roomScene}>
@@ -233,9 +246,7 @@ function RoomIllustration() {
   );
 }
 
-// ── Main Screen ───────────────────────────────────────────────────────────────
 export default function PropertyDetail() {
-  // ✅ ناخذ الداتا اللي بعثناها من HomeScreen
   const params = useLocalSearchParams<{
     id?: string;
     title?: string;
@@ -255,28 +266,71 @@ export default function PropertyDetail() {
     ownerResponse?: string;
   }>();
 
-  const title = params.title ?? "Modern Loft\nin Marais";
-  const price = params.price ?? "€1200";
-  const location = params.location ?? "Le Marais, Paris";
-  const rooms = params.rooms ?? "2 Beds";
-  const match = params.match ?? "95";
-  const image = Array.isArray(params.image) ? params.image[0] : params.image;
-  const baths = params.baths ?? "1 Bath";
-  const size = params.size ?? "65 m²";
-  const description =
-    params.description ??
-    "Beautiful modern loft in the heart of Le Marais. This spacious apartment features high ceilings, large windows, and a contemporary design. Perfect for young professionals looking for a stylish living space in a vibrant neighborhood.";
-  const lat = params.lat ? Number(params.lat) : 48.8566;
-  const lng = params.lng ? Number(params.lng) : 2.3522;
-  const ownerName = params.ownerName ?? "Amina Diallo";
+  const propertyId = getSingleParam(params.id);
+  const title = getSingleParam(params.title) ?? "Modern Loft\nin Marais";
+  const price = getSingleParam(params.price) ?? "€1200";
+  const location = getSingleParam(params.location) ?? "Le Marais, Paris";
+  const rooms = getSingleParam(params.rooms) ?? "2 Beds";
+  const match = getSingleParam(params.match) ?? "95";
+  const image = getSingleParam(params.image);
+  const baths = getSingleParam(params.baths) ?? "1 Bath";
+  const size = getSingleParam(params.size) ?? "65 m²";
+  const initialDescription = getSingleParam(params.description)?.trim();
+  const [description, setDescription] = useState(
+    initialDescription || "No description provided.",
+  );
+  const lat = parseNumberOrFallback(getSingleParam(params.lat), 48.8566);
+  const lng = parseNumberOrFallback(getSingleParam(params.lng), 2.3522);
+  const ownerName = getSingleParam(params.ownerName) ?? "Amina Diallo";
   const ownerAvatar =
-    params.ownerAvatar ??
+    getSingleParam(params.ownerAvatar) ??
     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200";
-  const ownerRating = params.ownerRating ?? "4.9";
-  const ownerResponse = params.ownerResponse ?? "2h response";
+  const ownerRating = getSingleParam(params.ownerRating) ?? "4.9";
+  const ownerResponse = getSingleParam(params.ownerResponse) ?? "2h response";
+
+  useEffect(() => {
+    if (initialDescription) {
+      setDescription(initialDescription);
+      return;
+    }
+
+    if (!propertyId) {
+      setDescription("No description provided.");
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadPropertyDescription = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/properties/${propertyId}`);
+        if (!response.ok) {
+          throw new Error(`Failed to load property ${propertyId}`);
+        }
+
+        const data: { description?: string | null } = await response.json();
+        const nextDescription = data.description?.trim();
+
+        if (!cancelled) {
+          setDescription(nextDescription || "No description provided.");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to load property description:", error);
+          setDescription("No description provided.");
+        }
+      }
+    };
+
+    loadPropertyDescription();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialDescription, propertyId]);
 
   const handleFavorite = () => {
-    const id = params.id ?? `${title}-${location}`;
+    const id = propertyId ?? `${title}-${location}`;
     addFavorite({ id, title, location, price, image });
   };
 
@@ -287,7 +341,7 @@ export default function PropertyDetail() {
     }
     router.replace("/homescreen");
     return true;
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", handleBack);
@@ -302,7 +356,6 @@ export default function PropertyDetail() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        {/* HERO */}
         <View style={styles.hero}>
           {image ? (
             <Image
@@ -321,7 +374,6 @@ export default function PropertyDetail() {
             pointerEvents="none"
           />
 
-          {/* Top Nav */}
           <View style={styles.heroNav}>
             <TouchableOpacity style={styles.navBtn} onPress={handleBack}>
               <Text style={styles.navIcon}>←</Text>
@@ -332,23 +384,20 @@ export default function PropertyDetail() {
                 <Text style={styles.navIcon}>♡</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.navBtn}>
-                <Text style={styles.navIcon}>⬆</Text>
+                <Text style={styles.navIcon}>↑</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Match Badge */}
           <View style={styles.matchBadge}>
             <Text style={styles.matchStar}>✦</Text>
             <Text style={styles.matchText}>{match}% Match</Text>
           </View>
         </View>
 
-        {/* CONTENT CARD */}
         <View style={styles.card}>
           <View style={styles.pill} />
 
-          {/* Title + Price */}
           <View style={styles.titleRow}>
             <Text style={styles.title}>{title}</Text>
             <View>
@@ -357,22 +406,19 @@ export default function PropertyDetail() {
             </View>
           </View>
 
-          {/* Location */}
           <View style={styles.locationRow}>
             <Text style={styles.locationPin}>📍</Text>
             <Text style={styles.locationText}>{location}</Text>
           </View>
 
-          {/* Specs */}
           <View style={styles.specsRow}>
-            {[rooms, baths, size].map((s) => (
-              <View key={s} style={styles.specTag}>
-                <Text style={styles.specText}>{s}</Text>
+            {[rooms, baths, size].map((spec) => (
+              <View key={spec} style={styles.specTag}>
+                <Text style={styles.specText}>{spec}</Text>
               </View>
             ))}
           </View>
 
-          {/* AI Score Card */}
           <View style={styles.scoreCard}>
             <View style={styles.scoreTitleRow}>
               <Text style={styles.scoreStar}>✦</Text>
@@ -390,7 +436,6 @@ export default function PropertyDetail() {
             ))}
           </View>
 
-          {/* Description */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Description</Text>
@@ -399,7 +444,6 @@ export default function PropertyDetail() {
             <Text style={styles.descText}>{description}</Text>
           </View>
 
-          {/* Amenities */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Amenities</Text>
             <View style={styles.amenitiesGrid}>
@@ -409,14 +453,13 @@ export default function PropertyDetail() {
                   style={styles.amenityCard}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.amenityIcon}>{typeof icon === 'string' ? <Text>{icon}</Text> : icon}</View>
+                  <View style={styles.amenityIcon}>{icon}</View>
                   <Text style={styles.amenityLabel}>{label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
 
-          {/* Location Map */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Location</Text>
             <View style={styles.mapContainer}>
@@ -436,7 +479,6 @@ export default function PropertyDetail() {
         </View>
       </ScrollView>
 
-      {/* CTA */}
       <View style={styles.ctaBar}>
         <TouchableOpacity
           style={styles.ctaBtn}
@@ -445,12 +487,14 @@ export default function PropertyDetail() {
             router.push({
               pathname: "/screens/OwnerProfile",
               params: {
+                id: propertyId,
                 title,
                 location,
                 ownerName,
                 ownerAvatar,
                 ownerRating,
                 ownerResponse,
+                description,
               },
             })
           }
@@ -462,12 +506,10 @@ export default function PropertyDetail() {
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
   scroll: { flex: 1 },
 
-  // HERO
   hero: { height: 300, position: "relative", overflow: "hidden" },
   heroImage: { width: "100%", height: "100%" },
   heroOverlay: { ...StyleSheet.absoluteFillObject },
@@ -612,7 +654,6 @@ const styles = StyleSheet.create({
   matchStar: { fontSize: 14, color: CORAL },
   matchText: { fontSize: 13, fontWeight: "600", color: INK },
 
-  // CARD
   card: {
     backgroundColor: "white",
     borderTopLeftRadius: 24,
@@ -659,7 +700,6 @@ const styles = StyleSheet.create({
   },
   specText: { fontSize: 12, fontWeight: "600", color: CORAL },
 
-  // SCORE
   scoreCard: {
     backgroundColor: "#FFF5F0",
     borderRadius: 16,
@@ -692,7 +732,6 @@ const styles = StyleSheet.create({
   },
   progressFill: { height: 6, backgroundColor: TEAL, borderRadius: 3 },
 
-  // SECTIONS
   section: { marginBottom: 24 },
   sectionHeader: {
     flexDirection: "row",
@@ -709,7 +748,6 @@ const styles = StyleSheet.create({
   sectionArrow: { fontSize: 14, color: MUTED },
   descText: { fontSize: 13, lineHeight: 22, color: MUTED },
 
-  // AMENITIES
   amenitiesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   amenityCard: {
     width: (width - 48 - 24) / 3,
@@ -734,7 +772,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // MAP
   mapContainer: {
     backgroundColor: CORAL_PASTEL,
     borderRadius: 16,
@@ -762,7 +799,6 @@ const styles = StyleSheet.create({
   mapTitle: { fontSize: 12, fontWeight: "600", color: INK },
   mapCoords: { fontSize: 11, color: MUTED, marginTop: 2 },
 
-  // CTA
   ctaBar: {
     position: "absolute",
     bottom: 0,

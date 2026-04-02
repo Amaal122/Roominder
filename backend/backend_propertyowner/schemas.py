@@ -99,3 +99,25 @@ class MessageOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+# ── Visit ─────────────────────────────────────────────
+class VisitCreate(BaseModel):
+    property_id:    int
+    full_name:      str
+    phone:          str
+    preferred_time: str
+    message:        Optional[str] = None
+
+class VisitOut(BaseModel):
+    id:             int
+    property_id:    int
+    tenant_id:      int
+    full_name:      str
+    phone:          str
+    preferred_time: str
+    message:        Optional[str]
+    status:         str
+    created_at:     datetime
+
+    class Config:
+        from_attributes = True        

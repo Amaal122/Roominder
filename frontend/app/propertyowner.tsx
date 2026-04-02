@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
 import {
     Image,
     ScrollView,
@@ -10,7 +11,8 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { usePendingCount } from "./state/ownerDashboard";
+import { setPendingCount, usePendingCount } from "./state/ownerDashboard";
+import { fetchNotifications } from "./state/notifications";
 import { useProperties } from "./state/properties";
 
 const STATS = [
@@ -41,6 +43,23 @@ export default function PropertyOwner() {
   const router = useRouter();
   const pendingCount = usePendingCount();
   const properties = useProperties();
+
+  useEffect(() => {
+    const loadPendingVisits = async () => {
+      try {
+        const notifications = await fetchNotifications();
+        const pendingVisits = notifications.filter(
+          (notification) =>
+            notification.can_act && notification.visit_status === "pending",
+        ).length;
+        setPendingCount(pendingVisits);
+      } catch (error) {
+        console.error("Failed to load pending visit notifications:", error);
+      }
+    };
+
+    loadPendingVisits();
+  }, []);
 
   const handleNewProperty = () => {
     router.push("/newproperty");

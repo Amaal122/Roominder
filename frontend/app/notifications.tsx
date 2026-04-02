@@ -1,7 +1,10 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useMemo, useState } from "react";
+import { useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -9,87 +12,158 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
 
-type NoticeType = "message" | "application" | "visit" | "payment" | "system";
+import { setPendingCount } from "./state/ownerDashboard";
+import {
+  fetchNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  respondToVisitRequest,
+  type AppNotification,
+} from "./state/notifications";
 
-type Notice = {
-  id: string;
-  type: NoticeType;
-  title: string;
-  body: string;
-  time: string;
-  read: boolean;
+type NoticeGroup = "visit" | "system";
+
+const GROUP_LABELS: Record<NoticeGroup, string> = {
+  visit: "Visits",
+  system: "System",
 };
 
-const NOTIFICATIONS: Notice[] = [
-  {
-    id: "1",
-    type: "application",
-    title: "New application received",
-    body: "Lina Moreau applied to Modern Loft in Marais.",
-    time: "2m ago",
-    read: false,
-  },
-  {
-    id: "2",
-    type: "message",
-    title: "New message",
-    body: "Amina Diallo: “Can we schedule the visit for Friday?”",
-    time: "1h ago",
-    read: false,
-  },
-  {
-    id: "3",
-    type: "visit",
-    title: "Visit confirmed",
-    body: "Your visit to Bright Flat near Canal is confirmed.",
-    time: "Yesterday",
-    read: true,
-  },
-  {
-    id: "4",
-    type: "payment",
-    title: "Payment reminder",
-    body: "Rent due in 3 days for Cozy Studio in Bastille.",
-    time: "2 days ago",
-    read: true,
-  },
-  {
-    id: "5",
-    type: "system",
-    title: "Profile verified",
-    body: "Your profile verification is complete.",
-    time: "3 days ago",
-    read: true,
-  },
-];
+const getGroup = (notificationType: string): NoticeGroup => {
+  if (notificationType.startsWith("visit")) {
+    return "visit";
+  }
+  return "system";
+};
 
-const TYPE_LABELS: Record<NoticeType, string> = {
-  message: "Messages",
-  application: "Applications",
-  visit: "Visits",
-  payment: "Payments",
-  system: "System",
+const getStringField = (value: unknown) =>
+  typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+
+const formatRelativeTime = (isoDate: string) => {
+  const timestamp = new Date(isoDate).getTime();
+  if (Number.isNaN(timestamp)) {
+    return "Just now";
+  }
+
+  const diffMs = Date.now() - timestamp;
+  const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
+
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return new Date(isoDate).toLocaleDateString();
 };
 
 export default function Notifications() {
   const router = useRouter();
-  const [filter, setFilter] = useState<"all" | NoticeType>("all");
-  const [items, setItems] = useState<Notice[]>(NOTIFICATIONS);
+  const [filter, setFilter] = useState<"all" | NoticeGroup>("all");
+  const [items, setItems] = useState<AppNotification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [actionKey, setActionKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadNotifications = useCallback(async (mode: "initial" | "refresh" = "initial") => {
+    try {
+      if (mode === "initial") {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
+
+      const notifications = await fetchNotifications();
+      setItems(notifications);
+      setError(null);
+    } catch (loadError) {
+      console.error("Failed to load notifications:", loadError);
+      setError("Unable to load notifications right now.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
 
   const unreadCount = useMemo(
-    () => items.filter((n) => !n.read).length,
-    [items]
+    () => items.filter((notification) => !notification.is_read).length,
+    [items],
   );
+
+  const pendingVisitsCount = useMemo(
+    () =>
+      items.filter(
+        (notification) => notification.can_act && notification.visit_status === "pending",
+      ).length,
+    [items],
+  );
+
+  useEffect(() => {
+    setPendingCount(pendingVisitsCount);
+  }, [pendingVisitsCount]);
 
   const filtered = useMemo(() => {
     if (filter === "all") return items;
-    return items.filter((n) => n.type === filter);
-  }, [items, filter]);
+    return items.filter((notification) => getGroup(notification.type) === filter);
+  }, [filter, items]);
 
-  const markAllRead = () => {
-    setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsRead();
+      setItems((prev) => prev.map((notification) => ({ ...notification, is_read: true })));
+    } catch (markError) {
+      console.error("Failed to mark all notifications as read:", markError);
+      Alert.alert("Error", "Could not mark all notifications as read.");
+    }
+  };
+
+  const handleMarkRead = async (notification: AppNotification) => {
+    if (notification.is_read) {
+      return;
+    }
+
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === notification.id ? { ...item, is_read: true } : item,
+      ),
+    );
+
+    try {
+      await markNotificationRead(notification.id);
+    } catch (markError) {
+      console.error("Failed to mark notification as read:", markError);
+    }
+  };
+
+  const handleVisitDecision = async (
+    notification: AppNotification,
+    decision: "confirmed" | "cancelled",
+  ) => {
+    if (!notification.visit_id) {
+      Alert.alert("Error", "This notification is missing its visit id.");
+      return;
+    }
+
+    const currentActionKey = `${notification.id}-${decision}`;
+    try {
+      setActionKey(currentActionKey);
+      await respondToVisitRequest(notification.visit_id, decision);
+      await handleMarkRead(notification);
+      await loadNotifications("refresh");
+    } catch (decisionError) {
+      console.error("Failed to update visit decision:", decisionError);
+      Alert.alert("Error", "Could not update this visit request.");
+    } finally {
+      setActionKey(null);
+    }
   };
 
   return (
@@ -110,34 +184,32 @@ export default function Notifications() {
               {unreadCount} unread · {items.length} total
             </Text>
           </View>
-          <TouchableOpacity style={styles.markBtn} onPress={markAllRead}>
+          <TouchableOpacity style={styles.markBtn} onPress={handleMarkAllRead}>
             <Text style={styles.markText}>Mark all read</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.filters}>
-          {(["all", "message", "application", "visit", "payment"] as const).map(
-            (key) => (
-              <TouchableOpacity
-                key={key}
+          {(["all", "visit", "system"] as const).map((key) => (
+            <TouchableOpacity
+              key={key}
+              style={[
+                styles.filterChip,
+                filter === key && styles.filterChipActive,
+              ]}
+              onPress={() => setFilter(key)}
+              activeOpacity={0.85}
+            >
+              <Text
                 style={[
-                  styles.filterChip,
-                  filter === key && styles.filterChipActive,
+                  styles.filterText,
+                  filter === key && styles.filterTextActive,
                 ]}
-                onPress={() => setFilter(key)}
-                activeOpacity={0.85}
               >
-                <Text
-                  style={[
-                    styles.filterText,
-                    filter === key && styles.filterTextActive,
-                  ]}
-                >
-                  {key === "all" ? "All" : TYPE_LABELS[key]}
-                </Text>
-              </TouchableOpacity>
-            )
-          )}
+                {key === "all" ? "All" : GROUP_LABELS[key]}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         <ScrollView
@@ -145,7 +217,25 @@ export default function Notifications() {
           contentContainerStyle={{ paddingBottom: 28 }}
           showsVerticalScrollIndicator={false}
         >
-          {filtered.length === 0 ? (
+          {loading ? (
+            <View style={styles.emptyCard}>
+              <ActivityIndicator color="#F4896B" />
+              <Text style={styles.emptySubtitle}>Loading notifications...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>Could not load notifications</Text>
+              <Text style={styles.emptySubtitle}>{error}</Text>
+              <TouchableOpacity
+                style={styles.retryBtn}
+                onPress={() => loadNotifications("refresh")}
+              >
+                <Text style={styles.retryText}>
+                  {refreshing ? "Refreshing..." : "Try again"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : filtered.length === 0 ? (
             <View style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>No notifications</Text>
               <Text style={styles.emptySubtitle}>
@@ -153,24 +243,104 @@ export default function Notifications() {
               </Text>
             </View>
           ) : (
-            filtered.map((n) => (
-              <View key={n.id} style={styles.card}>
-                <View style={styles.cardLeft}>
-                  <View
-                    style={[
-                      styles.dot,
-                      n.read ? styles.dotRead : styles.dotUnread,
-                    ]}
-                  />
-                  <View>
-                    <Text style={styles.cardTitle}>{n.title}</Text>
-                    <Text style={styles.cardBody}>{n.body}</Text>
-                    <Text style={styles.cardTime}>{n.time}</Text>
+            filtered.map((notification) => {
+              const payload = notification.data ?? {};
+              const requesterName = getStringField(payload.requester_name);
+              const requesterEmail = getStringField(payload.requester_email);
+              const requesterPhone = getStringField(payload.requester_phone);
+              const preferredTime = getStringField(payload.preferred_time);
+              const message = getStringField(payload.message);
+              const propertyTitle = getStringField(payload.property_title);
+
+              return (
+                <TouchableOpacity
+                  key={notification.id}
+                  style={styles.card}
+                  activeOpacity={0.92}
+                  onPress={() => handleMarkRead(notification)}
+                >
+                  <View style={styles.cardTop}>
+                    <View style={styles.cardLeft}>
+                      <View
+                        style={[
+                          styles.dot,
+                          notification.is_read ? styles.dotRead : styles.dotUnread,
+                        ]}
+                      />
+                      <View style={styles.cardTextWrap}>
+                        <Text style={styles.cardTitle}>{notification.title}</Text>
+                        <Text style={styles.cardBody}>{notification.body}</Text>
+                      </View>
+                    </View>
+                    {!notification.is_read ? <View style={styles.unreadPill} /> : null}
                   </View>
-                </View>
-                {!n.read ? <View style={styles.unreadPill} /> : null}
-              </View>
-            ))
+
+                  <View style={styles.metaRow}>
+                    <Text style={styles.cardTime}>
+                      {formatRelativeTime(notification.created_at)}
+                    </Text>
+                    {notification.visit_status ? (
+                      <View
+                        style={[
+                          styles.statusPill,
+                          notification.visit_status === "confirmed"
+                            ? styles.statusConfirmed
+                            : notification.visit_status === "cancelled"
+                              ? styles.statusCancelled
+                              : styles.statusPending,
+                        ]}
+                      >
+                        <Text style={styles.statusText}>{notification.visit_status}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  {propertyTitle ? (
+                    <Text style={styles.infoLine}>Property: {propertyTitle}</Text>
+                  ) : null}
+                  {requesterName ? (
+                    <Text style={styles.infoLine}>User: {requesterName}</Text>
+                  ) : null}
+                  {requesterEmail ? (
+                    <Text style={styles.infoLine}>Email: {requesterEmail}</Text>
+                  ) : null}
+                  {requesterPhone ? (
+                    <Text style={styles.infoLine}>Phone: {requesterPhone}</Text>
+                  ) : null}
+                  {preferredTime ? (
+                    <Text style={styles.infoLine}>Preferred time: {preferredTime}</Text>
+                  ) : null}
+                  {message ? <Text style={styles.infoLine}>Message: {message}</Text> : null}
+
+                  {notification.can_act && notification.visit_status === "pending" ? (
+                    <View style={styles.actionsRow}>
+                      <TouchableOpacity
+                        style={styles.rejectBtn}
+                        onPress={() => handleVisitDecision(notification, "cancelled")}
+                        disabled={Boolean(actionKey)}
+                      >
+                        <Text style={styles.rejectText}>
+                          {actionKey === `${notification.id}-cancelled`
+                            ? "Declining..."
+                            : "Decline"}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.approveBtn}
+                        onPress={() => handleVisitDecision(notification, "confirmed")}
+                        disabled={Boolean(actionKey)}
+                      >
+                        <Text style={styles.approveText}>
+                          {actionKey === `${notification.id}-confirmed`
+                            ? "Accepting..."
+                            : "Accept"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })
           )}
         </ScrollView>
       </SafeAreaView>
@@ -217,7 +387,7 @@ const styles = StyleSheet.create({
   filterTextActive: { color: "#fff" },
   list: { marginTop: 12 },
   card: {
-    backgroundColor: "rgba(255,255,255,0.95)",
+    backgroundColor: "rgba(255,255,255,0.96)",
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
@@ -226,16 +396,27 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },
     elevation: 3,
+  },
+  cardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: 12,
   },
   cardLeft: { flexDirection: "row", gap: 10, flex: 1 },
+  cardTextWrap: { flex: 1 },
   dot: { width: 8, height: 8, borderRadius: 4, marginTop: 6 },
   dotUnread: { backgroundColor: "#F4896B" },
   dotRead: { backgroundColor: "#D6D3D1" },
   cardTitle: { fontSize: 14, fontWeight: "800", color: "#2B2B33" },
-  cardBody: { fontSize: 12, color: "#7A6D6A", marginTop: 2 },
-  cardTime: { fontSize: 11, color: "#9CA3AF", marginTop: 6 },
+  cardBody: { fontSize: 12, color: "#7A6D6A", marginTop: 2, lineHeight: 18 },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  cardTime: { fontSize: 11, color: "#9CA3AF" },
   unreadPill: {
     width: 6,
     height: 36,
@@ -243,12 +424,62 @@ const styles = StyleSheet.create({
     backgroundColor: "#F4896B",
     alignSelf: "center",
   },
+  infoLine: {
+    fontSize: 12,
+    color: "#5F6472",
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  actionsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+  },
+  rejectBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+  },
+  rejectText: { color: "#7A6D6A", fontWeight: "700", fontSize: 12 },
+  approveBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: "center",
+    backgroundColor: "#F4896B",
+  },
+  approveText: { color: "#fff", fontWeight: "700", fontSize: 12 },
+  statusPill: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  statusPending: { backgroundColor: "#FEF3C7" },
+  statusConfirmed: { backgroundColor: "#DCFCE7" },
+  statusCancelled: { backgroundColor: "#FEE2E2" },
+  statusText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#374151",
+    textTransform: "capitalize",
+  },
   emptyCard: {
     backgroundColor: "rgba(255,255,255,0.95)",
     borderRadius: 18,
     padding: 20,
     alignItems: "center",
+    gap: 8,
   },
   emptyTitle: { fontSize: 16, fontWeight: "800", color: "#2B2B33" },
-  emptySubtitle: { fontSize: 12, color: "#7A6D6A", marginTop: 4 },
+  emptySubtitle: { fontSize: 12, color: "#7A6D6A", marginTop: 4, textAlign: "center" },
+  retryBtn: {
+    marginTop: 8,
+    backgroundColor: "#F4896B",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  retryText: { color: "#fff", fontSize: 12, fontWeight: "700" },
 });
