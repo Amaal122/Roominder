@@ -81,6 +81,26 @@ def _create_tables_on_startup() -> None:
 			ALTER COLUMN looking_for TYPE VARCHAR USING looking_for::VARCHAR;
 			"""
 		))
+		conn.execute(text(
+			"""
+			ALTER TABLE IF EXISTS properties
+			ADD COLUMN IF NOT EXISTS bathrooms INTEGER DEFAULT 1;
+			"""
+		))
+		conn.execute(text(
+			"""
+			ALTER TABLE IF EXISTS properties
+			ADD COLUMN IF NOT EXISTS space DOUBLE PRECISION DEFAULT 0;
+			"""
+		))
+		conn.execute(text(
+			"""
+			UPDATE properties
+			SET bathrooms = COALESCE(bathrooms, 1),
+			    space = COALESCE(space, 0)
+			WHERE bathrooms IS NULL OR space IS NULL;
+			"""
+		))
 		conn.commit()
 
 

@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback } from "react";
 import {
     Image,
     ScrollView,
@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { setPendingCount, usePendingCount } from "./state/ownerDashboard";
 import { fetchNotifications } from "./state/notifications";
-import { useProperties } from "./state/properties";
+import { loadMyProperties, useProperties } from "./state/properties";
 
 const STATS = [
   {
@@ -44,22 +44,26 @@ export default function PropertyOwner() {
   const pendingCount = usePendingCount();
   const properties = useProperties();
 
-  useEffect(() => {
-    const loadPendingVisits = async () => {
-      try {
-        const notifications = await fetchNotifications();
-        const pendingVisits = notifications.filter(
-          (notification) =>
-            notification.can_act && notification.visit_status === "pending",
-        ).length;
-        setPendingCount(pendingVisits);
-      } catch (error) {
-        console.error("Failed to load pending visit notifications:", error);
-      }
-    };
+  useFocusEffect(
+    useCallback(() => {
+      void loadMyProperties();
 
-    loadPendingVisits();
-  }, []);
+      const loadPendingVisits = async () => {
+        try {
+          const notifications = await fetchNotifications();
+          const pendingVisits = notifications.filter(
+            (notification) =>
+              notification.can_act && notification.visit_status === "pending",
+          ).length;
+          setPendingCount(pendingVisits);
+        } catch (error) {
+          console.error("Failed to load pending visit notifications:", error);
+        }
+      };
+
+      void loadPendingVisits();
+    }, []),
+  );
 
   const handleNewProperty = () => {
     router.push("/newproperty");
