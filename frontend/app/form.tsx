@@ -116,7 +116,7 @@ export default function Form() {
         const me = await meRes.json();
         user_id = me.id;
       }
-    } catch (e) {
+    } catch {
       // ignore, will fail below if user_id is missing
     }
     if (!user_id) {

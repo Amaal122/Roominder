@@ -18,6 +18,7 @@ export default function OwnerProfile() {
     id?: string;
     title?: string;
     location?: string;
+    ownerId?: string;
     ownerName?: string;
     ownerAvatar?: string;
     ownerRating?: string;
@@ -26,6 +27,7 @@ export default function OwnerProfile() {
   }>();
 
   const propertyId = getSingleParam(params.id);
+  const ownerId = getSingleParam(params.ownerId);
   const title = getSingleParam(params.title) ?? "Modern Loft in Marais";
   const location = getSingleParam(params.location) ?? "Le Marais, Paris";
   const ownerName = getSingleParam(params.ownerName) ?? "Amina Diallo";
@@ -36,6 +38,22 @@ export default function OwnerProfile() {
   const ownerResponse = getSingleParam(params.ownerResponse) ?? "2h response";
   const description =
     getSingleParam(params.description)?.trim() || "No description provided.";
+
+  const handleRequestVisit = () => {
+    if (!propertyId) return;
+    router.push({
+      pathname: "/screens/VisitRequest",
+      params: { id: propertyId, title, location },
+    });
+  };
+
+  const handleChatWithOwner = () => {
+    if (!ownerId) return;
+    router.push({
+      pathname: "/chat/[id]",
+      params: { id: ownerId, name: ownerName },
+    });
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -89,12 +107,7 @@ export default function OwnerProfile() {
           <TouchableOpacity
             style={styles.primaryBtn}
             activeOpacity={0.85}
-            onPress={() =>
-              router.push({
-                pathname: "/screens/VisitRequest",
-                params: { id: propertyId, title, location },
-              })
-            }
+            onPress={handleRequestVisit}
           >
             <Text style={styles.primaryText}>Request a Visit</Text>
           </TouchableOpacity>
@@ -102,12 +115,7 @@ export default function OwnerProfile() {
           <TouchableOpacity
             style={styles.secondaryBtn}
             activeOpacity={0.85}
-            onPress={() =>
-              router.push({
-                pathname: "/screens/OwnerChat",
-                params: { ownerName },
-              })
-            }
+            onPress={handleChatWithOwner}
           >
             <Text style={styles.secondaryText}>Chat with Owner</Text>
           </TouchableOpacity>

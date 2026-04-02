@@ -117,7 +117,7 @@ export const addProperty = async (payload: {
 
 export const updateProperty = async (
   id: string,
-  patch: Partial<Property> & {
+  patch: {
     title?: string;
     address?: string;
     city?: string;
@@ -150,9 +150,33 @@ export const updateProperty = async (
   return updated;
 };
 
+export const removeProperty = async (id: string) => {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  const response = await fetch(`${API_BASE}/properties/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok && response.status !== 204) {
+    const raw = await response.text();
+    throw new Error(raw || "Failed to delete property");
+  }
+
+  properties = properties.filter((p) => p.id !== id);
+  notify();
+};
+
 export const subscribeProperties = (listener: () => void) => {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 };
 
 export const useProperties = () => {

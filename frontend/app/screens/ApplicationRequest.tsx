@@ -173,8 +173,6 @@ export default function ApplicationRequest() {
   );
 }
 
-const CORAL = "#F4896B";
-const CORAL_PASTEL = "#F9D4C2";
 const TEAL = "#7ECEC4";
 const BG = "#FFF7F3";
 const TEXT = "#2B2B33";

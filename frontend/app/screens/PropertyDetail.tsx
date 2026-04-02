@@ -260,6 +260,7 @@ export default function PropertyDetail() {
     description?: string;
     lat?: string;
     lng?: string;
+    ownerId?: string;
     ownerName?: string;
     ownerAvatar?: string;
     ownerRating?: string;
@@ -279,6 +280,7 @@ export default function PropertyDetail() {
   const [description, setDescription] = useState(
     initialDescription || "No description provided.",
   );
+  const [ownerId, setOwnerId] = useState(getSingleParam(params.ownerId));
   const lat = parseNumberOrFallback(getSingleParam(params.lat), 48.8566);
   const lng = parseNumberOrFallback(getSingleParam(params.lng), 2.3522);
   const ownerName = getSingleParam(params.ownerName) ?? "Amina Diallo";
@@ -328,6 +330,31 @@ export default function PropertyDetail() {
       cancelled = true;
     };
   }, [initialDescription, propertyId]);
+
+  useEffect(() => {
+    if (!propertyId) return;
+    if (ownerId) return;
+
+    let cancelled = false;
+
+    const loadOwnerId = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/properties/${propertyId}`);
+        if (!response.ok) return;
+        const data: { owner_id?: number } = await response.json();
+        if (!cancelled && typeof data.owner_id === "number") {
+          setOwnerId(String(data.owner_id));
+        }
+      } catch {
+        // ignore; ownerId will remain undefined
+      }
+    };
+
+    loadOwnerId();
+    return () => {
+      cancelled = true;
+    };
+  }, [propertyId, ownerId]);
 
   const handleFavorite = () => {
     const id = propertyId ?? `${title}-${location}`;
@@ -490,6 +517,7 @@ export default function PropertyDetail() {
                 id: propertyId,
                 title,
                 location,
+                ownerId,
                 ownerName,
                 ownerAvatar,
                 ownerRating,

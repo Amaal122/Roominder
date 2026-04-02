@@ -1,6 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, type Href } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getAuthToken } from "./state/auth"; // adjust path
 import {
     Image,
     ScrollView,
@@ -10,10 +11,50 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useMatchesStore } from "../store/matchStore";
+
 
 export default function Match() {
-  const matches = useMatchesStore();
+  const [matches, setMatches] = useState<any[]>([]);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  const loadMatches = async () => {
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      // Step 1: get saved match IDs
+      const matchRes = await fetch("http://127.0.0.1:8001/matches/", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!matchRes.ok) return;
+      const savedMatches = await matchRes.json();
+      const savedIds = new Set(savedMatches.map((m: any) => String(m.matched_id)));
+
+      if (savedIds.size === 0) {
+        setMatches([]);
+        return;
+      }
+
+      // Step 2: get full profiles from roommates endpoint
+      const profilesRes = await fetch("http://127.0.0.1:8001/roommates/matches", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!profilesRes.ok) return;
+      const allProfiles = await profilesRes.json();
+
+      // Step 3: filter only the ones the user liked
+      const filtered = allProfiles.filter((p: any) => savedIds.has(String(p.id)));
+      setMatches(filtered);
+    } catch (e) {
+      console.error("Failed to load matches", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadMatches();
+}, []);
   const router = useRouter();
   const tabs: { icon: string; label: string; route: Href }[] = [
     { icon: "🏠", label: "Home", route: "/homescreen" },
@@ -66,6 +107,11 @@ export default function Match() {
         </View>
 
         <View style={styles.sheet}>
+          {loading ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>Loading...</Text>
+            </View>
+          ) : null}
           {matches.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>No matches yet</Text>
@@ -87,9 +133,9 @@ export default function Match() {
             >
               {matches.map((profile) => (
                 <View key={profile.id} style={styles.card}>
-                  {profile.image && !profile.image.startsWith('blob:') && (
+                  {profile.image ? (
                     <Image source={{ uri: profile.image }} style={styles.photo} />
-                  )}
+                  ) : null}
                   <View style={styles.cardBody}>
                     <View style={styles.rowBetween}>
                       <Text style={styles.name}>
