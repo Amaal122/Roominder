@@ -1,26 +1,42 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, type Href } from "expo-router";
-import { useState } from "react";
+import { useFocusEffect, useRouter, type Href } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { getAuthToken } from "./state/auth";
 
-const MESSAGES: {
-  id: string;
-  name: string;
-  time: string;
-  preview: string;
-  initials: string;
-  unread: number;
-  online: boolean;
-}[] = [];
+const API_BASE = "http://127.0.0.1:8001";
+
+type ConversationItem = {
+  other_user_id: number;
+  other_user_name: string;
+  last_message: string;
+  last_message_at: string;
+  unread_count: number;
+};
+
+const getInitials = (name: string) => {
+  const trimmed = name.trim();
+  if (!trimmed) return "?";
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  const first = parts[0]?.[0] ?? "?";
+  const second = parts.length > 1 ? parts[parts.length - 1]?.[0] : parts[0]?.[1];
+  return `${first}${second ?? ""}`.toUpperCase();
+};
+
+const formatTime = (isoDate: string) => {
+  const timestamp = new Date(isoDate);
+  if (Number.isNaN(timestamp.getTime())) return "";
+  return timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+};
 
 export default function Chat() {
   const router = useRouter();
@@ -28,16 +44,76 @@ export default function Chat() {
     { icon: "🏠", label: "Home", route: "/homescreen" },
     { icon: "👥", label: "Match", route: "/match" },
     { icon: "💬", label: "Chat", route: "/chat" },
-    { icon: "❤️", label: "Favorites", route: "/homescreen" },
-    { icon: "👤", label: "Profile", route: "/homescreen" },
+    { icon: "❤️", label: "Favorites", route: "/favorite" },
+    { icon: "👤", label: "Profile", route: "/profile" },
   ];
   const [activeTab, setActiveTab] = useState("Chat");
+  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const handleTabPress = (tabLabel: string, route: Href) => {
     setActiveTab(tabLabel);
     if (tabLabel === "Chat") return;
     router.push(route);
   };
+
+useFocusEffect(
+  useCallback(() => {
+    let isMounted = true;
+
+    const loadConversations = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const token = await getAuthToken();
+        if (!token) throw new Error("Missing auth token");
+
+        const response = await fetch(`${API_BASE}/chat/conversations`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const raw = await response.text();
+        let data: unknown = null;
+        if (raw) {
+          try { data = JSON.parse(raw); } catch { data = raw; }
+        }
+
+        if (!response.ok) {
+          const detail =
+            (data && typeof data === "object" && "detail" in data && (data as any).detail) ||
+            "Failed to load conversations";
+          throw new Error(String(detail));
+        }
+
+        if (isMounted) setConversations((data as ConversationItem[]) ?? []);
+      } catch (err) {
+        console.error("Failed to load conversations:", err);
+        if (isMounted) {
+          setError("Unable to load messages right now.");
+          setConversations([]);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadConversations();
+    return () => { isMounted = false; };
+  }, [])
+);
+
+  const filteredConversations = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return conversations;
+    return conversations.filter((item) => {
+      return (
+        item.other_user_name.toLowerCase().includes(term) ||
+        item.last_message.toLowerCase().includes(term)
+      );
+    });
+  }, [conversations, query]);
 
   return (
     <LinearGradient
@@ -68,12 +144,24 @@ export default function Chat() {
             style={styles.searchInput}
             placeholder="Search messages..."
             placeholderTextColor="#d9cfff"
+            value={query}
+            onChangeText={setQuery}
           />
         </View>
 
         {/* Messages list */}
         <ScrollView contentContainerStyle={styles.listContent} style={styles.list} showsVerticalScrollIndicator={false}>
-          {MESSAGES.length === 0 ? (
+          {loading ? (
+            <Text style={{ textAlign: "center", marginTop: 40, color: "#aaa" }}>
+              Loading...
+            </Text>
+          ) : error ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="alert-circle-outline" size={56} color="#b7bdd1" />
+              <Text style={styles.emptyTitle}>Something went wrong</Text>
+              <Text style={styles.emptySubtitle}>{error}</Text>
+            </View>
+          ) : filteredConversations.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="chatbubble-ellipses-outline" size={56} color="#b7bdd1" />
               <Text style={styles.emptyTitle}>No messages yet</Text>
@@ -82,37 +170,36 @@ export default function Chat() {
               </Text>
             </View>
           ) : (
-            MESSAGES.map((item) => (
+            filteredConversations.map((item) => (
               <TouchableOpacity
-                key={item.id}
+                key={item.other_user_id}
                 style={styles.card}
                 activeOpacity={0.9}
                 onPress={() =>
                   router.push({
                     pathname: "/chat/[id]",
-                    params: { id: item.id, name: item.name },
+                    params: { id: String(item.other_user_id), name: item.other_user_name },
                   })
                 }
               >
                 <View style={styles.avatarWrap}>
                   <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarText}>{item.initials}</Text>
+                    <Text style={styles.avatarText}>{getInitials(item.other_user_name)}</Text>
                   </View>
-                  {item.online ? <View style={styles.onlineDot} /> : null}
                 </View>
 
                 <View style={styles.cardBody}>
                   <View style={styles.cardTopRow}>
-                    <Text style={styles.name}>{item.name}</Text>
-                    <Text style={styles.time}>{item.time}</Text>
+                    <Text style={styles.name}>{item.other_user_name}</Text>
+                    <Text style={styles.time}>{formatTime(item.last_message_at)}</Text>
                   </View>
                   <View style={styles.cardBottomRow}>
                     <Text style={styles.preview} numberOfLines={1}>
-                      {item.preview}
+                      {item.last_message}
                     </Text>
-                    {item.unread > 0 ? (
+                    {item.unread_count > 0 ? (
                       <View style={styles.unreadBadge}>
-                        <Text style={styles.unreadText}>{item.unread}</Text>
+                        <Text style={styles.unreadText}>{item.unread_count}</Text>
                       </View>
                     ) : null}
                   </View>
@@ -225,17 +312,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarText: { color: "#fff", fontWeight: "800", fontSize: 16 },
-  onlineDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#2AD37F",
-    position: "absolute",
-    right: 6,
-    bottom: 2,
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
   cardBody: { flex: 1, gap: 4 },
   cardTopRow: {
     flexDirection: "row",
@@ -270,22 +346,10 @@ const styles = StyleSheet.create({
   emptyTitle: {
     marginTop: 16,
     fontSize: 22,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
+    fontWeight: "800",
+    color: "#2b2b33",
   },
-  preview: { color: "#7a7d8a", fontSize: 13, flex: 1 },
-  unreadBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#ff5f6d",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 6,
-  },
-  unreadText: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  emptySubtitle: { color: "#7a7d8a", fontSize: 13, marginTop: 8, textAlign: "center" },
   tabBar: {
     flexDirection: "row",
     backgroundColor: "#fff",

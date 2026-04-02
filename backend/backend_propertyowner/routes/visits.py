@@ -1,6 +1,6 @@
 """Endpoints pour les demandes de visite."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -21,6 +21,7 @@ router = APIRouter(prefix="/visits", tags=["Visits"])
 @router.post("/", response_model=VisitOut, status_code=status.HTTP_201_CREATED)
 def create_visit(
     data:         VisitCreate,
+    response:     Response,
     db:           Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -31,17 +32,15 @@ def create_visit(
     if not prop:
         raise HTTPException(status_code=404, detail="Logement introuvable")
 
-    # Vérifier que le locataire n'a pas déjà une visite pending pour ce logement
+    # Rendre la création idempotente: renvoyer la visite pending existante.
     existing = db.query(Visit).filter(
         Visit.property_id == data.property_id,
         Visit.tenant_id   == current_user.id,
         Visit.status      == "pending"
     ).first()
     if existing:
-        raise HTTPException(
-            status_code=400,
-            detail="Tu as déjà une demande de visite en attente pour ce logement"
-        )
+        response.status_code = status.HTTP_200_OK
+        return existing
 
     new_visit = Visit(
         property_id    = data.property_id,

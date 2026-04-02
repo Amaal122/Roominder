@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 export type AppTheme = "Light" | "Dark" | "System";
 export type AppLanguage = "English" | "French" | "Arabic";
 
-type SettingsState = {
+type SettingsStoreState = {
   pushEnabled: boolean;
   emailEnabled: boolean;
   smsEnabled: boolean;
@@ -13,7 +13,7 @@ type SettingsState = {
   blockedUsers: string[];
 };
 
-let settings: SettingsState = {
+let settings: SettingsStoreState = {
   pushEnabled: true,
   emailEnabled: true,
   smsEnabled: false,
@@ -27,14 +27,16 @@ const listeners = new Set<() => void>();
 
 export const getSettings = () => settings;
 
-export const updateSettings = (partial: Partial<SettingsState>) => {
+export const updateSettings = (partial: Partial<SettingsStoreState>) => {
   settings = { ...settings, ...partial };
   listeners.forEach((listener) => listener());
 };
 
 export const subscribeSettings = (listener: () => void) => {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 };
 
 export const useSettings = () => {
