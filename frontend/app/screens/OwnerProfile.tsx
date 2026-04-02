@@ -1,7 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { Image } from "react-native";
 import {
+  Image,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -10,23 +10,32 @@ import {
   View,
 } from "react-native";
 
+const getSingleParam = (value?: string | string[]) =>
+  Array.isArray(value) ? value[0] : value;
+
 export default function OwnerProfile() {
   const params = useLocalSearchParams<{
+    id?: string;
     title?: string;
     location?: string;
     ownerName?: string;
     ownerAvatar?: string;
     ownerRating?: string;
     ownerResponse?: string;
+    description?: string;
   }>();
-  const title = params.title ?? "Modern Loft in Marais";
-  const location = params.location ?? "Le Marais, Paris";
-  const ownerName = params.ownerName ?? "Amina Diallo";
+
+  const propertyId = getSingleParam(params.id);
+  const title = getSingleParam(params.title) ?? "Modern Loft in Marais";
+  const location = getSingleParam(params.location) ?? "Le Marais, Paris";
+  const ownerName = getSingleParam(params.ownerName) ?? "Amina Diallo";
   const ownerAvatar =
-    params.ownerAvatar ??
+    getSingleParam(params.ownerAvatar) ??
     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200";
-  const ownerRating = params.ownerRating ?? "4.9";
-  const ownerResponse = params.ownerResponse ?? "2h response";
+  const ownerRating = getSingleParam(params.ownerRating) ?? "4.9";
+  const ownerResponse = getSingleParam(params.ownerResponse) ?? "2h response";
+  const description =
+    getSingleParam(params.description)?.trim() || "No description provided.";
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -41,10 +50,7 @@ export default function OwnerProfile() {
           end={{ x: 1, y: 1 }}
           style={styles.header}
         >
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Owner Profile</Text>
@@ -68,10 +74,7 @@ export default function OwnerProfile() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.aboutText}>
-            I manage a small portfolio of modern apartments in central Paris. I
-            respond quickly and can schedule visits within 48 hours.
-          </Text>
+          <Text style={styles.aboutText}>{description}</Text>
         </View>
 
         <View style={styles.section}>
@@ -89,7 +92,7 @@ export default function OwnerProfile() {
             onPress={() =>
               router.push({
                 pathname: "/screens/VisitRequest",
-                params: { title, location },
+                params: { id: propertyId, title, location },
               })
             }
           >

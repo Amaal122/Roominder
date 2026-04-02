@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-let pendingCount = 7;
+let pendingCount = 0;
 const listeners = new Set<() => void>();
 
 export const getPendingCount = () => pendingCount;

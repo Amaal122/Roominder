@@ -56,7 +56,9 @@ export default function NewProperty() {
   const [size, setSize] = useState(
     editingProperty?.size ? String(editingProperty.size) : "",
   );
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(
+    editingProperty?.description ?? "",
+  );
   const [photos, setPhotos] = useState<string[]>([]);
 
   const formComplete = useMemo(

@@ -12,6 +12,7 @@ export type Property = {
   beds: number;
   baths: number;
   size: number;
+  description?: string;
   views?: number;
   applications?: number;
 };
@@ -52,6 +53,7 @@ const toUiProperty = (p: BackendProperty): Property => {
     beds: p.rooms ?? 1,
     baths: 1,
     size: 0,
+    description: p.description ?? undefined,
     views: 0,
     applications: 0,
     image:
