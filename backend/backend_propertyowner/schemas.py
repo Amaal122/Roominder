@@ -16,6 +16,8 @@ class PropertyCreate(BaseModel):
     city:        str
     price:       float
     rooms:       int = 1
+    bathrooms:   int = 1
+    space:       float = 0
     description: Optional[str] = None
     image_url:   Optional[str] = None
 
@@ -27,6 +29,8 @@ class PropertyUpdate(BaseModel):
     city:        Optional[str]   = None
     price:       Optional[float] = None
     rooms:       Optional[int]   = None
+    bathrooms:   Optional[int]   = None
+    space:       Optional[float] = None
     description: Optional[str]   = None
     status:      Optional[str]   = None   # available / occupied
     image_url:   Optional[str]   = None
@@ -41,6 +45,8 @@ class PropertyOut(BaseModel):
     city:        str
     price:       float
     rooms:       int
+    bathrooms:   int
+    space:       float
     description: Optional[str]
     status:      str
     image_url:   Optional[str]
@@ -120,4 +126,4 @@ class VisitOut(BaseModel):
     created_at:     datetime
 
     class Config:
-        from_attributes = True        
+        from_attributes = True

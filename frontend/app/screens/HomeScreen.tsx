@@ -24,6 +24,8 @@ type Listing = {
   location: string;
   price: string;
   rooms: string;
+  baths: string;
+  size: string;
   match: number;
   image: string;
   description?: string;
@@ -33,19 +35,23 @@ type Listing = {
   ownerResponse?: string;
 };
 
+type HouseRecord = {
+  id: number;
+  owner_id: number;
+  owner_name?: string | null;
+  title: string;
+  address?: string | null;
+  city?: string | null;
+  price: number;
+  rooms?: number | null;
+  bathrooms?: number | null;
+  space?: number | null;
+  description?: string | null;
+  image_url?: string | null;
+};
+
 type DashboardResponse = {
-  houses?: {
-    id: number;
-    owner_id: number;
-    owner_name?: string | null;
-    title: string;
-    address?: string | null;
-    city?: string | null;
-    price: number;
-    rooms?: number | null;
-    description?: string | null;
-    image_url?: string | null;
-  }[];
+  houses?: HouseRecord[];
 };
 
 // ─── AnimatedTabIcon ──────────────────────────────────────────────────────────
@@ -158,6 +164,23 @@ const resolveImageUrl = (imageUrl?: string | null) => {
   return `${API_BASE}/${imageUrl}`;
 };
 
+const toListing = (item: HouseRecord): Listing => ({
+  id: String(item.id),
+  title: item.title,
+  location: `${item.address ?? ""}${item.city ? `, ${item.city}` : ""}`.trim()
+    || "Unknown location",
+  price: `DT ${item.price}`,
+  rooms: `${item.rooms ?? 1} room${(item.rooms ?? 1) > 1 ? "s" : ""}`,
+  baths: `${item.bathrooms ?? 1} Bath${(item.bathrooms ?? 1) > 1 ? "s" : ""}`,
+  size: `${item.space ?? 0} m²`,
+  match: Math.floor(Math.random() * 30) + 70,
+  image:
+    resolveImageUrl(item.image_url) ??
+    "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
+  description: item.description ?? undefined,
+  ownerName: item.owner_name ?? undefined,
+});
+
 export default function HomeScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("Home");
@@ -168,34 +191,52 @@ export default function HomeScreen() {
   
   // 🔥 FETCH DATA FROM BACKEND
   useEffect(() => {
-    fetchListings();
+    void fetchListings();
   }, []);
   const fetchListings = async () => {
     setLoading(true);
+    setError(null);
     try {
       const token = await getAuthToken();
-      if (!token) {
-        setError("You must be logged in to view the dashboard. Please log in.");
-        setListings([]);
-        setLoading(false);
-        return;
-      }
-      const res = await fetch(`${API_BASE}/dashboard/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      let nextListings: Listing[] = [];
 
-      if (res.status === 401) {
-        setError("Session expired or unauthorized. Please log in again.");
-        setListings([]);
-        setLoading(false);
-        return;
-      }
+      if (token) {
+        const dashboardResponse = await fetch(`${API_BASE}/dashboard/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      if (!res.ok) {
-        throw new Error(`Failed to fetch dashboard (${res.status})`);
+        if (dashboardResponse.ok) {
+          const data: DashboardResponse = await dashboardResponse.json();
+          nextListings = (data.houses ?? []).map(toListing);
+        } else {
+          console.warn(
+            "Dashboard fetch failed, using public properties fallback.",
+            dashboardResponse.status,
+          );
+        }
       }
 
-      const data: DashboardResponse = await res.json();
+      if (nextListings.length === 0) {
+        const propertiesResponse = await fetch(`${API_BASE}/properties/`);
+
+        if (!propertiesResponse.ok) {
+          throw new Error(
+            `Failed to fetch properties (${propertiesResponse.status})`,
+          );
+        }
+
+        const publicData: HouseRecord[] = await propertiesResponse.json();
+        nextListings = publicData.map(toListing);
+      }
+
+      setListings(nextListings);
+
+      if (nextListings.length === 0) {
+        setError("No properties available right now.");
+      }
+
+      return;
+      /*
 
       const formatted = (data.houses ?? []).map((item) => ({
         id: String(item.id),
@@ -215,9 +256,11 @@ export default function HomeScreen() {
 
       setListings(formatted);
       setError(null);
+      */
     } catch (error) {
       console.error("Error fetching listings:", error);
-      setError("Unable to load recommendations. Please try again.");
+      setListings([]);
+      setError("Unable to load properties. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -251,6 +294,8 @@ export default function HomeScreen() {
         location: item.location,
         price: item.price,
         rooms: item.rooms,
+        baths: item.baths,
+        size: item.size,
         match: String(item.match),
         image: item.image,
         description: item.description,
@@ -375,6 +420,19 @@ export default function HomeScreen() {
               onPress={() => goToDetails(item)}
             />
           ))}
+
+          {!listings.length && error ? (
+            <View style={styles.feedbackCard}>
+              <Text style={styles.feedbackTitle}>No properties to show</Text>
+              <Text style={styles.feedbackText}>{error}</Text>
+              <TouchableOpacity
+                style={styles.feedbackButton}
+                onPress={() => void fetchListings()}
+              >
+                <Text style={styles.feedbackButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           <View style={{ height: 16 }} />
         </ScrollView>
@@ -581,6 +639,39 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   roomsText: { fontSize: 12, color: CORAL, fontWeight: "600" },
+  feedbackCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: "#FFF",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: CORAL_PASTEL,
+    padding: 18,
+    alignItems: "center",
+    gap: 10,
+  },
+  feedbackTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: INK,
+  },
+  feedbackText: {
+    fontSize: 13,
+    color: "#7A6D6A",
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  feedbackButton: {
+    backgroundColor: CORAL,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  feedbackButtonText: {
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
 
   // BOTTOM TAB BAR
   tabBar: {
