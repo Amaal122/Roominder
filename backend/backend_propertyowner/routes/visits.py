@@ -10,9 +10,39 @@ from ...backend_user.models import Notification, User
 from ...backend_user.notifications import create_notification
 
 from ..models import Visit, Property
+from ..property_status import sync_property_status
 from ..schemas import VisitCreate, VisitOut
 
 router = APIRouter(prefix="/visits", tags=["Visits"])
+
+
+def _notify_owner_about_visit(
+    db: Session,
+    *,
+    owner_id: int,
+    visit: Visit,
+    prop: Property,
+    requester: User,
+) -> None:
+    requester_name = requester.full_name or requester.email
+    create_notification(
+        db,
+        user_id=owner_id,
+        type="visit_request",
+        title="New visit request",
+        body=f"{requester_name} requested a visit for {prop.title}.",
+        data={
+            "visit_id": visit.id,
+            "property_id": prop.id,
+            "property_title": prop.title,
+            "requester_name": requester_name,
+            "requester_email": requester.email,
+            "requester_phone": visit.phone,
+            "preferred_time": visit.preferred_time,
+            "message": visit.message,
+            "audience": "owner",
+        },
+    )
 
 
 # ─────────────────────────────────────────────
@@ -39,6 +69,36 @@ def create_visit(
         Visit.status      == "pending"
     ).first()
     if existing:
+        sync_property_status(db, prop.id)
+        existing_owner_notification = (
+            db.query(Notification)
+            .filter(
+                Notification.user_id == prop.owner_id,
+                Notification.type == "visit_request",
+                Notification.is_read.is_(False),
+            )
+            .order_by(Notification.created_at.desc())
+            .all()
+        )
+        has_active_owner_notification = any(
+            (
+                notification.data if isinstance(notification.data, dict) else {}
+            ).get("visit_id") == existing.id
+            for notification in existing_owner_notification
+        )
+
+        if not has_active_owner_notification:
+            _notify_owner_about_visit(
+                db,
+                owner_id=prop.owner_id,
+                visit=existing,
+                prop=prop,
+                requester=current_user,
+            )
+
+        db.commit()
+        db.refresh(existing)
+
         response.status_code = status.HTTP_200_OK
         return existing
 
@@ -53,25 +113,14 @@ def create_visit(
     db.add(new_visit)
     db.flush()
 
-    requester_name = current_user.full_name or current_user.email
-    create_notification(
+    _notify_owner_about_visit(
         db,
-        user_id=prop.owner_id,
-        type="visit_request",
-        title="New visit request",
-        body=f"{requester_name} requested a visit for {prop.title}.",
-        data={
-            "visit_id": new_visit.id,
-            "property_id": prop.id,
-            "property_title": prop.title,
-            "requester_name": requester_name,
-            "requester_email": current_user.email,
-            "requester_phone": data.phone,
-            "preferred_time": data.preferred_time,
-            "message": data.message,
-            "audience": "owner",
-        },
+        owner_id=prop.owner_id,
+        visit=new_visit,
+        prop=prop,
+        requester=current_user,
     )
+    sync_property_status(db, prop.id)
 
     db.commit()
     db.refresh(new_visit)
@@ -200,6 +249,8 @@ def update_visit_status(
         body=notification_body,
         data=notification_data,
     )
+    db.flush()
+    sync_property_status(db, prop.id)
 
     db.commit()
     db.refresh(visit)
@@ -222,6 +273,9 @@ def delete_visit(
     if visit.tenant_id != current_user.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
 
+    property_id = visit.property_id
     db.delete(visit)
+    db.flush()
+    sync_property_status(db, property_id)
     db.commit()
     return None

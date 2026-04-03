@@ -51,6 +51,7 @@ class PropertyOut(BaseModel):
     status:      str
     image_url:   Optional[str]
     created_at:  datetime
+    applications_count: int = 0
 
     class Config:
         from_attributes = True   # permet de lire un objet SQLAlchemy directement

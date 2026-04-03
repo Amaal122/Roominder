@@ -29,6 +29,7 @@ type Listing = {
   match: number;
   image: string;
   description?: string;
+  ownerId?: string;
   ownerName?: string;
   ownerAvatar?: string;
   ownerRating?: string;
@@ -178,6 +179,7 @@ const toListing = (item: HouseRecord): Listing => ({
     resolveImageUrl(item.image_url) ??
     "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
   description: item.description ?? undefined,
+  ownerId: String(item.owner_id),
   ownerName: item.owner_name ?? undefined,
 });
 
@@ -290,6 +292,7 @@ export default function HomeScreen() {
         match: String(item.match),
         image: item.image,
         description: item.description,
+        ownerId: item.ownerId,
         ownerName: item.ownerName,
         ownerAvatar: item.ownerAvatar,
         ownerRating: item.ownerRating,

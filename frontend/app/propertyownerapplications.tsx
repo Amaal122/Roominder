@@ -1,100 +1,192 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Linking,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { incrementPending } from "./state/ownerDashboard";
+
+import { getAuthToken } from "./state/auth";
+
+const API_BASE = "http://127.0.0.1:8001";
 
 type Params = {
-  id?: string;
-  title?: string;
-  location?: string;
-  price?: string;
-  image?: string;
-  applications?: string;
+  id?: string | string[];
+  title?: string | string[];
+  location?: string | string[];
+  price?: string | string[];
+  image?: string | string[];
+  applications?: string | string[];
 };
 
-type Applicant = {
-  id: string;
-  name: string;
-  role: string;
-  match: number;
-  timeAgo: string;
-  avatar: string;
+type OwnerApplication = {
+  id: number;
+  application_id: number;
+  property_id: number;
+  seeker_id: number;
+  message?: string | null;
+  status: "pending" | "accepted" | "rejected";
+  id_doc_url?: string | null;
+  income_doc_url?: string | null;
+  employment_doc_url?: string | null;
+  guarantor_doc_url?: string | null;
+  created_at: string;
+  seeker_name?: string | null;
+  seeker_email?: string | null;
 };
 
-const APPLICANTS: Applicant[] = [
-  {
-    id: "1",
-    name: "Lina Moreau",
-    role: "Graphic Designer",
-    match: 92,
-    timeAgo: "2 days ago",
-    avatar:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80",
-  },
-  {
-    id: "2",
-    name: "Marcus Chen",
-    role: "Marketing Manager",
-    match: 88,
-    timeAgo: "1 week ago",
-    avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
-  },
-  {
-    id: "3",
-    name: "Amina Diallo",
-    role: "Product Analyst",
-    match: 90,
-    timeAgo: "3 days ago",
-    avatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-  },
-  {
-    id: "4",
-    name: "Nora Benali",
-    role: "UX Researcher",
-    match: 86,
-    timeAgo: "5 days ago",
-    avatar:
-      "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=200&q=80",
-  },
-];
+const getSingleParam = (value?: string | string[]) =>
+  Array.isArray(value) ? value[0] : value;
+
+const formatRelativeTime = (isoDate: string) => {
+  const timestamp = new Date(isoDate).getTime();
+  if (Number.isNaN(timestamp)) {
+    return "Just now";
+  }
+
+  const diffMs = Date.now() - timestamp;
+  const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
+
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return new Date(isoDate).toLocaleDateString();
+};
 
 export default function PropertyOwnerApplications() {
   const router = useRouter();
   const params = useLocalSearchParams<Params>();
+  const propertyIdParam = getSingleParam(params.id);
+  const propertyId = propertyIdParam ? Number(propertyIdParam) : NaN;
 
-  const applicationsCount = Number(
-    params.applications || `${APPLICANTS.length}`,
+  const [applications, setApplications] = useState<OwnerApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionKey, setActionKey] = useState<string | null>(null);
+
+  const loadApplications = useCallback(async () => {
+    if (!Number.isFinite(propertyId)) {
+      setApplications([]);
+      setError("This property could not be identified.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error("Missing auth token");
+      }
+
+      const response = await fetch(`${API_BASE}/rental-applications/property/${propertyId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to load applications");
+      }
+
+      setApplications(data as OwnerApplication[]);
+      setError(null);
+    } catch (loadError) {
+      console.error("Failed to load owner applications:", loadError);
+      setApplications([]);
+      setError(
+        loadError instanceof Error ? loadError.message : "Failed to load applications",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [propertyId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadApplications();
+    }, [loadApplications]),
   );
-  const initialVisible = useMemo(
-    () => APPLICANTS.slice(0, Math.max(0, applicationsCount)),
-    [applicationsCount],
-  );
-  const [visibleApplicants, setVisibleApplicants] =
-    useState<Applicant[]>(initialVisible);
-  const [queueIndex, setQueueIndex] = useState(initialVisible.length);
+
+  const updateApplicationStatus = async (
+    application: OwnerApplication,
+    nextStatus: "accepted" | "rejected",
+  ) => {
+    const currentActionKey = `${application.id}-${nextStatus}`;
+
+    try {
+      setActionKey(currentActionKey);
+
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error("Missing auth token");
+      }
+
+      const response = await fetch(
+        `${API_BASE}/rental-applications/${application.id}/status?status=${encodeURIComponent(nextStatus)}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to update application");
+      }
+
+      const updated = data as OwnerApplication;
+      setApplications((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item)),
+      );
+    } catch (updateError) {
+      console.error("Failed to update application:", updateError);
+      Alert.alert("Error", "Could not update this application right now.");
+    } finally {
+      setActionKey(null);
+    }
+  };
 
   const details = useMemo(() => {
     return {
-      title: params.title || "Modern Loft in Marais",
-      location: params.location || "Le Marais, Paris",
-      price: params.price || "€1200",
+      title: getSingleParam(params.title) || "Modern Loft in Marais",
+      location: getSingleParam(params.location) || "Le Marais, Paris",
+      price: getSingleParam(params.price) || "DT 0",
       image:
-        params.image ||
+        getSingleParam(params.image) ||
         "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
     };
-  }, [params]);
+  }, [params.image, params.location, params.price, params.title]);
+
+  const openDocument = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch (linkError) {
+      console.error("Failed to open document:", linkError);
+      Alert.alert("Error", "Could not open this document.");
+    }
+  };
+
+  const applicationsCount = applications.length;
 
   return (
     <LinearGradient
@@ -110,43 +202,22 @@ export default function PropertyOwnerApplications() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.heroWrapper}>
-            {details.image && !details.image.startsWith('blob:') && (
-              <Image
-                source={{ uri: details.image }}
-                style={styles.heroImage}
-                resizeMode="cover"
-              />
-            )}
+            {details.image && !details.image.startsWith("blob:") ? (
+              <Image source={{ uri: details.image }} style={styles.heroImage} resizeMode="cover" />
+            ) : null}
             <View style={styles.heroActions}>
-              <TouchableOpacity
-                style={styles.roundBtn}
-                onPress={() => router.back()}
-              >
+              <TouchableOpacity style={styles.roundBtn} onPress={() => router.back()}>
                 <Feather name="arrow-left" size={18} color="#111827" />
               </TouchableOpacity>
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                <TouchableOpacity style={styles.roundBtn}>
-                  <Feather name="edit-2" size={16} color="#111827" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.roundBtn}>
-                  <Feather name="trash-2" size={16} color="#DC2626" />
-                </TouchableOpacity>
-              </View>
+              <View style={styles.heroSpacer} />
             </View>
           </View>
 
           <View style={styles.tabsCard}>
-            <TouchableOpacity
-              style={styles.tab}
-              activeOpacity={0.9}
-              onPress={() => router.back()}
-            >
+            <TouchableOpacity style={styles.tab} activeOpacity={0.9} onPress={() => router.back()}>
               <Text style={styles.tabText}>Overview</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, styles.tabActive]}
-              activeOpacity={1}
-            >
+            <TouchableOpacity style={[styles.tab, styles.tabActive]} activeOpacity={1}>
               <Text style={styles.tabActiveText}>Applications</Text>
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{applicationsCount}</Text>
@@ -163,66 +234,123 @@ export default function PropertyOwnerApplications() {
             </Text>
           </View>
 
-          {applicationsCount === 0 ? (
+          {loading ? (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>{"Pas encore d'applications"}</Text>
+              <ActivityIndicator color="#F4896B" />
+              <Text style={styles.emptySubtitle}>Loading applications...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>Could not load applications</Text>
+              <Text style={styles.emptySubtitle}>{error}</Text>
+              <TouchableOpacity style={styles.retryBtn} onPress={() => void loadApplications()}>
+                <Text style={styles.retryText}>Try again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : applicationsCount === 0 ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>Pas encore d'applications</Text>
               <Text style={styles.emptySubtitle}>
-                Les demandes des locataires apparaîtront ici.
+                Les formulaires remplis par les locataires apparaissent ici.
               </Text>
             </View>
           ) : (
             <View style={styles.list}>
-              {visibleApplicants.map((app) => (
-                <View key={app.id} style={styles.appCard}>
-                  <Image source={{ uri: app.avatar }} style={styles.avatar} />
-                  <View style={styles.appInfo}>
-                    <Text style={styles.appName}>{app.name}</Text>
-                    <Text style={styles.appRole}>{app.role}</Text>
-                    <View style={styles.appMetaRow}>
-                      <Text style={styles.matchText}>{app.match}% Match</Text>
-                      <View style={styles.metaDot} />
-                      <Text style={styles.timeText}>{app.timeAgo}</Text>
+              {applications.map((application) => {
+                const applicantName =
+                  application.seeker_name ||
+                  application.seeker_email ||
+                  `Applicant #${application.seeker_id}`;
+                const docLinks = [
+                  ["Identity document", application.id_doc_url],
+                  ["Proof of income", application.income_doc_url],
+                  ["Employment letter", application.employment_doc_url],
+                  ["Guarantor info", application.guarantor_doc_url],
+                ].filter(([, url]) => Boolean(url)) as Array<[string, string]>;
+
+                return (
+                  <View key={application.id} style={styles.appCard}>
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>
+                        {applicantName.trim().charAt(0).toUpperCase()}
+                      </Text>
                     </View>
-                    <View style={styles.actionsRow}>
-                      <TouchableOpacity
-                        style={styles.rejectBtn}
-                        onPress={() => {
-                          setVisibleApplicants((prev) => {
-                            const next = prev.filter((p) => p.id !== app.id);
-                            const candidate = APPLICANTS[queueIndex];
-                            if (candidate) {
-                              return [...next, candidate];
-                            }
-                            return next;
-                          });
-                          setQueueIndex((i) => (APPLICANTS[i] ? i + 1 : i));
-                        }}
-                      >
-                        <Feather name="x" size={14} color="#6B7280" />
-                        <Text style={styles.rejectText}>Reject</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.approveBtn}
-                        onPress={() => {
-                          incrementPending();
-                          setVisibleApplicants((prev) => {
-                            const next = prev.filter((p) => p.id !== app.id);
-                            const candidate = APPLICANTS[queueIndex];
-                            if (candidate) {
-                              return [...next, candidate];
-                            }
-                            return next;
-                          });
-                          setQueueIndex((i) => (APPLICANTS[i] ? i + 1 : i));
-                        }}
-                      >
-                        <Feather name="check" size={14} color="#fff" />
-                        <Text style={styles.approveText}>Approve</Text>
-                      </TouchableOpacity>
+
+                    <View style={styles.appInfo}>
+                      <Text style={styles.appName}>{applicantName}</Text>
+                      <Text style={styles.appRole}>
+                        {application.seeker_email || "No email provided"}
+                      </Text>
+
+                      <View style={styles.appMetaRow}>
+                        <View
+                          style={[
+                            styles.statusPill,
+                            application.status === "accepted"
+                              ? styles.statusAccepted
+                              : application.status === "rejected"
+                                ? styles.statusRejected
+                                : styles.statusPending,
+                          ]}
+                        >
+                          <Text style={styles.statusText}>{application.status}</Text>
+                        </View>
+                        <Text style={styles.timeText}>
+                          {formatRelativeTime(application.created_at)}
+                        </Text>
+                      </View>
+
+                      {application.message ? (
+                        <Text style={styles.messageText}>{application.message}</Text>
+                      ) : null}
+
+                      {docLinks.length > 0 ? (
+                        <View style={styles.docsWrap}>
+                          {docLinks.map(([label, url]) => (
+                            <TouchableOpacity
+                              key={label}
+                              style={styles.docLink}
+                              onPress={() => void openDocument(url)}
+                            >
+                              <Text style={styles.docLinkText}>{label}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      ) : null}
+
+                      {application.status === "pending" ? (
+                        <View style={styles.actionsRow}>
+                          <TouchableOpacity
+                            style={styles.rejectBtn}
+                            onPress={() => void updateApplicationStatus(application, "rejected")}
+                            disabled={Boolean(actionKey)}
+                          >
+                            <Feather name="x" size={14} color="#6B7280" />
+                            <Text style={styles.rejectText}>
+                              {actionKey === `${application.id}-rejected`
+                                ? "Saving..."
+                                : "Reject"}
+                            </Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={styles.approveBtn}
+                            onPress={() => void updateApplicationStatus(application, "accepted")}
+                            disabled={Boolean(actionKey)}
+                          >
+                            <Feather name="check" size={14} color="#fff" />
+                            <Text style={styles.approveText}>
+                              {actionKey === `${application.id}-accepted`
+                                ? "Saving..."
+                                : "Approve"}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      ) : null}
                     </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           )}
         </ScrollView>
@@ -247,6 +375,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  heroSpacer: { width: 42, height: 42 },
   roundBtn: {
     width: 42,
     height: 42,
@@ -324,6 +453,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 16, fontWeight: "800", color: "#2B2B33" },
   emptySubtitle: { fontSize: 13, color: "#7A6D6A", textAlign: "center" },
+  retryBtn: {
+    marginTop: 8,
+    backgroundColor: "#F4896B",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  retryText: { color: "#fff", fontSize: 12, fontWeight: "800" },
   appCard: {
     backgroundColor: "#fff",
     borderRadius: 18,
@@ -336,19 +473,43 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 3,
   },
-  avatar: { width: 54, height: 54, borderRadius: 27 },
+  avatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "#FDE7DD",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: { color: "#F4896B", fontWeight: "800", fontSize: 18 },
   appInfo: { flex: 1, gap: 6 },
   appName: { fontSize: 15, fontWeight: "800", color: "#2B2B33" },
   appRole: { color: "#7A6D6A", fontSize: 12 },
-  appMetaRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  matchText: { color: "#7ECEC4", fontWeight: "700", fontSize: 12 },
-  metaDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#D1D5DB",
+  appMetaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  statusPill: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  statusPending: { backgroundColor: "#FEF3C7" },
+  statusAccepted: { backgroundColor: "#DCFCE7" },
+  statusRejected: { backgroundColor: "#FEE2E2" },
+  statusText: {
+    color: "#374151",
+    fontWeight: "700",
+    fontSize: 11,
+    textTransform: "capitalize",
   },
   timeText: { color: "#9CA3AF", fontSize: 12, fontWeight: "600" },
+  messageText: { color: "#5F6472", fontSize: 12, lineHeight: 18 },
+  docsWrap: { gap: 8, marginTop: 4 },
+  docLink: {
+    backgroundColor: "#EEF2FF",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  docLinkText: { color: "#4F46E5", fontWeight: "700", fontSize: 12 },
   actionsRow: { flexDirection: "row", gap: 10, marginTop: 6 },
   rejectBtn: {
     flexDirection: "row",

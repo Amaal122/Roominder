@@ -1,6 +1,7 @@
 """Endpoints pour la gestion des logements."""
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List
 import shutil
@@ -20,6 +21,43 @@ from backend.backend_propertyowner.schemas import PropertyCreate, PropertyUpdate
 router = APIRouter(prefix="/properties", tags=["Properties"])
 
 
+def _get_rental_application_counts(db: Session, property_ids: list[int]) -> dict[int, int]:
+    if not property_ids:
+        return {}
+
+    from backend.backend_user.applicationrequest import RentalApplication
+
+    rows = (
+        db.query(
+            RentalApplication.property_id,
+            func.count(RentalApplication.id),
+        )
+        .filter(RentalApplication.property_id.in_(property_ids))
+        .group_by(RentalApplication.property_id)
+        .all()
+    )
+    return {property_id: count for property_id, count in rows}
+
+
+def _build_property_out(prop: Property, applications_count: int = 0) -> PropertyOut:
+    return PropertyOut(
+        id=prop.id,
+        owner_id=prop.owner_id,
+        title=prop.title,
+        address=prop.address,
+        city=prop.city,
+        price=prop.price,
+        rooms=prop.rooms,
+        bathrooms=prop.bathrooms,
+        space=prop.space,
+        description=prop.description,
+        status=prop.status,
+        image_url=prop.image_url,
+        created_at=prop.created_at,
+        applications_count=applications_count,
+    )
+
+
 # ─────────────────────────────────────────────
 #  GET /properties  →  liste tous les logements
 # ─────────────────────────────────────────────
@@ -27,7 +65,11 @@ router = APIRouter(prefix="/properties", tags=["Properties"])
 def get_all_properties(db: Session = Depends(get_db)):
     """Retourne tous les logements disponibles (visible par tout le monde)."""
     properties = db.query(Property).all()
-    return properties
+    application_counts = _get_rental_application_counts(db, [prop.id for prop in properties])
+    return [
+        _build_property_out(prop, application_counts.get(prop.id, 0))
+        for prop in properties
+    ]
 
 
 # ─────────────────────────────────────────────
@@ -40,7 +82,11 @@ def get_my_properties(
 ):
     """Retourne uniquement les logements du propriétaire connecté."""
     properties = db.query(Property).filter(Property.owner_id == current_user.id).all()
-    return properties
+    application_counts = _get_rental_application_counts(db, [prop.id for prop in properties])
+    return [
+        _build_property_out(prop, application_counts.get(prop.id, 0))
+        for prop in properties
+    ]
 
 #staic routes 
 load_dotenv()
@@ -66,7 +112,8 @@ def get_property(property_id: int, db: Session = Depends(get_db)):
     prop = db.query(Property).filter(Property.id == property_id).first()
     if not prop:
         raise HTTPException(status_code=404, detail="Logement introuvable")
-    return prop
+    application_counts = _get_rental_application_counts(db, [prop.id])
+    return _build_property_out(prop, application_counts.get(prop.id, 0))
 
 
 # ─────────────────────────────────────────────
@@ -94,7 +141,7 @@ def create_property(
     db.add(new_property)
     db.commit()
     db.refresh(new_property)
-    return new_property
+    return _build_property_out(new_property, 0)
 
 
 # ─────────────────────────────────────────────
@@ -120,7 +167,8 @@ def update_property(
 
     db.commit()
     db.refresh(prop)
-    return prop
+    application_counts = _get_rental_application_counts(db, [prop.id])
+    return _build_property_out(prop, application_counts.get(prop.id, 0))
 
 
 # ─────────────────────────────────────────────

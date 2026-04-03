@@ -281,14 +281,21 @@ export default function PropertyDetail() {
     initialDescription || "No description provided.",
   );
   const [ownerId, setOwnerId] = useState(getSingleParam(params.ownerId));
+  const [ownerName, setOwnerName] = useState<string | undefined>(
+    getSingleParam(params.ownerName) ?? undefined,
+  );
+  const [ownerAvatar, setOwnerAvatar] = useState<string>(
+    getSingleParam(params.ownerAvatar) ??
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
+  );
+  const [ownerRating] = useState(
+    getSingleParam(params.ownerRating) ?? "4.9",
+  );
+  const [ownerResponse] = useState(
+    getSingleParam(params.ownerResponse) ?? "2h response",
+  );
   const lat = parseNumberOrFallback(getSingleParam(params.lat), 48.8566);
   const lng = parseNumberOrFallback(getSingleParam(params.lng), 2.3522);
-  const ownerName = getSingleParam(params.ownerName) ?? "Amina Diallo";
-  const ownerAvatar =
-    getSingleParam(params.ownerAvatar) ??
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200";
-  const ownerRating = getSingleParam(params.ownerRating) ?? "4.9";
-  const ownerResponse = getSingleParam(params.ownerResponse) ?? "2h response";
 
   useEffect(() => {
     if (initialDescription) {
@@ -333,28 +340,65 @@ export default function PropertyDetail() {
 
   useEffect(() => {
     if (!propertyId) return;
-    if (ownerId) return;
 
     let cancelled = false;
 
-    const loadOwnerId = async () => {
+    const loadProperty = async () => {
       try {
         const response = await fetch(`${API_BASE}/properties/${propertyId}`);
         if (!response.ok) return;
-        const data: { owner_id?: number } = await response.json();
-        if (!cancelled && typeof data.owner_id === "number") {
+
+        const data: { owner_id?: number; description?: string | null } = await response.json();
+
+        if (cancelled) return;
+
+        if (!ownerId && typeof data.owner_id === "number") {
           setOwnerId(String(data.owner_id));
         }
+
+        if (data.description?.trim()) {
+          setDescription(data.description.trim());
+        }
       } catch {
-        // ignore; ownerId will remain undefined
+        // ignore; fallbacks manage this state
       }
     };
 
-    loadOwnerId();
+    loadProperty();
     return () => {
       cancelled = true;
     };
   }, [propertyId, ownerId]);
+
+  useEffect(() => {
+    if (!ownerId || ownerName) return;
+
+    let cancelled = false;
+
+    const loadOwnerProfile = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/users/${ownerId}`);
+        if (!response.ok) return;
+
+        const data: { full_name?: string | null } = await response.json();
+        if (cancelled) return;
+
+        if (data.full_name) {
+          setOwnerName(data.full_name);
+          setOwnerAvatar(`https://ui-avatars.com/api/?name=${encodeURIComponent(
+            data.full_name,
+          )}&background=7ECEC4&color=fff`);
+        }
+      } catch {
+        // ignore; keep fallback values
+      }
+    };
+
+    loadOwnerProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [ownerId, ownerName]);
 
   const handleFavorite = () => {
     const id = propertyId ?? `${title}-${location}`;

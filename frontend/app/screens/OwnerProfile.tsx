@@ -1,5 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   Image,
   SafeAreaView,
@@ -30,14 +31,51 @@ export default function OwnerProfile() {
   const ownerId = getSingleParam(params.ownerId);
   const title = getSingleParam(params.title) ?? "Modern Loft in Marais";
   const location = getSingleParam(params.location) ?? "Le Marais, Paris";
-  const ownerName = getSingleParam(params.ownerName) ?? "Amina Diallo";
-  const ownerAvatar =
+  const [ownerName, setOwnerName] = useState<string | undefined>(
+    getSingleParam(params.ownerName) ?? undefined,
+  );
+  const [ownerAvatar, setOwnerAvatar] = useState(
     getSingleParam(params.ownerAvatar) ??
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200";
-  const ownerRating = getSingleParam(params.ownerRating) ?? "4.9";
-  const ownerResponse = getSingleParam(params.ownerResponse) ?? "2h response";
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
+  );
+  const [ownerRating] = useState(
+    getSingleParam(params.ownerRating) ?? "4.9",
+  );
+  const [ownerResponse] = useState(
+    getSingleParam(params.ownerResponse) ?? "2h response",
+  );
   const description =
     getSingleParam(params.description)?.trim() || "No description provided.";
+
+  useEffect(() => {
+    if (!ownerId || ownerName) return;
+
+    let cancelled = false;
+    const loadOwner = async () => {
+      try {
+        const response = await fetch(`http://127.0.0.1:8001/users/${ownerId}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (cancelled) return;
+
+        if (data.full_name) {
+          setOwnerName(data.full_name);
+          setOwnerAvatar(
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+              data.full_name,
+            )}&background=7ECEC4&color=fff`,
+          );
+        }
+      } catch {
+        // ignore
+      }
+    };
+    void loadOwner();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ownerId, ownerName]);
 
   const handleRequestVisit = () => {
     if (!propertyId) return;
@@ -51,7 +89,7 @@ export default function OwnerProfile() {
     if (!ownerId) return;
     router.push({
       pathname: "/chat/[id]",
-      params: { id: ownerId, name: ownerName },
+      params: { id: ownerId, name: ownerName ?? "Owner" },
     });
   };
 
@@ -77,7 +115,7 @@ export default function OwnerProfile() {
         <View style={styles.card}>
           <Image source={{ uri: ownerAvatar }} style={styles.avatar} />
           <View style={styles.ownerInfo}>
-            <Text style={styles.ownerName}>{ownerName}</Text>
+            <Text style={styles.ownerName}>{ownerName ?? "Unknown Owner"}</Text>
             <Text style={styles.ownerMeta}>
               Verified · {ownerRating} ★ · {ownerResponse}
             </Text>

@@ -15,6 +15,8 @@ import {
 
 import { setPendingCount } from "./state/ownerDashboard";
 import {
+  connectWebSocket,
+  disconnectWebSocket,
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -109,6 +111,18 @@ export default function Notifications() {
   useEffect(() => {
     loadNotifications();
   }, [loadNotifications]);
+
+  useEffect(() => {
+    const handleNewNotification = (notification: AppNotification) => {
+      setItems((prev) => [notification, ...prev]);
+    };
+
+    connectWebSocket(handleNewNotification);
+
+    return () => {
+      disconnectWebSocket();
+    };
+  }, []);
 
   const unreadCount = useMemo(
     () => items.filter((notification) => !notification.is_read).length,

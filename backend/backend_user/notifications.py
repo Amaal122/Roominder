@@ -1,7 +1,11 @@
 """Notification endpoints and helpers."""
 
+import asyncio
+import json
 from datetime import timezone
 from typing import Any, Optional
+
+import anyio
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -11,6 +15,7 @@ from ..backend_propertyowner.models import Property, Visit
 from ..db import get_db
 from .auth import get_current_user
 from .models import Notification, User
+from .websocket_manager import manager
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
@@ -47,6 +52,38 @@ def create_notification(
     )
     db.add(notification)
     db.flush()
+
+    message = json.dumps(
+        {
+            "type": "notification",
+            "data": {
+                "id": notification.id,
+                "user_id": notification.user_id,
+                "type": notification.type,
+                "title": notification.title,
+                "body": notification.body,
+                "data": notification.data,
+                "is_read": notification.is_read,
+                "created_at": notification.created_at.isoformat(),
+            },
+        }
+    )
+
+    # Notifications are created from both async and sync routes. Sync routes run
+    # in a worker thread, so we need the AnyIO bridge there instead of assuming
+    # an active asyncio loop exists locally.
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        try:
+            anyio.from_thread.run(manager.send_personal_message, message, user_id)
+        except RuntimeError:
+            # If there is no active portal, keep the DB write successful and
+            # fall back to the next explicit notifications fetch.
+            pass
+    else:
+        loop.create_task(manager.send_personal_message(message, user_id))
+
     return notification
 
 

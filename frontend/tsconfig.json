@@ -16,6 +16,7 @@
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "rootDir": "./",
     "paths": {
       "@/*": [
         "./*"
