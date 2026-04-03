@@ -33,6 +33,7 @@ type BackendProperty = {
   status: string;
   image_url?: string | null;
   created_at: string;
+  applications_count?: number;
 };
 
 let properties: Property[] = [];
@@ -57,7 +58,7 @@ const toUiProperty = (p: BackendProperty): Property => {
     size: p.space ?? 0,
     description: p.description ?? undefined,
     views: 0,
-    applications: 0,
+    applications: p.applications_count ?? 0,
     image:
       p.image_url
         ? (p.image_url.startsWith("/static/")

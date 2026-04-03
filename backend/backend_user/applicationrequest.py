@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Session
 
+from ..backend_propertyowner.property_status import sync_property_status
 from ..db import Base, get_db
 from .auth import get_current_user
 from .models import User
@@ -68,6 +69,39 @@ class RentalApplicationOut(BaseModel):
     employment_doc_url: Optional[str]
     guarantor_doc_url:  Optional[str]
     created_at:         datetime
+    seeker_name:        Optional[str] = None
+    seeker_email:       Optional[str] = None
+    property_title:     Optional[str] = None
+    property_location:  Optional[str] = None
+
+
+def _build_rental_application_out(
+    rental_app: "RentalApplication",
+    db: Session,
+) -> RentalApplicationOut:
+    seeker = db.query(User).filter(User.id == rental_app.seeker_id).first()
+    prop = db.query(Property).filter(Property.id == rental_app.property_id).first()
+    property_location = None
+    if prop:
+        property_location = f"{prop.address}, {prop.city}" if prop.city else prop.address
+
+    return RentalApplicationOut(
+        id=rental_app.id,
+        application_id=rental_app.application_id,
+        property_id=rental_app.property_id,
+        seeker_id=rental_app.seeker_id,
+        message=rental_app.message,
+        status=rental_app.status,
+        id_doc_url=rental_app.id_doc_url,
+        income_doc_url=rental_app.income_doc_url,
+        employment_doc_url=rental_app.employment_doc_url,
+        guarantor_doc_url=rental_app.guarantor_doc_url,
+        created_at=rental_app.created_at,
+        seeker_name=(seeker.full_name if seeker else None) or (seeker.email if seeker else None),
+        seeker_email=seeker.email if seeker else None,
+        property_title=prop.title if prop else None,
+        property_location=property_location,
+    )
 
 
 router = APIRouter(prefix="/rental-applications", tags=["rental-applications"])
@@ -151,11 +185,12 @@ async def create_rental_application(
             "guarantor_doc_url": rental_app.guarantor_doc_url,
         },
     )
+    sync_property_status(db, prop.id)
 
     db.add(rental_app)
     db.commit()
     db.refresh(rental_app)
-    return rental_app
+    return _build_rental_application_out(rental_app, db)
 
 
 # ─────────────────────────────────────────────
@@ -167,12 +202,13 @@ def get_my_rental_applications(
     db:           Session = Depends(get_db),
     current_user: User    = Depends(get_current_user),
 ):
-    return (
+    rental_applications = (
         db.query(RentalApplication)
         .filter(RentalApplication.seeker_id == current_user.id)
         .order_by(RentalApplication.created_at.desc())
         .all()
     )
+    return [_build_rental_application_out(rental_app, db) for rental_app in rental_applications]
 
 
 # ─────────────────────────────────────────────
@@ -191,12 +227,13 @@ def get_rental_applications_for_property(
     if prop.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    return (
+    rental_applications = (
         db.query(RentalApplication)
         .filter(RentalApplication.property_id == property_id)
         .order_by(RentalApplication.created_at.desc())
         .all()
     )
+    return [_build_rental_application_out(rental_app, db) for rental_app in rental_applications]
 
 
 # ─────────────────────────────────────────────
@@ -226,6 +263,8 @@ def update_rental_application_status(
         raise HTTPException(status_code=400, detail="Invalid status")
 
     rental_app.status = status
+    db.flush()
+    sync_property_status(db, rental_app.property_id)
     db.commit()
     db.refresh(rental_app)
-    return rental_app
+    return _build_rental_application_out(rental_app, db)

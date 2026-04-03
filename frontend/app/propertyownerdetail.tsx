@@ -49,8 +49,8 @@ export default function PropertyDetails() {
       beds: Number(params.beds || "2"),
       baths: Number(params.baths || "1"),
       size: Number(params.size || "65"),
-      views: Number(params.views || "247"),
-      applications: Number(params.applications || "2"),
+      views: Number(params.views || "0"),
+      applications: Number(params.applications || "0"),
     };
   }, [params]);
 

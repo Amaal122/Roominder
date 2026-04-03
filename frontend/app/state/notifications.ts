@@ -28,6 +28,80 @@ const getHeaders = async () => {
   };
 };
 
+let ws: WebSocket | null = null;
+let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+let isManualDisconnect = false;
+let onNotificationCallback: ((notification: AppNotification) => void) | null = null;
+
+export const connectWebSocket = async (onNotification: (notification: AppNotification) => void) => {
+  onNotificationCallback = onNotification;
+  isManualDisconnect = false;
+
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout);
+    reconnectTimeout = null;
+  }
+
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    return;
+  }
+
+  const token = await getAuthToken();
+  if (!token) return;
+
+  const wsUrl = `ws://127.0.0.1:8001/ws/notifications?token=${encodeURIComponent(token)}`;
+  ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    console.log("WebSocket connected for notifications");
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const message = JSON.parse(event.data);
+      if (message.type === "notification") {
+        onNotificationCallback?.(message.data);
+      }
+    } catch (error) {
+      console.error("Failed to parse WebSocket message:", error);
+    }
+  };
+
+  ws.onclose = () => {
+    console.log("WebSocket disconnected");
+    ws = null;
+
+    if (isManualDisconnect || !onNotificationCallback) {
+      return;
+    }
+
+    reconnectTimeout = setTimeout(() => {
+      if (onNotificationCallback) {
+        void connectWebSocket(onNotificationCallback);
+      }
+    }, 5000);
+  };
+
+  ws.onerror = (error) => {
+    console.error("WebSocket error:", error);
+  };
+};
+
+export const disconnectWebSocket = () => {
+  isManualDisconnect = true;
+
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout);
+    reconnectTimeout = null;
+  }
+
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
+  onNotificationCallback = null;
+};
+
 export const fetchNotifications = async (): Promise<AppNotification[]> => {
   const headers = await getHeaders();
   const response = await fetch(`${API_BASE}/notifications/`, { headers });
