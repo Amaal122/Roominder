@@ -163,6 +163,27 @@ export const respondToVisitRequest = async (
   return data;
 };
 
+export const respondToRentalApplication = async (
+  rentalApplicationId: number,
+  status: "accepted" | "rejected",
+) => {
+  const headers = await getHeaders();
+  const response = await fetch(
+    `${API_BASE}/rental-applications/${rentalApplicationId}/status?status=${encodeURIComponent(status)}`,
+    {
+      method: "PUT",
+      headers,
+    },
+  );
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.detail || "Failed to update rental application");
+  }
+
+  return data;
+};
+
 export default function NotificationsState() {
   return null;
 }

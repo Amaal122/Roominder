@@ -1,10 +1,83 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+const API_BASE = "http://127.0.0.1:8001";
+
+const getSingleParam = (value?: string | string[]) =>
+  Array.isArray(value) ? value[0] : value;
 
 export default function VisitConfirmation() {
-  const params = useLocalSearchParams<{ id?: string; title?: string; location?: string }>();
-  const title = params.title ?? "Modern Loft in Marais";
-  const location = params.location ?? "Le Marais, Paris";
+  const params = useLocalSearchParams<{
+    id?: string | string[];
+    title?: string | string[];
+    location?: string | string[];
+  }>();
+  const propertyId = getSingleParam(params.id);
+  const title = getSingleParam(params.title) ?? "Modern Loft in Marais";
+  const location = getSingleParam(params.location) ?? "Le Marais, Paris";
+  const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [ownerName, setOwnerName] = useState("Owner");
+
+  useEffect(() => {
+    if (!propertyId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadOwner = async () => {
+      try {
+        const propertyResponse = await fetch(`${API_BASE}/properties/${propertyId}`);
+        if (!propertyResponse.ok) {
+          return;
+        }
+
+        const property = (await propertyResponse.json()) as {
+          owner_id?: number | null;
+        };
+        if (cancelled || property.owner_id == null) {
+          return;
+        }
+
+        const resolvedOwnerId = String(property.owner_id);
+        setOwnerId(resolvedOwnerId);
+
+        const ownerResponse = await fetch(`${API_BASE}/users/${resolvedOwnerId}`);
+        if (!ownerResponse.ok) {
+          return;
+        }
+
+        const owner = (await ownerResponse.json()) as { full_name?: string | null };
+        if (!cancelled && owner.full_name?.trim()) {
+          setOwnerName(owner.full_name.trim());
+        }
+      } catch (error) {
+        console.error("Failed to resolve owner for visit confirmation:", error);
+      }
+    };
+
+    void loadOwner();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [propertyId]);
+
+  const handleChatWithOwner = () => {
+    if (!ownerId) {
+      Alert.alert(
+        "Owner unavailable",
+        "Could not open the owner conversation for this property.",
+      );
+      return;
+    }
+
+    router.push({
+      pathname: "/chat/[id]",
+      params: { id: ownerId, name: ownerName },
+    });
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -26,7 +99,7 @@ export default function VisitConfirmation() {
           onPress={() =>
             router.push({
               pathname: "/screens/ApplicationRequest",
-              params: { id: params.id, title, location },
+              params: { id: propertyId, title, location },
             })
           }
         >
@@ -36,7 +109,7 @@ export default function VisitConfirmation() {
         <TouchableOpacity
           style={styles.secondaryBtn}
           activeOpacity={0.85}
-          onPress={() => router.push("/screens/OwnerChat")}
+          onPress={handleChatWithOwner}
         >
           <Text style={styles.secondaryText}>Chat with Owner</Text>
         </TouchableOpacity>

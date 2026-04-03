@@ -11,57 +11,19 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { setPendingCount, usePendingCount } from "./state/ownerDashboard";
-import { fetchNotifications } from "./state/notifications";
+import { usePendingCount, useStats, loadStats } from "./state/ownerDashboard";
 import { loadMyProperties, useProperties } from "./state/properties";
-
-const STATS = [
-  {
-    key: "monthly",
-    label: "Monthly",
-    value: "€1200",
-    icon: "dollar-sign",
-    color: "#10B981",
-  },
-  {
-    key: "occupancy",
-    label: "Occupancy",
-    value: "50%",
-    icon: "trending-up",
-    color: "#6366F1",
-  },
-  {
-    key: "pending",
-    label: "Pending",
-    value: "7",
-    icon: "clock",
-    color: "#F59E0B",
-  },
-] as const;
 
 export default function PropertyOwner() {
   const router = useRouter();
   const pendingCount = usePendingCount();
   const properties = useProperties();
+  const stats = useStats();
 
   useFocusEffect(
     useCallback(() => {
       void loadMyProperties();
-
-      const loadPendingVisits = async () => {
-        try {
-          const notifications = await fetchNotifications();
-          const pendingVisits = notifications.filter(
-            (notification) =>
-              notification.can_act && notification.visit_status === "pending",
-          ).length;
-          setPendingCount(pendingVisits);
-        } catch (error) {
-          console.error("Failed to load pending visit notifications:", error);
-        }
-      };
-
-      void loadPendingVisits();
+      void loadStats();
     }, []),
   );
 
@@ -82,6 +44,7 @@ export default function PropertyOwner() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* ── Header ────────────────────────────────── */}
           <View style={styles.headerCard}>
             <View style={styles.headerTopRow}>
               <View style={{ flex: 1 }}>
@@ -123,27 +86,45 @@ export default function PropertyOwner() {
             </TouchableOpacity>
           </View>
 
+          {/* ── Stats ─────────────────────────────────── */}
           <View style={styles.statsRow}>
-            {STATS.map((stat) => (
-              <View key={stat.key} style={styles.statCard}>
-                <View
-                  style={[
-                    styles.statIconWrap,
-                    { backgroundColor: `${stat.color}15` },
-                  ]}
-                >
-                  {" "}
-                  {/* light tint */}
-                  <Feather name={stat.icon} size={18} color={stat.color} />
-                </View>
-                <Text style={[styles.statValue, { color: stat.color }]}>
-                  {stat.key === "pending" ? String(pendingCount) : stat.value}
-                </Text>
-                <Text style={styles.statLabel}>{stat.label}</Text>
+
+            {/* Monthly */}
+            <View style={styles.statCard}>
+              <View style={[styles.statIconWrap, { backgroundColor: "#10B98115" }]}>
+                <Feather name="dollar-sign" size={18} color="#10B981" />
               </View>
-            ))}
+              <Text style={[styles.statValue, { color: "#10B981" }]}>
+                {stats.monthly_revenue} {stats.currency}
+              </Text>
+              <Text style={styles.statLabel}>Monthly</Text>
+            </View>
+
+            {/* Occupancy */}
+            <View style={styles.statCard}>
+              <View style={[styles.statIconWrap, { backgroundColor: "#6366F115" }]}>
+                <Feather name="trending-up" size={18} color="#6366F1" />
+              </View>
+              <Text style={[styles.statValue, { color: "#6366F1" }]}>
+                {stats.occupancy_percent}%
+              </Text>
+              <Text style={styles.statLabel}>Occupancy</Text>
+            </View>
+
+            {/* Pending */}
+            <View style={styles.statCard}>
+              <View style={[styles.statIconWrap, { backgroundColor: "#F59E0B15" }]}>
+                <Feather name="clock" size={18} color="#F59E0B" />
+              </View>
+              <Text style={[styles.statValue, { color: "#F59E0B" }]}>
+                {String(pendingCount)}
+              </Text>
+              <Text style={styles.statLabel}>Pending</Text>
+            </View>
+
           </View>
 
+          {/* ── Properties List ───────────────────────── */}
           <Text style={styles.sectionTitle}>Your Properties</Text>
 
           <View style={styles.propertiesList}>
@@ -172,13 +153,14 @@ export default function PropertyOwner() {
                   })
                 }
               >
-                {property.image && !property.image.startsWith('blob:') && (
+                {property.image && !property.image.startsWith("blob:") && (
                   <Image
                     source={{ uri: property.image }}
                     style={styles.propertyImage}
                     resizeMode="cover"
                   />
                 )}
+
                 <View style={styles.statusBadgeWrapper}>
                   <View
                     style={[
@@ -226,6 +208,7 @@ export default function PropertyOwner() {
               </TouchableOpacity>
             ))}
           </View>
+
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
@@ -278,7 +261,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   addBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  statsRow: { flexDirection: "row", gap: 12 },
+  statsRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
   statCard: {
     flex: 1,
     backgroundColor: "rgba(255,255,255,0.9)",
@@ -287,62 +273,115 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
-    alignItems: "flex-start",
-    gap: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   statIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 12,
   },
-  statValue: { fontSize: 20, fontWeight: "800" },
-  statLabel: { color: "#7A6D6A", fontSize: 12, fontWeight: "600" },
-  sectionTitle: {
+  statValue: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#2B2B33",
-    marginTop: 4,
-    marginBottom: 4,
   },
-  propertiesList: { gap: 14 },
+  statLabel: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1F2937",
+    marginTop: 6,
+  },
+  propertiesList: {
+    gap: 16,
+  },
   propertyCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
+    position: "relative",
     overflow: "hidden",
+    borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
   },
-  propertyImage: { width: "100%", height: 150 },
-  statusBadgeWrapper: { position: "absolute", top: 12, right: 12 },
+  propertyImage: {
+    width: "100%",
+    height: 190,
+    backgroundColor: "#E5E7EB",
+  },
+  statusBadgeWrapper: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    zIndex: 2,
+  },
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    borderRadius: 999,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingVertical: 7,
   },
-  statusAvailable: { backgroundColor: "#DCFCE7" },
-  statusOccupied: { backgroundColor: "#FDE7DD" },
-  statusText: { fontWeight: "700", fontSize: 12 },
-  statusTextAvailable: { color: "#166534" },
-  statusTextOccupied: { color: "#C2410C" },
-  propertyBody: { padding: 14, gap: 8 },
-  propertyTitle: { fontSize: 16, fontWeight: "800", color: "#2B2B33" },
-  locationRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  locationText: { color: "#7A6D6A", fontSize: 13 },
+  statusAvailable: {
+    backgroundColor: "rgba(240,253,244,0.95)",
+  },
+  statusOccupied: {
+    backgroundColor: "rgba(239,246,255,0.95)",
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  statusTextAvailable: {
+    color: "#16A34A",
+  },
+  statusTextOccupied: {
+    color: "#1D4ED8",
+  },
+  propertyBody: {
+    padding: 18,
+    gap: 10,
+  },
+  propertyTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1F2937",
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 14,
+    color: "#6B7280",
+  },
   priceRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 12,
   },
-  priceText: { color: "#F4896B", fontWeight: "800", fontSize: 16 },
-  tenantsText: { color: "#7A6D6A", fontWeight: "700", fontSize: 12 },
+  priceText: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#F97316",
+  },
+  tenantsText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
 });

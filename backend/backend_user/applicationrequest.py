@@ -75,6 +75,69 @@ class RentalApplicationOut(BaseModel):
     property_location:  Optional[str] = None
 
 
+def _clear_owner_application_notifications(
+    db: Session,
+    *,
+    owner_id: int,
+    application_id: int,
+    rental_application_id: int,
+) -> None:
+    owner_notifications = (
+        db.query(Notification)
+        .filter(
+            Notification.user_id == owner_id,
+            Notification.type == "application_submitted",
+        )
+        .all()
+    )
+
+    for notification in owner_notifications:
+        payload = notification.data if isinstance(notification.data, dict) else {}
+        if (
+            payload.get("application_id") == application_id
+            or payload.get("rental_application_id") == rental_application_id
+        ):
+            db.delete(notification)
+
+
+def _notify_seeker_about_application_decision(
+    db: Session,
+    *,
+    rental_app: "RentalApplication",
+    owner: User,
+    prop: Property,
+) -> None:
+    owner_name = owner.full_name or owner.email
+    property_location = f"{prop.address}, {prop.city}" if prop.city else prop.address
+    decision = rental_app.status
+
+    if decision == "accepted":
+        title = "Application accepted"
+        body = f"{owner_name} accepted your rental application for {prop.title}."
+    else:
+        title = "Application rejected"
+        body = f"{owner_name} declined your rental application for {prop.title}."
+
+    create_notification(
+        db,
+        user_id=rental_app.seeker_id,
+        type=f"application_{decision}",
+        title=title,
+        body=body,
+        data={
+            "application_id": rental_app.application_id,
+            "rental_application_id": rental_app.id,
+            "property_id": prop.id,
+            "property_title": prop.title,
+            "property_location": property_location,
+            "owner_id": owner.id,
+            "owner_name": owner_name,
+            "status": decision,
+            "audience": "seeker",
+        },
+    )
+
+
 def _build_rental_application_out(
     rental_app: "RentalApplication",
     db: Session,
@@ -173,11 +236,13 @@ async def create_rental_application(
         body=f"{seeker_name} submitted a full application for {prop.title}.",
         data={
             "application_id": application_id,
+            "rental_application_id": rental_app.id,
             "property_id": prop.id,
             "property_title": prop.title,
             "property_location": property_location,
             "seeker_name": seeker_name,
             "seeker_email": current_user.email,
+            "message": rental_app.message,
             "audience": "owner",
             "id_doc_url": rental_app.id_doc_url,
             "income_doc_url": rental_app.income_doc_url,
@@ -262,7 +327,30 @@ def update_rental_application_status(
     if status not in ("pending", "accepted", "rejected"):
         raise HTTPException(status_code=400, detail="Invalid status")
 
+    if rental_app.status == status:
+        return _build_rental_application_out(rental_app, db)
+
     rental_app.status = status
+    base_application = db.query(Application).filter(
+        Application.id == rental_app.application_id
+    ).first()
+    if base_application:
+        base_application.status = status
+
+    if status in ("accepted", "rejected"):
+        _clear_owner_application_notifications(
+            db,
+            owner_id=prop.owner_id,
+            application_id=rental_app.application_id,
+            rental_application_id=rental_app.id,
+        )
+        _notify_seeker_about_application_decision(
+            db,
+            rental_app=rental_app,
+            owner=current_user,
+            prop=prop,
+        )
+
     db.flush()
     sync_property_status(db, rental_app.property_id)
     db.commit()

@@ -24,7 +24,7 @@ from ..backend_propertyowner.routes.visits import router as visits_router
 from ..config import settings
 from .matchs import router as matches_router
 from backend.backend_user.applicationrequest import router as rental_applications_router
-
+from ..backend_propertyowner.routes.stats import router as stats_router  # ← ajoute
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -67,6 +67,8 @@ app.include_router(applications_router)
 app.include_router(messages_router)
 app.include_router(visits_router)
 app.include_router(rental_applications_router)
+app.include_router(stats_router)   # ← ajoute
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 
