@@ -20,6 +20,7 @@ import {
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  respondToRentalApplication,
   respondToVisitRequest,
   type AppNotification,
 } from "./state/notifications";
@@ -79,6 +80,26 @@ const formatRelativeTime = (isoDate: string) => {
   return new Date(isoDate).toLocaleDateString();
 };
 
+const countPendingVisitDecisions = (notifications: AppNotification[]) => {
+  const pendingVisitIds = new Set<number>();
+  let notificationsWithoutVisitId = 0;
+
+  notifications.forEach((notification) => {
+    if (!(notification.can_act && notification.visit_status === "pending")) {
+      return;
+    }
+
+    if (typeof notification.visit_id === "number") {
+      pendingVisitIds.add(notification.visit_id);
+      return;
+    }
+
+    notificationsWithoutVisitId += 1;
+  });
+
+  return pendingVisitIds.size + notificationsWithoutVisitId;
+};
+
 export default function Notifications() {
   const router = useRouter();
   const [filter, setFilter] = useState<"all" | NoticeGroup>("all");
@@ -130,10 +151,7 @@ export default function Notifications() {
   );
 
   const pendingVisitsCount = useMemo(
-    () =>
-      items.filter(
-        (notification) => notification.can_act && notification.visit_status === "pending",
-      ).length,
+    () => countPendingVisitDecisions(items),
     [items],
   );
 
@@ -192,6 +210,31 @@ export default function Notifications() {
     } catch (decisionError) {
       console.error("Failed to update visit decision:", decisionError);
       Alert.alert("Error", "Could not update this visit request.");
+    } finally {
+      setActionKey(null);
+    }
+  };
+
+  const handleApplicationDecision = async (
+    notification: AppNotification,
+    decision: "accepted" | "rejected",
+  ) => {
+    const payload = notification.data ?? {};
+    const rentalApplicationId = getNumberField(payload.rental_application_id);
+    if (!rentalApplicationId) {
+      Alert.alert("Error", "This application is missing its id.");
+      return;
+    }
+
+    const currentActionKey = `${notification.id}-application-${decision}`;
+    try {
+      setActionKey(currentActionKey);
+      await respondToRentalApplication(rentalApplicationId, decision);
+      setItems((prev) => prev.filter((item) => item.id !== notification.id));
+      await loadNotifications("refresh");
+    } catch (decisionError) {
+      console.error("Failed to update rental application:", decisionError);
+      Alert.alert("Error", "Could not update this application right now.");
     } finally {
       setActionKey(null);
     }
@@ -304,12 +347,20 @@ export default function Notifications() {
               const propertyTitle = getStringField(payload.property_title);
               const propertyLocation = getStringField(payload.property_location);
               const ownerName = getStringField(payload.owner_name);
+              const applicantName =
+                requesterName ?? getStringField(payload.seeker_name);
+              const applicantEmail =
+                requesterEmail ?? getStringField(payload.seeker_email);
               const ctaLabel =
                 getStringField(payload.cta_label) ?? "Fill Application Form";
               const isOwnerVisitRequest = notification.type === "visit_request";
               const isAcceptedVisit = notification.type === "visit_confirmed";
               const isDeclinedVisit = notification.type === "visit_cancelled";
               const isApplicationSubmitted = notification.type === "application_submitted";
+              const isOwnerApplicationSubmission =
+                isApplicationSubmitted && payload.audience === "owner";
+              const isApplicationAccepted = notification.type === "application_accepted";
+              const isApplicationRejected = notification.type === "application_rejected";
 
               return (
                 <TouchableOpacity
@@ -378,13 +429,16 @@ export default function Notifications() {
                   {isOwnerVisitRequest && message ? (
                     <Text style={styles.infoLine}>Message: {message}</Text>
                   ) : null}
-                  {isApplicationSubmitted && requesterName ? (
-                    <Text style={styles.infoLine}>Applicant: {requesterName ?? getStringField(payload.seeker_name)}</Text>
+                  {isOwnerApplicationSubmission && applicantName ? (
+                    <Text style={styles.infoLine}>Applicant: {applicantName}</Text>
                   ) : null}
-                  {isApplicationSubmitted && (requesterEmail || getStringField(payload.seeker_email)) ? (
+                  {isOwnerApplicationSubmission && applicantEmail ? (
                     <Text style={styles.infoLine}>
-                      Email: {requesterEmail ?? getStringField(payload.seeker_email)}
+                      Email: {applicantEmail}
                     </Text>
+                  ) : null}
+                  {isOwnerApplicationSubmission && message ? (
+                    <Text style={styles.infoLine}>Message: {message}</Text>
                   ) : null}
                   {isAcceptedVisit ? (
                     <View style={styles.userNoticeBox}>
@@ -411,11 +465,12 @@ export default function Notifications() {
                       </Text>
                     </View>
                   ) : null}
-                  {isApplicationSubmitted ? (
+                  {isOwnerApplicationSubmission ? (
                     <View style={styles.userNoticeBox}>
-                      <Text style={styles.userNoticeTitle}>Application Documents</Text>
+                      <Text style={styles.userNoticeTitle}>Application Details</Text>
                       <Text style={styles.userNoticeText}>
-                        The applicant has submitted their documents. Review them below.
+                        Review the applicant documents below, then decide whether to accept
+                        or reject this rental application.
                       </Text>
                       {[
                         ["Identity document",   payload.id_doc_url],
@@ -437,6 +492,48 @@ export default function Notifications() {
                           </TouchableOpacity>
                         ) : null
                       )}
+                      <View style={styles.actionsRow}>
+                        <TouchableOpacity
+                          style={styles.rejectBtn}
+                          onPress={() => void handleApplicationDecision(notification, "rejected")}
+                          disabled={Boolean(actionKey)}
+                        >
+                          <Text style={styles.rejectText}>
+                            {actionKey === `${notification.id}-application-rejected`
+                              ? "Rejecting..."
+                              : "Reject"}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.approveBtn}
+                          onPress={() => void handleApplicationDecision(notification, "accepted")}
+                          disabled={Boolean(actionKey)}
+                        >
+                          <Text style={styles.approveText}>
+                            {actionKey === `${notification.id}-application-accepted`
+                              ? "Accepting..."
+                              : "Accept"}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : null}
+                  {isApplicationAccepted ? (
+                    <View style={styles.userNoticeBox}>
+                      <Text style={styles.userNoticeTitle}>Application update</Text>
+                      <Text style={styles.userNoticeText}>
+                        Your rental application was accepted. You can continue with the owner
+                        to finalize the next steps.
+                      </Text>
+                    </View>
+                  ) : null}
+                  {isApplicationRejected ? (
+                    <View style={styles.userNoticeBox}>
+                      <Text style={styles.userNoticeTitle}>Application update</Text>
+                      <Text style={styles.userNoticeText}>
+                        Your rental application was declined. You can keep exploring other
+                        homes and submit a new application anytime.
+                      </Text>
                     </View>
                   ) : null}
 
