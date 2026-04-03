@@ -14,6 +14,7 @@ from .notifications import router as notifications_router
 from .users import router as users_router
 from .chatuser import router as chat_router
 from .roomate import router as roommate_router
+from .favorite import router as favorites_router
 
 from ..backend_propertyowner.routes.applications import router as applications_router
 from ..backend_propertyowner.routes.messages import router as messages_router
@@ -21,6 +22,8 @@ from ..backend_propertyowner.routes.properties import router as properties_route
 from ..backend_propertyowner.routes.visits import router as visits_router
 from ..config import settings
 from .matchs import router as matches_router
+from backend.backend_user.applicationrequest import router as rental_applications_router
+
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -56,10 +59,12 @@ app.include_router(users_router)
 app.include_router(chat_router)
 app.include_router(roommate_router)
 app.include_router(matches_router)
+app.include_router(favorites_router)
 app.include_router(properties_router)
 app.include_router(applications_router)
 app.include_router(messages_router)
 app.include_router(visits_router)
+app.include_router(rental_applications_router)
 
 # ──────────────────────────────────────────────────────────────────────────────
 

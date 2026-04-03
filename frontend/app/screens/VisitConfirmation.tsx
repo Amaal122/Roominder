@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function VisitConfirmation() {
-  const params = useLocalSearchParams<{ title?: string; location?: string }>();
+  const params = useLocalSearchParams<{ id?: string; title?: string; location?: string }>();
   const title = params.title ?? "Modern Loft in Marais";
   const location = params.location ?? "Le Marais, Paris";
 
@@ -26,7 +26,7 @@ export default function VisitConfirmation() {
           onPress={() =>
             router.push({
               pathname: "/screens/ApplicationRequest",
-              params: { title, location },
+              params: { id: params.id, title, location },
             })
           }
         >

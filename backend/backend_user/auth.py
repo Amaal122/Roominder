@@ -1,7 +1,7 @@
 """Authentication and user management endpoints."""
 
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
@@ -12,6 +12,9 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, relationship
+
+from ..backend_propertyowner.models import Property
+from ..backend_propertyowner.schemas import PropertyOut
 from ..config import settings
 from ..db import Base, get_db
 from .models import User
@@ -36,6 +39,7 @@ class UserRead(BaseModel):
 	id: int
 	email: EmailStr
 	full_name: Optional[str] = None
+	role: Optional[str] = None
 	is_active: bool
 	created_at: datetime
 
@@ -298,6 +302,31 @@ def get_my_profile(current_user: User = Depends(get_current_user), db: Session =
         raise HTTPException(status_code=404, detail="Profile not found")
     return profile
 
+@seeker_router.get("/recommended", response_model=List[PropertyOut])
+def get_recommended_properties(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    """Returns properties filtered by seeker's profile preferences."""
+    from backend.backend_user.auth import SeekerProfile as SP
 
+    profile = db.query(SP).filter(SP.user_id == current_user.id).first()
+
+    query = db.query(Property)
+
+    if profile:
+        # Filter by city if seeker has a location set
+        if profile.location:
+            query = query.filter(
+                Property.city.ilike(f"%{profile.location}%")
+            )
+
+        # Filter by looking_for
+        # "house" or "both" → show all available properties
+        # "roommate" → still show properties (they need housing too)
+        query = query.filter(Property.status == "available")
+
+    properties = query.order_by(Property.created_at.desc()).all()
+    return properties
 # Keep a default export for backward compatibility if callers still import `router`.
 router = auth_router

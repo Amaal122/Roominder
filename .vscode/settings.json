@@ -1,5 +1,8 @@
 {
   "python.analysis.extraPaths": [
     "./backend"
+  ],
+  "typescript.tsserver.exclude": [
+    "**/node_modules/**"
   ]
 }
