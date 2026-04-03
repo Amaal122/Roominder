@@ -30,12 +30,13 @@ const GROUP_LABELS: Record<NoticeGroup, string> = {
   visit: "Visits",
   system: "System",
 };
-
 const getGroup = (notification: AppNotification): NoticeGroup => {
   const audience = notification.data?.audience;
   if (audience === "owner") return "visit-owner";
   if (audience === "seeker") return "visit-seeker";
-  if (notification.type.startsWith("visit")) return "visit";
+  if (notification.type.startsWith("visit") || notification.type === "application_submitted") {
+    return "visit";
+  }
   return "system";
 };
 
@@ -185,6 +186,7 @@ export default function Notifications() {
   const handleOpenApplicationForm = async (notification: AppNotification) => {
     const payload = notification.data ?? {};
     const propertyId = getNumberField(payload.property_id);
+    const applicationId = getNumberField(payload.application_id);
     const propertyTitle = getStringField(payload.property_title) ?? "Property";
     const propertyLocation = getStringField(payload.property_location) ?? "";
 
@@ -194,6 +196,7 @@ export default function Notifications() {
       pathname: "/screens/ApplicationRequest",
       params: {
         id: propertyId ? String(propertyId) : undefined,
+        application_id: applicationId ? String(applicationId) : undefined,
         title: propertyTitle,
         location: propertyLocation,
       },
@@ -292,6 +295,7 @@ export default function Notifications() {
               const isOwnerVisitRequest = notification.type === "visit_request";
               const isAcceptedVisit = notification.type === "visit_confirmed";
               const isDeclinedVisit = notification.type === "visit_cancelled";
+              const isApplicationSubmitted = notification.type === "application_submitted";
 
               return (
                 <TouchableOpacity
@@ -360,7 +364,14 @@ export default function Notifications() {
                   {isOwnerVisitRequest && message ? (
                     <Text style={styles.infoLine}>Message: {message}</Text>
                   ) : null}
-
+                  {isApplicationSubmitted && requesterName ? (
+                    <Text style={styles.infoLine}>Applicant: {requesterName ?? getStringField(payload.seeker_name)}</Text>
+                  ) : null}
+                  {isApplicationSubmitted && (requesterEmail || getStringField(payload.seeker_email)) ? (
+                    <Text style={styles.infoLine}>
+                      Email: {requesterEmail ?? getStringField(payload.seeker_email)}
+                    </Text>
+                  ) : null}
                   {isAcceptedVisit ? (
                     <View style={styles.userNoticeBox}>
                       <Text style={styles.userNoticeTitle}>Next step</Text>
@@ -384,6 +395,34 @@ export default function Notifications() {
                         This visit request was declined. You can keep exploring other homes
                         and send a new request anytime.
                       </Text>
+                    </View>
+                  ) : null}
+                  {isApplicationSubmitted ? (
+                    <View style={styles.userNoticeBox}>
+                      <Text style={styles.userNoticeTitle}>Application Documents</Text>
+                      <Text style={styles.userNoticeText}>
+                        The applicant has submitted their documents. Review them below.
+                      </Text>
+                      {[
+                        ["Identity document",   payload.id_doc_url],
+                        ["Proof of income",     payload.income_doc_url],
+                        ["Employment letter",   payload.employment_doc_url],
+                        ["Guarantor info",      payload.guarantor_doc_url],
+                      ].map(([label, url]) =>
+                        url ? (
+                          <TouchableOpacity
+                            key={label as string}
+                            style={styles.docLink}
+                            onPress={() => {
+                              // Open the Cloudinary URL in browser
+                              const { Linking } = require("react-native");
+                              Linking.openURL(url as string);
+                            }}
+                          >
+                            <Text style={styles.docLinkText}>📄 {label as string}</Text>
+                          </TouchableOpacity>
+                        ) : null
+                      )}
                     </View>
                   ) : null}
 
@@ -588,4 +627,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
   },
+  docLink: {
+  marginTop: 8,
+  backgroundColor: "#EEF2FF",
+  borderRadius: 10,
+  paddingVertical: 10,
+  paddingHorizontal: 12,
+},
+docLinkText: {
+  fontSize: 12,
+  fontWeight: "700",
+  color: "#4F46E5",
+},
 });

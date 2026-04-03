@@ -184,9 +184,35 @@ const toListing = (item: HouseRecord): Listing => ({
 export default function HomeScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("Home");
+  const [userName, setUserName] = useState<string>("");
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUser = async () => {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const res = await fetch("http://127.0.0.1:8001/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) return;
+
+      const data = (await res.json()) as { full_name?: string; email?: string };
+      if (!isMounted) return;
+
+      setUserName(data.full_name || data.email || "");
+    };
+
+    fetchUser();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   
   // 🔥 FETCH DATA FROM BACKEND
@@ -194,77 +220,42 @@ export default function HomeScreen() {
     void fetchListings();
   }, []);
   const fetchListings = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = await getAuthToken();
-      let nextListings: Listing[] = [];
+  setLoading(true);
+  setError(null);
+  try {
+    const token = await getAuthToken();
+    let nextListings: Listing[] = [];
 
-      if (token) {
-        const dashboardResponse = await fetch(`${API_BASE}/dashboard/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+    if (token) {
+      // ✅ Use personalized endpoint
+      const res = await fetch(`${API_BASE}/seeker/recommended`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-        if (dashboardResponse.ok) {
-          const data: DashboardResponse = await dashboardResponse.json();
-          nextListings = (data.houses ?? []).map(toListing);
-        } else {
-          console.warn(
-            "Dashboard fetch failed, using public properties fallback.",
-            dashboardResponse.status,
-          );
-        }
+      if (res.ok) {
+        const data: HouseRecord[] = await res.json();
+        nextListings = data.map(toListing);
       }
-
-      if (nextListings.length === 0) {
-        const propertiesResponse = await fetch(`${API_BASE}/properties/`);
-
-        if (!propertiesResponse.ok) {
-          throw new Error(
-            `Failed to fetch properties (${propertiesResponse.status})`,
-          );
-        }
-
-        const publicData: HouseRecord[] = await propertiesResponse.json();
-        nextListings = publicData.map(toListing);
-      }
-
-      setListings(nextListings);
-
-      if (nextListings.length === 0) {
-        setError("No properties available right now.");
-      }
-
-      return;
-      /*
-
-      const formatted = (data.houses ?? []).map((item) => ({
-        id: String(item.id),
-        title: item.title,
-        location: `${item.address ?? ""}${
-          item.city ? `, ${item.city}` : ""
-        }`.trim() || "Unknown location",
-        price: `€${item.price}`,
-        rooms: `${item.rooms ?? 1} rooms`,
-        match: Math.floor(Math.random() * 30) + 70,
-        image:
-          resolveImageUrl(item.image_url) ??
-          "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
-        description: item.description ?? undefined,
-        ownerName: item.owner_name ?? undefined,
-      }));
-
-      setListings(formatted);
-      setError(null);
-      */
-    } catch (error) {
-      console.error("Error fetching listings:", error);
-      setListings([]);
-      setError("Unable to load properties. Please try again.");
-    } finally {
-      setLoading(false);
     }
-  };
+
+    // Fallback to all properties if not logged in or no results
+    if (nextListings.length === 0) {
+      const res = await fetch(`${API_BASE}/properties/`);
+      if (res.ok) {
+        const data: HouseRecord[] = await res.json();
+        nextListings = data.map(toListing);
+      }
+    }
+
+    setListings(nextListings);
+    if (nextListings.length === 0) setError("No properties available right now.");
+  } catch (e) {
+    console.error("Error fetching listings:", e);
+    setError("Unable to load properties. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
   // Use SeekerProfile context to determine if Roommates tab/toggle should show
   const { profile } = useSeekerProfile();
   let showRoommates = true;
@@ -348,7 +339,9 @@ export default function HomeScreen() {
           >
             <View style={styles.heroTop}>
               <View>
-                <Text style={styles.heroTitle}>Welcome to{"\n"}Roominder</Text>
+                <Text style={styles.heroTitle}>
+                   Welcome,{"\n"}{userName || "Roominder"} 👋
+                </Text>
                 <Text style={styles.heroSubtitle}>Find your perfect match</Text>
                 <View style={styles.heroChips}>
                   <View style={styles.heroChip}>

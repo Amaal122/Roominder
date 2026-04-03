@@ -1,8 +1,21 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function ApplicationConfirmation() {
-  const params = useLocalSearchParams<{ title?: string; location?: string }>();
+  const params = useLocalSearchParams<{
+    title?: string;
+    location?: string;
+    owner_id?: string;
+    owner_name?: string;
+    id?: string;
+  }>();
   const title = params.title ?? "Modern Loft in Marais";
   const location = params.location ?? "Le Marais, Paris";
 
@@ -23,7 +36,21 @@ export default function ApplicationConfirmation() {
         <TouchableOpacity
           style={styles.primaryBtn}
           activeOpacity={0.85}
-          onPress={() => router.push("/screens/OwnerChat")}
+          onPress={() => {
+            const ownerId = params.owner_id;
+            if (!ownerId) {
+              Alert.alert(
+                "Missing owner",
+                "Owner information is not available for chat."
+              );
+              return;
+            }
+
+            router.push({
+              pathname: "/chat/[id]",
+              params: { id: ownerId, name: params.owner_name ?? "Owner" },
+            });
+          }}
         >
           <Text style={styles.primaryText}>Chat with Owner</Text>
         </TouchableOpacity>
@@ -31,9 +58,9 @@ export default function ApplicationConfirmation() {
         <TouchableOpacity
           style={styles.secondaryBtn}
           activeOpacity={0.85}
-          onPress={() => router.replace("/propertyownerapplications")}
+          onPress={() => router.replace("/screens/HomeScreen")}
         >
-          <Text style={styles.secondaryText}>Back to Applications</Text>
+          <Text style={styles.secondaryText}>Back to Home</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

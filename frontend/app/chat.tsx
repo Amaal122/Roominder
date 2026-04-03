@@ -48,6 +48,7 @@ export default function Chat() {
     { icon: "👤", label: "Profile", route: "/profile" },
   ];
   const [activeTab, setActiveTab] = useState("Chat");
+  const [isOwner, setIsOwner] = useState(false);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +70,41 @@ useFocusEffect(
         setError(null);
         const token = await getAuthToken();
         if (!token) throw new Error("Missing auth token");
+
+        // Determine role so we can hide the bottom nav for owners
+        try {
+          const meRes = await fetch(`${API_BASE}/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (meRes.ok) {
+            const meRaw = await meRes.text();
+            let me: any = null;
+            if (meRaw) {
+              try {
+                me = JSON.parse(meRaw);
+              } catch {
+                me = null;
+              }
+            }
+
+            const role = typeof me?.role === "string" ? me.role : undefined;
+            const userType = typeof me?.user_type === "string" ? me.user_type : undefined;
+            const ownerFlag = me?.is_owner === true;
+
+            const looksLikeOwner =
+              (typeof role === "string" && role.toLowerCase().includes("owner")) ||
+              (typeof userType === "string" && userType.toLowerCase().includes("owner")) ||
+              ownerFlag;
+
+            if (isMounted) {
+              setIsOwner(looksLikeOwner);
+            }
+          }
+        } catch (roleErr) {
+          // Don't block the chat list if role detection fails
+          console.warn("Failed to detect user role:", roleErr);
+        }
 
         const response = await fetch(`${API_BASE}/chat/conversations`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -150,7 +186,11 @@ useFocusEffect(
         </View>
 
         {/* Messages list */}
-        <ScrollView contentContainerStyle={styles.listContent} style={styles.list} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={[styles.listContent, isOwner ? { paddingBottom: 24 } : null]}
+          style={styles.list}
+          showsVerticalScrollIndicator={false}
+        >
           {loading ? (
             <Text style={{ textAlign: "center", marginTop: 40, color: "#aaa" }}>
               Loading...
@@ -209,27 +249,29 @@ useFocusEffect(
           )}
         </ScrollView>
 
-        {/* Bottom nav */}
-        <View style={styles.tabBar}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab.label}
-              style={styles.tabItem}
-              activeOpacity={0.8}
-              onPress={() => handleTabPress(tab.label, tab.route)}
-            >
-              <Text style={styles.tabIcon}>{tab.icon}</Text>
-              <Text
-                style={[
-                  styles.tabLabel,
-                  activeTab === tab.label && styles.tabLabelActive,
-                ]}
+        {/* Bottom nav (hide for owners) */}
+        {!isOwner ? (
+          <View style={styles.tabBar}>
+            {tabs.map((tab) => (
+              <TouchableOpacity
+                key={tab.label}
+                style={styles.tabItem}
+                activeOpacity={0.8}
+                onPress={() => handleTabPress(tab.label, tab.route)}
               >
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+                <Text style={styles.tabIcon}>{tab.icon}</Text>
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    activeTab === tab.label && styles.tabLabelActive,
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
       </SafeAreaView>
     </LinearGradient>
   );
