@@ -41,6 +41,8 @@ def get_dashboard(
                 "address": property_item.address,
                 "city": property_item.city,
                 "rooms": property_item.rooms,
+                "bathrooms": property_item.bathrooms,
+                "space": property_item.space,
                 "price": property_item.price,
                 "description": property_item.description,
                 "image_url": property_item.image_url,

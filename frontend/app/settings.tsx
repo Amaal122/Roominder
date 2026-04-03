@@ -82,6 +82,10 @@ export default function Settings() {
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>App</Text>
             <ActionRow
+              label="Messages"
+              onPress={() => router.push("/chat")}
+            />
+            <ActionRow
               label="Language"
               value={settings.language}
               onPress={() => router.push("/language")}

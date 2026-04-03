@@ -14,11 +14,16 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
+import { getAuthToken } from "../state/auth";
+
+const API_BASE = "http://127.0.0.1:8001";
+
 type DocKey = "id" | "income" | "employment" | "guarantor";
 
 export default function ApplicationRequest() {
   const params = useLocalSearchParams<{
     id?: string;
+    application_id?: string;
     title?: string;
     location?: string;
   }>();
@@ -34,10 +39,11 @@ export default function ApplicationRequest() {
     employment: null,
     guarantor: null,
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const canSubmit = useMemo(() => {
-    return email.includes("@");
-  }, [email]);
+    return email.includes("@") && !submitting;
+  }, [email, submitting]);
 
   const pickImage = async (key: DocKey) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -159,22 +165,177 @@ export default function ApplicationRequest() {
           style={[styles.primaryBtn, !canSubmit && styles.btnDisabled]}
           activeOpacity={0.85}
           disabled={!canSubmit}
-          onPress={() =>
-            router.replace({
-              pathname: "/screens/ApplicationConfirmation",
-              params: { title, location },
-            })
+onPress={async () => {
+  if (!canSubmit || submitting) return;
+
+  setSubmitting(true);
+
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      Alert.alert("Login required", "Please sign in first.");
+      setSubmitting(false);
+      return;
+    }
+
+    const baseMessage = `Contact: ${email}. Notes: ${notes}`;
+
+    const getPropertyId = async (applicationId: number): Promise<number> => {
+      const propertyId = Number(params.id);
+      if (Number.isFinite(propertyId)) return propertyId;
+
+      const sentRes = await fetch(`${API_BASE}/applications/sent`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!sentRes.ok) {
+        throw new Error(`Failed to load sent applications: ${sentRes.status}`);
+      }
+      const sent = (await sentRes.json()) as Array<any>;
+      const existing = sent.find((a) => Number(a.id) === applicationId);
+      const foundPropertyId = Number(existing?.property_id);
+      if (!Number.isFinite(foundPropertyId)) {
+        throw new Error("Could not resolve property id for this application.");
+      }
+      return foundPropertyId;
+    };
+
+    const getOrCreateApplicationId = async (): Promise<number> => {
+      const fromParams = Number(params.application_id);
+      if (Number.isFinite(fromParams)) return fromParams;
+
+      const propertyId = Number(params.id);
+      if (!Number.isFinite(propertyId)) {
+        throw new Error("Missing property ID.");
+      }
+
+      const createRes = await fetch(`${API_BASE}/applications/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          property_id: propertyId,
+          message: baseMessage,
+        }),
+      });
+
+      if (createRes.ok) {
+        const created = await createRes.json();
+        return Number(created.id);
+      }
+
+      const createText = await createRes.text();
+      // If already applied, try to find the existing application id.
+      if (createRes.status === 400) {
+        const sentRes = await fetch(`${API_BASE}/applications/sent`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (sentRes.ok) {
+          const sent = (await sentRes.json()) as Array<any>;
+          const existing = sent.find((a) => Number(a.property_id) === propertyId);
+          if (existing?.id) return Number(existing.id);
+        }
+      }
+
+      throw new Error(`Failed to create application: ${createRes.status} ${createText}`);
+    };
+
+    const applicationId = await getOrCreateApplicationId();
+    const propertyId = await getPropertyId(applicationId);
+
+    const formData = new FormData();
+    formData.append("application_id", String(applicationId));
+    formData.append("message", baseMessage);
+
+    const appendDoc = async (field: string, uri: string) => {
+      const filename = uri.split("/").pop() || `${field}.jpg`;
+      const match = /\.(\w+)$/.exec(filename);
+      const mimeType = match ? `image/${match[1].toLowerCase()}` : "image/jpeg";
+
+      if (uri.startsWith("blob:") || uri.startsWith("data:")) {
+        const blobRes = await fetch(uri);
+        const blob = await blobRes.blob();
+        formData.append(field, blob as any, filename);
+        return;
+      }
+
+      formData.append(field, { uri, name: filename, type: mimeType } as any);
+    };
+
+    if (docs.id) await appendDoc("id_doc", docs.id);
+    if (docs.income) await appendDoc("income_doc", docs.income);
+    if (docs.employment) await appendDoc("employment_doc", docs.employment);
+    if (docs.guarantor) await appendDoc("guarantor_doc", docs.guarantor);
+
+    const response = await fetch(`${API_BASE}/rental-applications/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const content = await response.text();
+      Alert.alert("Submission failed", `${response.status}: ${content}`);
+      console.warn("Application error", response.status, content);
+      return;
+    }
+
+    // Fetch owner_id for chat routing on the confirmation screen.
+    let ownerId: string | undefined;
+    let ownerName: string | undefined;
+    try {
+      const propRes = await fetch(`${API_BASE}/properties/${propertyId}`);
+      if (propRes.ok) {
+        const prop = await propRes.json();
+        if (prop?.owner_id != null) {
+          ownerId = String(prop.owner_id);
+        }
+      }
+
+      if (ownerId) {
+        const ownerRes = await fetch(`${API_BASE}/users/${ownerId}`);
+        if (ownerRes.ok) {
+          const owner = await ownerRes.json();
+          if (owner?.full_name) {
+            ownerName = String(owner.full_name);
           }
+        }
+      }
+    } catch {
+      // Non-blocking: user can still go back home even if owner_id fetch fails.
+    }
+
+    router.replace({
+      pathname: "/screens/ApplicationConfirmation",
+      params: {
+        title,
+        location,
+        owner_id: ownerId,
+        owner_name: ownerName,
+        id: String(propertyId),
+      },
+    });
+  } catch (error) {
+    console.error("Submission network error:", error);
+    const message = error instanceof Error ? error.message : "Could not submit application at this time.";
+    Alert.alert("Submission failed", message);
+  } finally {
+    setSubmitting(false);
+  }
+}}
         >
-          <Text style={styles.primaryText}>Submit Application</Text>
+          <Text style={styles.primaryText}>
+            {submitting ? "Submitting..." : "Submit Application"}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const CORAL = "#F4896B";
-const CORAL_PASTEL = "#F9D4C2";
 const TEAL = "#7ECEC4";
 const BG = "#FFF7F3";
 const TEXT = "#2B2B33";

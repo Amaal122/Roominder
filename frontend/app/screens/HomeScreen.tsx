@@ -24,6 +24,8 @@ type Listing = {
   location: string;
   price: string;
   rooms: string;
+  baths: string;
+  size: string;
   match: number;
   image: string;
   description?: string;
@@ -33,19 +35,23 @@ type Listing = {
   ownerResponse?: string;
 };
 
+type HouseRecord = {
+  id: number;
+  owner_id: number;
+  owner_name?: string | null;
+  title: string;
+  address?: string | null;
+  city?: string | null;
+  price: number;
+  rooms?: number | null;
+  bathrooms?: number | null;
+  space?: number | null;
+  description?: string | null;
+  image_url?: string | null;
+};
+
 type DashboardResponse = {
-  houses?: {
-    id: number;
-    owner_id: number;
-    owner_name?: string | null;
-    title: string;
-    address?: string | null;
-    city?: string | null;
-    price: number;
-    rooms?: number | null;
-    description?: string | null;
-    image_url?: string | null;
-  }[];
+  houses?: HouseRecord[];
 };
 
 // ─── AnimatedTabIcon ──────────────────────────────────────────────────────────
@@ -158,70 +164,98 @@ const resolveImageUrl = (imageUrl?: string | null) => {
   return `${API_BASE}/${imageUrl}`;
 };
 
+const toListing = (item: HouseRecord): Listing => ({
+  id: String(item.id),
+  title: item.title,
+  location: `${item.address ?? ""}${item.city ? `, ${item.city}` : ""}`.trim()
+    || "Unknown location",
+  price: `DT ${item.price}`,
+  rooms: `${item.rooms ?? 1} room${(item.rooms ?? 1) > 1 ? "s" : ""}`,
+  baths: `${item.bathrooms ?? 1} Bath${(item.bathrooms ?? 1) > 1 ? "s" : ""}`,
+  size: `${item.space ?? 0} m²`,
+  match: Math.floor(Math.random() * 30) + 70,
+  image:
+    resolveImageUrl(item.image_url) ??
+    "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
+  description: item.description ?? undefined,
+  ownerName: item.owner_name ?? undefined,
+});
+
 export default function HomeScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("Home");
+  const [userName, setUserName] = useState<string>("");
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  
-  // 🔥 FETCH DATA FROM BACKEND
   useEffect(() => {
-    fetchListings();
-  }, []);
-  const fetchListings = async () => {
-    setLoading(true);
-    try {
+    let isMounted = true;
+
+    const fetchUser = async () => {
       const token = await getAuthToken();
-      if (!token) {
-        setError("You must be logged in to view the dashboard. Please log in.");
-        setListings([]);
-        setLoading(false);
-        return;
-      }
-      const res = await fetch(`${API_BASE}/dashboard/`, {
+      if (!token) return;
+
+      const res = await fetch("http://127.0.0.1:8001/auth/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (res.status === 401) {
-        setError("Session expired or unauthorized. Please log in again.");
-        setListings([]);
-        setLoading(false);
-        return;
+      if (!res.ok) return;
+
+      const data = (await res.json()) as { full_name?: string; email?: string };
+      if (!isMounted) return;
+
+      setUserName(data.full_name || data.email || "");
+    };
+
+    fetchUser();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  
+  // 🔥 FETCH DATA FROM BACKEND
+  useEffect(() => {
+    void fetchListings();
+  }, []);
+  const fetchListings = async () => {
+  setLoading(true);
+  setError(null);
+  try {
+    const token = await getAuthToken();
+    let nextListings: Listing[] = [];
+
+    if (token) {
+      // ✅ Use personalized endpoint
+      const res = await fetch(`${API_BASE}/seeker/recommended`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const data: HouseRecord[] = await res.json();
+        nextListings = data.map(toListing);
       }
-
-      if (!res.ok) {
-        throw new Error(`Failed to fetch dashboard (${res.status})`);
-      }
-
-      const data: DashboardResponse = await res.json();
-
-      const formatted = (data.houses ?? []).map((item) => ({
-        id: String(item.id),
-        title: item.title,
-        location: `${item.address ?? ""}${
-          item.city ? `, ${item.city}` : ""
-        }`.trim() || "Unknown location",
-        price: `€${item.price}`,
-        rooms: `${item.rooms ?? 1} rooms`,
-        match: Math.floor(Math.random() * 30) + 70,
-        image:
-          resolveImageUrl(item.image_url) ??
-          "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
-        description: item.description ?? undefined,
-        ownerName: item.owner_name ?? undefined,
-      }));
-
-      setListings(formatted);
-      setError(null);
-    } catch (error) {
-      console.error("Error fetching listings:", error);
-      setError("Unable to load recommendations. Please try again.");
-    } finally {
-      setLoading(false);
     }
-  };
+
+    // Fallback to all properties if not logged in or no results
+    if (nextListings.length === 0) {
+      const res = await fetch(`${API_BASE}/properties/`);
+      if (res.ok) {
+        const data: HouseRecord[] = await res.json();
+        nextListings = data.map(toListing);
+      }
+    }
+
+    setListings(nextListings);
+    if (nextListings.length === 0) setError("No properties available right now.");
+  } catch (e) {
+    console.error("Error fetching listings:", e);
+    setError("Unable to load properties. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
   // Use SeekerProfile context to determine if Roommates tab/toggle should show
   const { profile } = useSeekerProfile();
   let showRoommates = true;
@@ -251,6 +285,8 @@ export default function HomeScreen() {
         location: item.location,
         price: item.price,
         rooms: item.rooms,
+        baths: item.baths,
+        size: item.size,
         match: String(item.match),
         image: item.image,
         description: item.description,
@@ -303,7 +339,9 @@ export default function HomeScreen() {
           >
             <View style={styles.heroTop}>
               <View>
-                <Text style={styles.heroTitle}>Welcome to{"\n"}Roominder</Text>
+                <Text style={styles.heroTitle}>
+                   Welcome,{"\n"}{userName || "Roominder"} 👋
+                </Text>
                 <Text style={styles.heroSubtitle}>Find your perfect match</Text>
                 <View style={styles.heroChips}>
                   <View style={styles.heroChip}>
@@ -375,6 +413,19 @@ export default function HomeScreen() {
               onPress={() => goToDetails(item)}
             />
           ))}
+
+          {!listings.length && error ? (
+            <View style={styles.feedbackCard}>
+              <Text style={styles.feedbackTitle}>No properties to show</Text>
+              <Text style={styles.feedbackText}>{error}</Text>
+              <TouchableOpacity
+                style={styles.feedbackButton}
+                onPress={() => void fetchListings()}
+              >
+                <Text style={styles.feedbackButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           <View style={{ height: 16 }} />
         </ScrollView>
@@ -581,6 +632,39 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   roomsText: { fontSize: 12, color: CORAL, fontWeight: "600" },
+  feedbackCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: "#FFF",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: CORAL_PASTEL,
+    padding: 18,
+    alignItems: "center",
+    gap: 10,
+  },
+  feedbackTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: INK,
+  },
+  feedbackText: {
+    fontSize: 13,
+    color: "#7A6D6A",
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  feedbackButton: {
+    backgroundColor: CORAL,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  feedbackButtonText: {
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
 
   // BOTTOM TAB BAR
   tabBar: {

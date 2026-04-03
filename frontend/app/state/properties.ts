@@ -27,6 +27,8 @@ type BackendProperty = {
   city: string;
   price: number;
   rooms: number;
+  bathrooms: number;
+  space: number;
   description?: string | null;
   status: string;
   image_url?: string | null;
@@ -47,12 +49,12 @@ const toUiProperty = (p: BackendProperty): Property => {
     id: String(p.id),
     title: p.title,
     location: `${p.address}${p.city ? `, ${p.city}` : ""}`,
-    price: `€${p.price}`,
+    price: `DT ${p.price}`,
     tenants: status === "Available" ? "Available" : "Occupied",
     status,
     beds: p.rooms ?? 1,
-    baths: 1,
-    size: 0,
+    baths: p.bathrooms ?? 1,
+    size: p.space ?? 0,
     description: p.description ?? undefined,
     views: 0,
     applications: 0,
@@ -67,18 +69,34 @@ const toUiProperty = (p: BackendProperty): Property => {
 
 export const loadMyProperties = async () => {
   const token = await getAuthToken();
-  if (!token) return;
-  const response = await fetch(`${API_BASE}/properties/mine`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  if (!response.ok) {
+  if (!token) {
+    properties = [];
+    notify();
     return;
   }
-  const data: BackendProperty[] = await response.json();
-  properties = data.map(toUiProperty);
-  notify();
+
+  try {
+    const response = await fetch(`${API_BASE}/properties/mine`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error("Failed to load properties:", response.status);
+      properties = [];
+      notify();
+      return;
+    }
+
+    const data: BackendProperty[] = await response.json();
+    properties = data.map(toUiProperty);
+    notify();
+  } catch (error) {
+    console.error("Failed to load owner properties:", error);
+    properties = [];
+    notify();
+  }
 };
 
 export const getPropertyById = (id: string) =>
@@ -90,6 +108,8 @@ export const addProperty = async (payload: {
   city: string;
   price: number;
   rooms: number;
+  bathrooms: number;
+  space: number;
   description?: string;
   image_url?: string;
 }) => {
@@ -117,12 +137,14 @@ export const addProperty = async (payload: {
 
 export const updateProperty = async (
   id: string,
-  patch: Partial<Property> & {
+  patch: {
     title?: string;
     address?: string;
     city?: string;
     price?: number;
     rooms?: number;
+    bathrooms?: number;
+    space?: number;
     description?: string;
     status?: string;
     image_url?: string;
@@ -150,9 +172,44 @@ export const updateProperty = async (
   return updated;
 };
 
+export const removeProperty = async (id: string) => {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  const response = await fetch(`${API_BASE}/properties/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    let message = "Failed to delete property";
+
+    try {
+      const data = text ? JSON.parse(text) : null;
+      message = data?.detail || message;
+    } catch {
+      if (text) {
+        message = text;
+      }
+    }
+
+    throw new Error(message);
+  }
+
+  properties = properties.filter((property) => property.id !== id);
+  notify();
+};
+
 export const subscribeProperties = (listener: () => void) => {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 };
 
 export const useProperties = () => {
@@ -160,7 +217,8 @@ export const useProperties = () => {
 
   useEffect(() => {
     loadMyProperties();
-    return subscribeProperties(() => setList(getProperties()));
+    const unsubscribe = subscribeProperties(() => setList(getProperties()));
+    return () => unsubscribe();
   }, []);
 
   return list;

@@ -1,9 +1,8 @@
-import { AntDesign, Feather } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import { QUESTIONS } from "./form";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo } from "react";
-import LookingFor from "./lookingfor";
 import {
   ScrollView,
   StyleSheet,
@@ -31,14 +30,6 @@ const PROFILE_FIELDS = [
   { key: "work_style", label: "Work Style" },
 ];
 
-type ParsedAnswers = Record<string, string>;
-type ParsedProfileData = { answers?: ParsedAnswers };
-type Selection = {
-  key: string;
-  title: string;
-  label: string;
-  icon: keyof typeof Feather.glyphMap;
-};
 
 export default function ReviewProfile() {
   const router = useRouter();

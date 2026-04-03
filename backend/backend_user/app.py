@@ -12,12 +12,18 @@ from .auth import router as auth_router, seeker_router
 from .dashbord import router as dashboard_router
 from .notifications import router as notifications_router
 from .users import router as users_router
+from .chatuser import router as chat_router
+from .roomate import router as roommate_router
+from .favorite import router as favorites_router
 
 from ..backend_propertyowner.routes.applications import router as applications_router
 from ..backend_propertyowner.routes.messages import router as messages_router
 from ..backend_propertyowner.routes.properties import router as properties_router
 from ..backend_propertyowner.routes.visits import router as visits_router
 from ..config import settings
+from .matchs import router as matches_router
+from backend.backend_user.applicationrequest import router as rental_applications_router
+
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -50,10 +56,15 @@ app.include_router(seeker_router)
 app.include_router(dashboard_router)
 app.include_router(notifications_router)
 app.include_router(users_router)
+app.include_router(chat_router)
+app.include_router(roommate_router)
+app.include_router(matches_router)
+app.include_router(favorites_router)
 app.include_router(properties_router)
 app.include_router(applications_router)
 app.include_router(messages_router)
 app.include_router(visits_router)
+app.include_router(rental_applications_router)
 
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -73,6 +84,26 @@ def _create_tables_on_startup() -> None:
 			ALTER COLUMN guests TYPE VARCHAR USING guests::VARCHAR,
 			ALTER COLUMN work_style TYPE VARCHAR USING work_style::VARCHAR,
 			ALTER COLUMN looking_for TYPE VARCHAR USING looking_for::VARCHAR;
+			"""
+		))
+		conn.execute(text(
+			"""
+			ALTER TABLE IF EXISTS properties
+			ADD COLUMN IF NOT EXISTS bathrooms INTEGER DEFAULT 1;
+			"""
+		))
+		conn.execute(text(
+			"""
+			ALTER TABLE IF EXISTS properties
+			ADD COLUMN IF NOT EXISTS space DOUBLE PRECISION DEFAULT 0;
+			"""
+		))
+		conn.execute(text(
+			"""
+			UPDATE properties
+			SET bathrooms = COALESCE(bathrooms, 1),
+			    space = COALESCE(space, 0)
+			WHERE bathrooms IS NULL OR space IS NULL;
 			"""
 		))
 		conn.commit()

@@ -6,6 +6,8 @@ from typing import List
 
 from backend.db import get_db
 from backend.backend_user.auth import get_current_user
+from backend.backend_user.models import Notification, User
+from backend.backend_user.notifications import create_notification
 
 from backend.backend_propertyowner.models  import Application, Property
 from backend.backend_propertyowner.schemas import ApplicationCreate, ApplicationUpdate, ApplicationOut
@@ -43,6 +45,28 @@ def create_application(
         message     = data.message,
     )
     db.add(new_app)
+    db.flush()
+
+    print(f"DEBUG: application create for user={current_user.id} property={prop.id} msg={data.message}")
+
+    requester_name = current_user.full_name or current_user.email
+    create_notification(
+        db,
+        user_id=prop.owner_id,
+        type="application_submitted",
+        title="New application submitted",
+        body=f"{requester_name} submitted an application for {prop.title}.",
+        data={
+            "application_id": new_app.id,
+            "property_id": prop.id,
+            "property_title": prop.title,
+            "requester_name": requester_name,
+            "requester_email": current_user.email,
+            "message": data.message,
+            "audience": "owner",
+        },
+    )
+
     db.commit()
     db.refresh(new_app)
     return new_app

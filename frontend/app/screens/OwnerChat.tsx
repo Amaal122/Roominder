@@ -112,7 +112,6 @@ const CORAL_PASTEL = "#F9D4C2";
 const TEAL = "#7ECEC4";
 const BG = "#FFF7F3";
 const TEXT = "#2B2B33";
-const MUTED = "#7A6D6A";
 const BORDER = "#F1E3DC";
 
 const styles = StyleSheet.create({
