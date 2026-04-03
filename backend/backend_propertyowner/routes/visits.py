@@ -1,6 +1,6 @@
 """Endpoints pour les demandes de visite."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -21,6 +21,7 @@ router = APIRouter(prefix="/visits", tags=["Visits"])
 @router.post("/", response_model=VisitOut, status_code=status.HTTP_201_CREATED)
 def create_visit(
     data:         VisitCreate,
+    response:     Response,
     db:           Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -31,17 +32,15 @@ def create_visit(
     if not prop:
         raise HTTPException(status_code=404, detail="Logement introuvable")
 
-    # Vérifier que le locataire n'a pas déjà une visite pending pour ce logement
+    # Rendre la création idempotente: renvoyer la visite pending existante.
     existing = db.query(Visit).filter(
         Visit.property_id == data.property_id,
         Visit.tenant_id   == current_user.id,
         Visit.status      == "pending"
     ).first()
     if existing:
-        raise HTTPException(
-            status_code=400,
-            detail="Tu as déjà une demande de visite en attente pour ce logement"
-        )
+        response.status_code = status.HTTP_200_OK
+        return existing
 
     new_visit = Visit(
         property_id    = data.property_id,
@@ -70,6 +69,7 @@ def create_visit(
             "requester_phone": data.phone,
             "preferred_time": data.preferred_time,
             "message": data.message,
+            "audience": "owner",
         },
     )
 
@@ -143,7 +143,7 @@ def update_visit_status(
     visit.status = new_status
 
     owner_name = current_user.full_name or current_user.email
-    decision_word = "confirmed" if new_status == "confirmed" else "declined"
+    property_location = f"{prop.address}, {prop.city}" if prop.city else prop.address
 
     owner_notifications = (
         db.query(Notification)
@@ -158,20 +158,47 @@ def update_visit_status(
         if payload.get("visit_id") == visit.id:
             notification.is_read = True
 
+    if new_status == "confirmed":
+        notification_title = "Visit accepted"
+        notification_body = (
+            f"{owner_name} accepted your visit request for {prop.title}. "
+            "Please fill in the application form to continue."
+        )
+        notification_data = {
+            "visit_id": visit.id,
+            "property_id": prop.id,
+            "property_title": prop.title,
+            "property_location": property_location,
+            "owner_name": owner_name,
+            "status": new_status,
+            "preferred_time": visit.preferred_time,
+            "next_step": "application_form",
+            "cta_label": "Fill Application Form",
+            "audience": "seeker",
+        }
+    else:
+        notification_title = "Visit request declined"
+        notification_body = (
+            f"{owner_name} declined your visit request for {prop.title}."
+        )
+        notification_data = {
+            "visit_id": visit.id,
+            "property_id": prop.id,
+            "property_title": prop.title,
+            "property_location": property_location,
+            "owner_name": owner_name,
+            "status": new_status,
+            "preferred_time": visit.preferred_time,
+            "audience": "seeker",
+        }
+
     create_notification(
         db,
         user_id=visit.tenant_id,
         type=f"visit_{new_status}",
-        title=f"Visit request {decision_word}",
-        body=f"{owner_name} {decision_word} your visit request for {prop.title}.",
-        data={
-            "visit_id": visit.id,
-            "property_id": prop.id,
-            "property_title": prop.title,
-            "owner_name": owner_name,
-            "status": new_status,
-            "preferred_time": visit.preferred_time,
-        },
+        title=notification_title,
+        body=notification_body,
+        data=notification_data,
     )
 
     db.commit()

@@ -17,7 +17,9 @@ export const incrementPending = () => {
 
 export const subscribePending = (listener: () => void) => {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 };
 
 export const usePendingCount = () => {

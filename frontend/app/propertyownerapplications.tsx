@@ -165,7 +165,7 @@ export default function PropertyOwnerApplications() {
 
           {applicationsCount === 0 ? (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>Pas encore d'applications</Text>
+              <Text style={styles.emptyTitle}>{"Pas encore d'applications"}</Text>
               <Text style={styles.emptySubtitle}>
                 Les demandes des locataires apparaîtront ici.
               </Text>

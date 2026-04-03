@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from backend.db import get_db
 from backend.backend_user.auth import get_current_user   # retourne l'utilisateur connecté via JWT
 
-from backend.backend_propertyowner.models  import Property
+from backend.backend_propertyowner.models  import Application, Property, Visit
 from backend.backend_propertyowner.schemas import PropertyCreate, PropertyUpdate, PropertyOut
 
 
@@ -86,6 +86,8 @@ def create_property(
         city        = data.city,
         price       = data.price,
         rooms       = data.rooms,
+        bathrooms   = data.bathrooms,
+        space       = data.space,
         description = data.description,
         image_url   = data.image_url,
     )
@@ -137,8 +139,12 @@ def delete_property(
     if prop.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
 
+    db.query(Application).filter(
+        Application.property_id == property_id
+    ).delete(synchronize_session=False)
+    db.query(Visit).filter(
+        Visit.property_id == property_id
+    ).delete(synchronize_session=False)
     db.delete(prop)
     db.commit()
     return None
-
-

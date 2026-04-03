@@ -1,5 +1,5 @@
-import { createContext, ReactNode, useContext, useState } from "react";
-
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { getAuthToken } from "../state/auth"; // adjust path
 type SeekerProfile = {
   looking_for?: "roommate" | "house" | "both";
   location?: string;
@@ -19,6 +19,7 @@ type SeekerProfileContextType = {
   profile: SeekerProfile;
   updateProfile: (data: Partial<SeekerProfile>) => void;
   resetProfile: () => void;
+  loaded: boolean;
 };
 
 const SeekerProfileContext = createContext<
@@ -31,16 +32,40 @@ export const SeekerProfileProvider = ({
   children: ReactNode;
 }) => {
   const [profile, setProfile] = useState<SeekerProfile>({});
+  const [loaded, setLoaded] = useState(false);
 
+  const resetProfile = () => setProfile({});
+  // ✅ Load profile from backend on mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const token = await getAuthToken();
+        if (!token) return;
+
+        const res = await fetch("http://127.0.0.1:8001/seeker/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setProfile(data);
+        }
+      } catch (e) {
+        console.error("Failed to load seeker profile", e);
+      } finally {
+        setLoaded(true);
+      }
+    };
+
+    loadProfile();
+  }, []);
   const updateProfile = (data: Partial<SeekerProfile>) => {
     setProfile((prev) => ({ ...prev, ...data }));
   };
 
-  const resetProfile = () => setProfile({});
-
   return (
     <SeekerProfileContext.Provider
-      value={{ profile, updateProfile, resetProfile }}
+      value={{ profile, updateProfile, resetProfile, loaded }}
     >
       {children}
     </SeekerProfileContext.Provider>

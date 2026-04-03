@@ -1,7 +1,10 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, type Href } from "expo-router";
 import { useSeekerProfile } from "./contexts/SeekerProfileContext";
-import { useMemo, useRef, useState } from "react";
+import { getAuthToken } from "./state/auth"; // adjust path to yours
+import { useRef, useState, useEffect } from "react";
+
+
 import {
     Animated,
     Dimensions,
@@ -11,66 +14,24 @@ import {
     StatusBar,
     StyleSheet,
     Text,
+  TouchableOpacity,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { addMatch } from "../store/matchStore";
-import { TouchableOpacity } from "react-native";
 
-const PROFILES = [
-  {
-    id: "1",
-    name: "Sarah Miller",
-    age: 26,
-    role: "Graphic Designer",
-    location: "Le Marais, Paris",
-    about:
-      "Creative professional looking for a clean, friendly roommate to share a cozy apartment.",
-    lifestyle: ["Early Bird", "Very Organized", "Love to Cook"],
-    match: 92,
-    image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&w=900&q=80",
-  },
-  {
-    id: "2",
-    name: "Lena Kim",
-    age: 24,
-    role: "Product Designer",
-    location: "Canal Saint-Martin, Paris",
-    about:
-      "Chill, tidy, and loves plants. Down for movie nights and board games.",
-    lifestyle: ["Plant Lover", "Night Owl", "Board Games"],
-    match: 88,
-    image:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&w=900&q=80",
-  },
-  {
-    id: "3",
-    name: "Mia Laurent",
-    age: 27,
-    role: "Marketing Lead",
-    location: "Bastille, Paris",
-    about: "Sociable but respects quiet time. Enjoys cooking and Sunday runs.",
-    lifestyle: ["Runner", "Great Cook", "Clean"],
-    match: 85,
-    image:
-      "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&w=900&q=80",
-  },
-  {
-    id: "4",
-    name: "Jade Cohen",
-    age: 25,
-    role: "UX Researcher",
-    location: "Montmartre, Paris",
-    about: "Bookworm with a calm vibe. Loves coffee spots and weekend markets.",
-    lifestyle: ["Calm", "Reads a lot", "Loves Coffee"],
-    match: 80,
-    image:
-      "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&w=900&q=80",
-  },
-];
 
-type Profile = (typeof PROFILES)[number];
+
+type Profile = {
+  id: string;
+  name: string;
+  age: number;
+  role: string;
+  location: string;
+  about: string;
+  lifestyle: string[];
+  match: number;
+  image?: string | null;
+};
 
 function formatLifestyleIcon(label: string) {
   if (label.toLowerCase().includes("cook")) return "🍳";
@@ -272,7 +233,28 @@ export default function RoomateMatch() {
     { icon: "💬", label: "Chat", route: "/chat" as Href },
     { icon: "👤", label: "Profile", route: "/profile" as Href },
   ];
-  const profiles = useMemo(() => PROFILES, []);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  const fetchMatches = async () => {
+    try {
+      const token = await getAuthToken();
+      const res = await fetch("http://127.0.0.1:8001/roommates/matches", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProfiles(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch matches", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchMatches();
+}, []);
   const [index, setIndex] = useState(0);
   const pan = useRef(new Animated.ValueXY()).current;
   const currentProfile = profiles[index];
@@ -293,26 +275,28 @@ export default function RoomateMatch() {
       setIndex(nextIndex);
     }
   };
-  const forceSwipe = (direction: "left" | "right") => {
-    if (!currentProfile) return;
-    if (direction === "right") {
-      addMatch({
-        id: currentProfile.id,
-        name: currentProfile.name,
-        age: currentProfile.age,
-        role: currentProfile.role,
-        location: currentProfile.location,
-        image: currentProfile.image,
-        match: currentProfile.match,
+  const forceSwipe = async (direction: "left" | "right") => {
+  if (!currentProfile) return;
+
+  if (direction === "right") {
+    try {
+      const token = await getAuthToken();
+      await fetch(`http://127.0.0.1:8001/matches/${currentProfile.id}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
       });
+    } catch (e) {
+      console.error("Failed to save match", e);
     }
-    const destX = direction === "right" ? width * 1.2 : -width * 1.2;
-    Animated.timing(pan, {
-      toValue: { x: destX, y: 0 },
-      duration: 240,
-      useNativeDriver: false,
-    }).start(handleSwipeComplete);
-  };
+  }
+
+  const destX = direction === "right" ? width * 1.2 : -width * 1.2;
+  Animated.timing(pan, {
+    toValue: { x: destX, y: 0 },
+    duration: 240,
+    useNativeDriver: false,
+  }).start(handleSwipeComplete);
+};
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gesture) =>
@@ -322,15 +306,15 @@ export default function RoomateMatch() {
       }),
       onPanResponderRelease: (_, gesture) => {
         if (gesture.dx > SWIPE_THRESHOLD) {
-          forceSwipe("right");
+          forceSwipe("right"); // async but fine, no need to await
           return;
         }
         if (gesture.dx < -SWIPE_THRESHOLD) {
           forceSwipe("left");
           return;
         }
-        resetPosition();
-      },
+      resetPosition();
+    },
     }),
   ).current;
   const rotate = pan.x.interpolate({
@@ -356,9 +340,9 @@ export default function RoomateMatch() {
   const renderProfile = (profile: Profile) => (
     <>
       <View style={styles.imageWrapper}>
-        {profile.image && !profile.image.startsWith('blob:') && (
+        {profile.image ? (
           <Image source={{ uri: profile.image }} style={styles.photo} />
-        )}
+        ) : null}
         <View style={styles.matchBadge}>
           <Text style={styles.matchText}>{profile.match}%</Text>
         </View>
@@ -415,12 +399,17 @@ export default function RoomateMatch() {
           </Pressable>
           <View>
             <Text style={styles.headerTitle}>matchs                                                    </Text>
-            <Text style={styles.headerSubtitle}>3 potential matches      </Text>
+            <Text style={styles.headerSubtitle}>{profiles.length} potential matches      </Text>
           </View>
         </View>
         <Text style={styles.headerHint}>Swipe right to save, left to pass</Text>
       </LinearGradient>
       <View style={styles.deckArea}>
+        {loading ? (
+          <View style={[styles.card, styles.shadow, styles.emptyCard]}>
+            <Text style={styles.emptyTitle}>Finding matches...</Text>
+          </View>
+        ) : null}
         {nextProfile && (
           <Animated.View
             pointerEvents="none"

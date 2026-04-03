@@ -22,15 +22,19 @@ import {
   type AppNotification,
 } from "./state/notifications";
 
-type NoticeGroup = "visit" | "system";
+type NoticeGroup = "visit-owner" | "visit-seeker" | "visit" | "system";
 
 const GROUP_LABELS: Record<NoticeGroup, string> = {
+  "visit-owner": "Owner",
+  "visit-seeker": "Seeker",
   visit: "Visits",
   system: "System",
 };
-
-const getGroup = (notificationType: string): NoticeGroup => {
-  if (notificationType.startsWith("visit")) {
+const getGroup = (notification: AppNotification): NoticeGroup => {
+  const audience = notification.data?.audience;
+  if (audience === "owner") return "visit-owner";
+  if (audience === "seeker") return "visit-seeker";
+  if (notification.type.startsWith("visit") || notification.type === "application_submitted") {
     return "visit";
   }
   return "system";
@@ -38,6 +42,19 @@ const getGroup = (notificationType: string): NoticeGroup => {
 
 const getStringField = (value: unknown) =>
   typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+
+const getNumberField = (value: unknown) => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+};
 
 const formatRelativeTime = (isoDate: string) => {
   const timestamp = new Date(isoDate).getTime();
@@ -112,7 +129,7 @@ export default function Notifications() {
 
   const filtered = useMemo(() => {
     if (filter === "all") return items;
-    return items.filter((notification) => getGroup(notification.type) === filter);
+    return items.filter((notification) => getGroup(notification) === filter);
   }, [filter, items]);
 
   const handleMarkAllRead = async () => {
@@ -166,6 +183,26 @@ export default function Notifications() {
     }
   };
 
+  const handleOpenApplicationForm = async (notification: AppNotification) => {
+    const payload = notification.data ?? {};
+    const propertyId = getNumberField(payload.property_id);
+    const applicationId = getNumberField(payload.application_id);
+    const propertyTitle = getStringField(payload.property_title) ?? "Property";
+    const propertyLocation = getStringField(payload.property_location) ?? "";
+
+    await handleMarkRead(notification);
+
+    router.push({
+      pathname: "/screens/ApplicationRequest",
+      params: {
+        id: propertyId ? String(propertyId) : undefined,
+        application_id: applicationId ? String(applicationId) : undefined,
+        title: propertyTitle,
+        location: propertyLocation,
+      },
+    });
+  };
+
   return (
     <LinearGradient
       colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
@@ -190,7 +227,7 @@ export default function Notifications() {
         </View>
 
         <View style={styles.filters}>
-          {(["all", "visit", "system"] as const).map((key) => (
+          {(["all", "visit-owner", "visit-seeker", "visit", "system"] as const).map((key) => (
             <TouchableOpacity
               key={key}
               style={[
@@ -251,6 +288,14 @@ export default function Notifications() {
               const preferredTime = getStringField(payload.preferred_time);
               const message = getStringField(payload.message);
               const propertyTitle = getStringField(payload.property_title);
+              const propertyLocation = getStringField(payload.property_location);
+              const ownerName = getStringField(payload.owner_name);
+              const ctaLabel =
+                getStringField(payload.cta_label) ?? "Fill Application Form";
+              const isOwnerVisitRequest = notification.type === "visit_request";
+              const isAcceptedVisit = notification.type === "visit_confirmed";
+              const isDeclinedVisit = notification.type === "visit_cancelled";
+              const isApplicationSubmitted = notification.type === "application_submitted";
 
               return (
                 <TouchableOpacity
@@ -298,19 +343,88 @@ export default function Notifications() {
                   {propertyTitle ? (
                     <Text style={styles.infoLine}>Property: {propertyTitle}</Text>
                   ) : null}
-                  {requesterName ? (
+                  {propertyLocation ? (
+                    <Text style={styles.infoLine}>Location: {propertyLocation}</Text>
+                  ) : null}
+                  {isOwnerVisitRequest && requesterName ? (
                     <Text style={styles.infoLine}>User: {requesterName}</Text>
                   ) : null}
-                  {requesterEmail ? (
+                  {!isOwnerVisitRequest && ownerName ? (
+                    <Text style={styles.infoLine}>Owner: {ownerName}</Text>
+                  ) : null}
+                  {isOwnerVisitRequest && requesterEmail ? (
                     <Text style={styles.infoLine}>Email: {requesterEmail}</Text>
                   ) : null}
-                  {requesterPhone ? (
+                  {isOwnerVisitRequest && requesterPhone ? (
                     <Text style={styles.infoLine}>Phone: {requesterPhone}</Text>
                   ) : null}
                   {preferredTime ? (
                     <Text style={styles.infoLine}>Preferred time: {preferredTime}</Text>
                   ) : null}
-                  {message ? <Text style={styles.infoLine}>Message: {message}</Text> : null}
+                  {isOwnerVisitRequest && message ? (
+                    <Text style={styles.infoLine}>Message: {message}</Text>
+                  ) : null}
+                  {isApplicationSubmitted && requesterName ? (
+                    <Text style={styles.infoLine}>Applicant: {requesterName ?? getStringField(payload.seeker_name)}</Text>
+                  ) : null}
+                  {isApplicationSubmitted && (requesterEmail || getStringField(payload.seeker_email)) ? (
+                    <Text style={styles.infoLine}>
+                      Email: {requesterEmail ?? getStringField(payload.seeker_email)}
+                    </Text>
+                  ) : null}
+                  {isAcceptedVisit ? (
+                    <View style={styles.userNoticeBox}>
+                      <Text style={styles.userNoticeTitle}>Next step</Text>
+                      <Text style={styles.userNoticeText}>
+                        Your visit was accepted. Complete the application form so the owner
+                        can review your file.
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.userCtaBtn}
+                        onPress={() => void handleOpenApplicationForm(notification)}
+                      >
+                        <Text style={styles.userCtaText}>{ctaLabel}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+
+                  {isDeclinedVisit ? (
+                    <View style={styles.userNoticeBox}>
+                      <Text style={styles.userNoticeTitle}>Update</Text>
+                      <Text style={styles.userNoticeText}>
+                        This visit request was declined. You can keep exploring other homes
+                        and send a new request anytime.
+                      </Text>
+                    </View>
+                  ) : null}
+                  {isApplicationSubmitted ? (
+                    <View style={styles.userNoticeBox}>
+                      <Text style={styles.userNoticeTitle}>Application Documents</Text>
+                      <Text style={styles.userNoticeText}>
+                        The applicant has submitted their documents. Review them below.
+                      </Text>
+                      {[
+                        ["Identity document",   payload.id_doc_url],
+                        ["Proof of income",     payload.income_doc_url],
+                        ["Employment letter",   payload.employment_doc_url],
+                        ["Guarantor info",      payload.guarantor_doc_url],
+                      ].map(([label, url]) =>
+                        url ? (
+                          <TouchableOpacity
+                            key={label as string}
+                            style={styles.docLink}
+                            onPress={() => {
+                              // Open the Cloudinary URL in browser
+                              const { Linking } = require("react-native");
+                              Linking.openURL(url as string);
+                            }}
+                          >
+                            <Text style={styles.docLinkText}>📄 {label as string}</Text>
+                          </TouchableOpacity>
+                        ) : null
+                      )}
+                    </View>
+                  ) : null}
 
                   {notification.can_act && notification.visit_status === "pending" ? (
                     <View style={styles.actionsRow}>
@@ -482,4 +596,47 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   retryText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+  userNoticeBox: {
+    marginTop: 14,
+    borderRadius: 14,
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    padding: 12,
+    gap: 8,
+  },
+  userNoticeTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#2B2B33",
+  },
+  userNoticeText: {
+    fontSize: 12,
+    color: "#5F6472",
+    lineHeight: 18,
+  },
+  userCtaBtn: {
+    marginTop: 2,
+    backgroundColor: "#7ECEC4",
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: "center",
+  },
+  userCtaText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  docLink: {
+  marginTop: 8,
+  backgroundColor: "#EEF2FF",
+  borderRadius: 10,
+  paddingVertical: 10,
+  paddingHorizontal: 12,
+},
+docLinkText: {
+  fontSize: 12,
+  fontWeight: "700",
+  color: "#4F46E5",
+},
 });

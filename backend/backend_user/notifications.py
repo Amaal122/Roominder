@@ -1,5 +1,6 @@
 """Notification endpoints and helpers."""
 
+from datetime import timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -75,6 +76,10 @@ def _build_notification_out(
                 prop = db.query(Property).filter(Property.id == visit.property_id).first()
                 can_act = bool(prop and prop.owner_id == current_user.id)
 
+    created_at = notification.created_at
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+
     return NotificationOut(
         id=notification.id,
         user_id=notification.user_id,
@@ -83,7 +88,7 @@ def _build_notification_out(
         body=notification.body,
         data=payload,
         is_read=notification.is_read,
-        created_at=notification.created_at.isoformat(),
+        created_at=created_at.isoformat(),
         visit_id=visit_id,
         visit_status=visit_status,
         can_act=can_act,
@@ -95,13 +100,27 @@ def list_notifications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    notifications = (
+    raw_notifications = (
         db.query(Notification)
         .filter(Notification.user_id == current_user.id)
         .order_by(Notification.created_at.desc())
         .all()
     )
-    return [_build_notification_out(notification, db, current_user) for notification in notifications]
+
+    filtered_notifications = []
+    for notification in raw_notifications:
+        data = notification.data if isinstance(notification.data, dict) else {}
+        audience = data.get("audience")
+
+        if current_user.role == "owner" and audience == "seeker":
+            continue
+
+        if current_user.role != "owner" and audience == "owner":
+            continue
+
+        filtered_notifications.append(notification)
+
+    return [_build_notification_out(notification, db, current_user) for notification in filtered_notifications]
 
 
 @router.put("/read-all")

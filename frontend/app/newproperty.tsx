@@ -139,6 +139,8 @@ export default function NewProperty() {
       city: inferCity(address),
       price: parseRent(rent),
       rooms: Number(beds) || 1,
+      bathrooms: Number(baths) || 1,
+      space: Number(size) || 0,
       description,
       image_url: imageUrl,
     };
