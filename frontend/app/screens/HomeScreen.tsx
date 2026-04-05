@@ -190,6 +190,7 @@ export default function HomeScreen() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState({ new_listings: 0, best_match: 0 });
 
   useEffect(() => {
     let isMounted = true;
@@ -216,11 +217,24 @@ export default function HomeScreen() {
     };
   }, []);
 
-  
   // 🔥 FETCH DATA FROM BACKEND
   useEffect(() => {
+    const fetchStats = async () => {
+      const token = await getAuthToken();
+      if (!token) return;
+      const res = await fetch(`${API_BASE}/seeker/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data);
+      }
+    };
+
+    void fetchStats();
     void fetchListings();
   }, []);
+
   const fetchListings = async () => {
   setLoading(true);
   setError(null);
@@ -391,12 +405,12 @@ export default function HomeScreen() {
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>📈 New Listings</Text>
-              <Text style={[styles.statValue, styles.statValueTeal]}>24</Text>
+              <Text style={[styles.statValue, styles.statValueTeal]}>{stats.new_listings}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>✨ Best Match</Text>
               <Text style={[styles.statValue, styles.statValueAccent]}>
-                95%
+                {stats.best_match}%
               </Text>
             </View>
           </View>
