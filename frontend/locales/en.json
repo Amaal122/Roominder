@@ -13,6 +13,7 @@
     "app": "App",
     "messages": "Messages",
     "language": "Language",
+    "currency": "Currency",
     "theme": "Theme",
     "about": "About",
     "off": "Off",

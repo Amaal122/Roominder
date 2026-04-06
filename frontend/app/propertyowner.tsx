@@ -16,6 +16,8 @@ import { loadMyProperties, useProperties } from "./state/properties";
 import { useTranslation } from "react-i18next";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useSettings } from "./state/settings";
+import { formatMoney } from "./utils/money";
 
 export default function PropertyOwner() {
   const router = useRouter();
@@ -25,6 +27,7 @@ export default function PropertyOwner() {
   const pendingCount = usePendingCount();
   const properties = useProperties();
   const stats = useStats();
+  const settings = useSettings();
 
   useFocusEffect(
     useCallback(() => {
@@ -105,7 +108,7 @@ export default function PropertyOwner() {
                 <Feather name="dollar-sign" size={18} color="#10B981" />
               </View>
               <Text style={[styles.statValue, { color: "#10B981" }]}>
-                {stats.monthly_revenue} {stats.currency}
+                {formatMoney(stats.monthly_revenue, settings.currency)}
               </Text>
               <Text style={[styles.statLabel, isDark && styles.mutedTextDark]}>
                 {t("properties.monthly")}
@@ -232,7 +235,7 @@ export default function PropertyOwner() {
                   </View>
                   <View style={styles.priceRow}>
                     <Text style={styles.priceText}>
-                      {property.price} {t("properties.per_month")}
+                      {formatMoney(property.price, settings.currency)} {t("properties.per_month")}
                     </Text>
                     <Text style={[styles.tenantsText, isDark && styles.mutedTextDark]}>
                       {property.tenants}

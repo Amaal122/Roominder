@@ -127,10 +127,10 @@ export default function Settings() {
               value={settings.emailEnabled}
               onChange={(value) => updateSettings({ emailEnabled: value })}
             />
-            <SettingRow
-              label={t("settings.sms_alerts")}
-              value={settings.smsEnabled}
-              onChange={(value) => updateSettings({ smsEnabled: value })}
+            <ActionRow
+              label={t("settings.currency")}
+              value={settings.currency}
+              onPress={() => router.push("/currency")}
             />
           </View>
 
