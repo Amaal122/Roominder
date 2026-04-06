@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, TextProps } from "react-native";
+import { useThemeColor } from "@/hooks/use-theme-color";
 
 type Props = TextProps & { type?: "title" | "subtitle" | "defaultSemiBold" };
 
@@ -9,6 +10,7 @@ export const ThemedText: React.FC<Props> = ({
   type,
   ...rest
 }) => {
+  const color = useThemeColor({}, "text");
   const typeStyle =
     type === "title"
       ? styles.title
@@ -16,7 +18,7 @@ export const ThemedText: React.FC<Props> = ({
         ? styles.subtitle
         : undefined;
   return (
-    <Text style={[typeStyle, style]} {...rest}>
+    <Text style={[{ color }, typeStyle, style]} {...rest}>
       {children}
     </Text>
   );

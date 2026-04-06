@@ -2,9 +2,6 @@ from datetime import datetime
 from typing import List, Optional
 
 import os
-
-import cloudinary
-import cloudinary.uploader
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel, ConfigDict
@@ -21,22 +18,38 @@ from ..backend_user.models import Notification
 
 load_dotenv()
 
-cloudinary.config(
-	cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-	api_key=os.getenv("CLOUDINARY_API_KEY"),
-	api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-)
+try:
+    import cloudinary  # type: ignore
+    import cloudinary.uploader  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    cloudinary = None
 
 
 async def upload_to_cloudinary(file: Optional[UploadFile]) -> Optional[str]:
-	if not file or not file.filename:
-		return None
-	contents = await file.read()
-	if not contents:
-		return None
-	# cloudinary-python accepts bytes
-	result = cloudinary.uploader.upload(contents, folder="rental_applications")
-	return result.get("secure_url")
+    # NOTE: Keep this function import-safe so the server can start even when
+    # cloudinary isn't installed; only fail when the upload endpoint is used.
+    if not file or not file.filename:
+        return None
+
+    if cloudinary is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Cloudinary is not installed on the server.",
+        )
+
+    cloudinary.config(
+        cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+        api_key=os.getenv("CLOUDINARY_API_KEY"),
+        api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    )
+
+    contents = await file.read()
+    if not contents:
+        return None
+
+    # cloudinary-python accepts bytes
+    result = cloudinary.uploader.upload(contents, folder="rental_applications")
+    return result.get("secure_url")
 
 class RentalApplication(Base):
     __tablename__ = "rental_applications"

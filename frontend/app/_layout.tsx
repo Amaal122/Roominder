@@ -1,16 +1,29 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { SeekerProfileProvider } from "../app/contexts/SeekerProfileContext";
+import { SeekerProfileProvider } from "./contexts/SeekerProfileContext";
+import { initI18n } from "../i18n";
+import { useEffect, useState } from "react";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
 
-export default function Layout() {
+export default function RootLayout() {
+  const [ready, setReady] = useState(false);
+  const scheme = useColorScheme();
+
+  useEffect(() => {
+    initI18n().then(() => setReady(true));
+  }, []);
+
+  if (!ready) return null; // or a splash screen
+
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
       <SeekerProfileProvider>
         <Stack
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: "#F5F5F5" },
+            contentStyle: { backgroundColor: Colors[scheme].background },
           }}
           initialRouteName="index"
         >

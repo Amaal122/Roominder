@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { QUESTIONS } from "./form";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -11,6 +11,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { getAuthToken } from "./state/auth";
+
+const API_BASE = "http://127.0.0.1:8001";
 
 
 // List of all profile fields to display
@@ -56,6 +59,53 @@ export default function ReviewProfile() {
     }
   }, [rawPayload]);
 
+  // If location/radius were not edited in this flow, they might be missing from
+  // the payload. Hydrate them from the saved seeker profile so the confirmation
+  // screen reflects existing DB values.
+  const [resolvedProfile, setResolvedProfile] = useState<any>(parsedProfile);
+
+  useEffect(() => {
+    setResolvedProfile(parsedProfile);
+  }, [parsedProfile]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const needsLocation = resolvedProfile?.location == null;
+    const needsRadius = resolvedProfile?.radius == null;
+    if (!needsLocation && !needsRadius) return;
+
+    const hydrate = async () => {
+      try {
+        const token = await getAuthToken();
+        if (!token) return;
+
+        const res = await fetch(`${API_BASE}/seeker/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) return;
+        const saved = await res.json();
+
+        if (cancelled) return;
+        setResolvedProfile((prev: any) => ({
+          ...saved,
+          ...prev,
+          // Only fill missing values
+          location: prev?.location ?? saved?.location,
+          radius: prev?.radius ?? saved?.radius,
+        }));
+      } catch {
+        // ignore hydration failures; keep payload-only view
+      }
+    };
+
+    hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, [resolvedProfile?.location, resolvedProfile?.radius]);
+
   // For lifestyle fields, get the label from QUESTIONS
   function getLifestyleLabel(key: string, value: string) {
     const q = QUESTIONS.find(q => q.key === key);
@@ -66,7 +116,7 @@ export default function ReviewProfile() {
 
   // Build display list
   const displayFields = PROFILE_FIELDS.map(field => {
-    let value = parsedProfile[field.key];
+    let value = resolvedProfile[field.key];
     // For lifestyle fields, show label
     if (["sleep_schedule","cleanliness","social_life","guests","work_style"].includes(field.key)) {
       value = getLifestyleLabel(field.key, value);
@@ -76,7 +126,7 @@ export default function ReviewProfile() {
 
   const handleConfirm = () => {
     // Route based on looking_for (handle string, array, or comma-separated)
-    let lookingFor = parsedProfile.looking_for;
+    let lookingFor = resolvedProfile.looking_for;
     if (Array.isArray(lookingFor)) {
       lookingFor = lookingFor.join(",");
     }

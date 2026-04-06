@@ -3,6 +3,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getAuthToken } from "../state/auth";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -35,6 +37,10 @@ export default function ChatDetail() {
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+  const mutedIcon = isDark ? Colors.dark.mutedText : "#9aa0b5";
 
   const title = useMemo(() => params.name || "Conversation", [params.name]);
   const otherUserId = useMemo(() => {
@@ -171,12 +177,16 @@ export default function ChatDetail() {
 
   return (
     <LinearGradient
-      colors={["#6a36ff", "#b845ff", "#f56fa5"]}
+      colors={
+        isDark
+          ? [Colors.dark.background, Colors.dark.background]
+          : ["#F4896B", "#7ECEC4", "#FFF7F3"]
+      }
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.gradient}
     >
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -200,16 +210,28 @@ export default function ChatDetail() {
         >
           <ScrollView
             ref={scrollRef}
-            style={styles.thread}
+            style={[styles.thread, isDark && styles.threadDark]}
             contentContainerStyle={styles.threadContent}
             showsVerticalScrollIndicator={false}
           >
             {loading ? (
-              <Text style={{ textAlign: "center", marginTop: 24, color: "#777" }}>
+              <Text
+                style={{
+                  textAlign: "center",
+                  marginTop: 24,
+                  color: isDark ? Colors.dark.mutedText : "#777",
+                }}
+              >
                 Loading...
               </Text>
             ) : error ? (
-              <Text style={{ textAlign: "center", marginTop: 24, color: "#777" }}>
+              <Text
+                style={{
+                  textAlign: "center",
+                  marginTop: 24,
+                  color: isDark ? Colors.dark.mutedText : "#777",
+                }}
+              >
                 {error}
               </Text>
             ) : (
@@ -227,17 +249,19 @@ export default function ChatDetail() {
                       style={[
                         styles.bubble,
                         isMe ? styles.bubbleMe : styles.bubbleThem,
+                        !isMe && isDark ? styles.bubbleThemDark : null,
                       ]}
                     >
                       <Text
                         style={[
                           styles.bubbleText,
                           isMe ? styles.bubbleTextMe : null,
+                          !isMe && isDark ? styles.bubbleTextDark : null,
                         ]}
                       >
                         {m.content}
                       </Text>
-                      <Text style={styles.timeText}>
+                      <Text style={[styles.timeText, isDark && styles.timeTextDark]}>
                         {new Date(m.created_at).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -250,14 +274,14 @@ export default function ChatDetail() {
             )}
           </ScrollView>
 
-          <View style={styles.inputBar}>
+          <View style={[styles.inputBar, isDark && styles.inputBarDark]}>
             <TouchableOpacity style={styles.attachBtn}>
-              <Ionicons name="add" size={22} color="#9aa0b5" />
+              <Ionicons name="add" size={22} color={mutedIcon} />
             </TouchableOpacity>
             <TextInput
-              style={styles.input}
+              style={[styles.input, isDark && styles.inputDark]}
               placeholder="Type a message"
-              placeholderTextColor="#9aa0b5"
+              placeholderTextColor={mutedIcon}
               value={input}
               onChangeText={setInput}
               onSubmitEditing={sendMessage}
@@ -267,6 +291,7 @@ export default function ChatDetail() {
               style={[
                 styles.sendBtn,
                 input.trim() ? styles.sendBtnActive : null,
+                !input.trim() && isDark ? styles.sendBtnDark : null,
               ]}
               onPress={sendMessage}
               disabled={!input.trim()}
@@ -274,7 +299,7 @@ export default function ChatDetail() {
               <Ionicons
                 name="send"
                 size={18}
-                color={input.trim() ? "#fff" : "#c6c9d6"}
+                color={input.trim() ? "#fff" : isDark ? Colors.dark.mutedText : "#c6c9d6"}
               />
             </TouchableOpacity>
           </View>
@@ -287,6 +312,7 @@ export default function ChatDetail() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   safeArea: { flex: 1 },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   flex: { flex: 1 },
   header: {
     flexDirection: "row",
@@ -306,6 +332,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.14)",
   },
   thread: { flex: 1, backgroundColor: "#f8f8fb" },
+  threadDark: { backgroundColor: Colors.dark.background },
   threadContent: { paddingHorizontal: 14, paddingVertical: 16 },
   bubbleRow: { marginBottom: 10 },
   rowMe: { alignItems: "flex-end" },
@@ -325,12 +352,15 @@ const styles = StyleSheet.create({
   bubbleThem: { backgroundColor: "#fff" },
   bubbleText: { color: "#1e1e2e", fontSize: 14 },
   bubbleTextMe: { color: "#fff" },
+  bubbleThemDark: { backgroundColor: Colors.dark.card },
+  bubbleTextDark: { color: Colors.dark.text },
   timeText: {
     fontSize: 10,
     color: "#9aa0b5",
     marginTop: 4,
     alignSelf: "flex-end",
   },
+  timeTextDark: { color: Colors.dark.mutedText },
   inputBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -340,6 +370,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#eceef4",
     gap: 10,
+  },
+  inputBarDark: {
+    backgroundColor: Colors.dark.card,
+    borderTopColor: Colors.dark.border,
   },
   attachBtn: {
     width: 34,
@@ -358,6 +392,10 @@ const styles = StyleSheet.create({
     color: "#1e1e2e",
     fontSize: 14,
   },
+  inputDark: {
+    backgroundColor: Colors.dark.cardMuted,
+    color: Colors.dark.text,
+  },
   sendBtn: {
     width: 40,
     height: 40,
@@ -366,5 +404,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  sendBtnDark: { backgroundColor: Colors.dark.cardMuted },
   sendBtnActive: { backgroundColor: "#7d5dff" },
 });

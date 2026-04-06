@@ -12,6 +12,9 @@ import {
   View,
 } from "react-native";
 
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
+
 import { getAuthToken } from "../state/auth";
 
 const API_BASE = "http://127.0.0.1:8001";
@@ -20,6 +23,9 @@ const getSingleParam = (value?: string | string[]) =>
   Array.isArray(value) ? value[0] : value;
 
 export default function VisitRequest() {
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+
   const params = useLocalSearchParams<{
     id?: string;
     title?: string;
@@ -114,57 +120,85 @@ export default function VisitRequest() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
       >
         <LinearGradient
-          colors={["#F4896B", "#7ECEC4"]}
+          colors={
+            isDark
+              ? [Colors.dark.card, Colors.dark.card]
+              : ["#F4896B", "#7ECEC4"]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.header}
+          style={[styles.header, isDark && styles.headerDark]}
         >
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backIcon}>←</Text>
+          <TouchableOpacity
+            style={[styles.backBtn, isDark && styles.backBtnDark]}
+            onPress={() => router.back()}
+          >
+            <Text style={[styles.backIcon, isDark && styles.backIconDark]}>
+              ←
+            </Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Visit Request</Text>
+          <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
+            Visit Request
+          </Text>
         </LinearGradient>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Property</Text>
-          <Text style={styles.propertyTitle}>{title}</Text>
-          <Text style={styles.propertyLocation}>{location}</Text>
+        <View style={[styles.card, isDark && styles.cardDark]}>
+          <Text style={[styles.cardTitle, isDark && styles.cardTitleDark]}>
+            Property
+          </Text>
+          <Text style={[styles.propertyTitle, isDark && styles.propertyTitleDark]}>
+            {title}
+          </Text>
+          <Text
+            style={[styles.propertyLocation, isDark && styles.propertyLocationDark]}
+          >
+            {location}
+          </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Details</Text>
+          <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
+            Your Details
+          </Text>
           <TextInput
             placeholder="Full name"
             value={fullName}
             onChangeText={setFullName}
-            style={styles.input}
-            placeholderTextColor="#A0A0B5"
+            style={[styles.input, isDark && styles.inputDark]}
+            placeholderTextColor={
+              isDark ? Colors.dark.mutedText : "#A0A0B5"
+            }
           />
           <TextInput
             placeholder="Phone number"
             value={phone}
             onChangeText={setPhone}
-            style={styles.input}
-            placeholderTextColor="#A0A0B5"
+            style={[styles.input, isDark && styles.inputDark]}
+            placeholderTextColor={
+              isDark ? Colors.dark.mutedText : "#A0A0B5"
+            }
             keyboardType="phone-pad"
           />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferred Time</Text>
+          <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
+            Preferred Time
+          </Text>
           <View style={styles.choiceRow}>
             {(["Today", "Tomorrow", "Weekend"] as const).map((opt) => (
               <TouchableOpacity
                 key={opt}
                 style={[
                   styles.choicePill,
+                  isDark && styles.choicePillDark,
                   dateOption === opt && styles.choicePillActive,
                 ]}
                 onPress={() => setDateOption(opt)}
@@ -172,6 +206,7 @@ export default function VisitRequest() {
                 <Text
                   style={[
                     styles.choiceText,
+                    isDark && styles.choiceTextDark,
                     dateOption === opt && styles.choiceTextActive,
                   ]}
                 >
@@ -183,13 +218,17 @@ export default function VisitRequest() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Message (optional)</Text>
+          <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
+            Message (optional)
+          </Text>
           <TextInput
             placeholder="Tell the owner about yourself..."
             value={message}
             onChangeText={setMessage}
-            style={[styles.input, styles.textArea]}
-            placeholderTextColor="#A0A0B5"
+            style={[styles.input, styles.textArea, isDark && styles.inputDark]}
+            placeholderTextColor={
+              isDark ? Colors.dark.mutedText : "#A0A0B5"
+            }
             multiline
           />
         </View>
@@ -218,6 +257,7 @@ const BORDER = "#F1E3DC";
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   scroll: { flex: 1, padding: 20 },
   header: {
     flexDirection: "row",
@@ -226,6 +266,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 16,
     borderRadius: 16,
+  },
+  headerDark: {
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
   },
   backBtn: {
     width: 34,
@@ -239,6 +283,12 @@ const styles = StyleSheet.create({
   },
   backIcon: { fontSize: 16, color: TEXT },
   headerTitle: { fontSize: 18, fontWeight: "700", color: "white" },
+  backBtnDark: {
+    backgroundColor: Colors.dark.card,
+    borderColor: Colors.dark.border,
+  },
+  backIconDark: { color: Colors.dark.text },
+  headerTitleDark: { color: Colors.dark.text },
   card: {
     backgroundColor: "white",
     borderRadius: 16,
@@ -250,6 +300,13 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 12, color: MUTED, marginBottom: 6 },
   propertyTitle: { fontSize: 16, fontWeight: "700", color: TEXT },
   propertyLocation: { fontSize: 13, color: MUTED, marginTop: 2 },
+  cardDark: {
+    backgroundColor: Colors.dark.card,
+    borderColor: Colors.dark.border,
+  },
+  cardTitleDark: { color: Colors.dark.mutedText },
+  propertyTitleDark: { color: Colors.dark.text },
+  propertyLocationDark: { color: Colors.dark.mutedText },
   section: { marginBottom: 18 },
   sectionTitle: {
     fontSize: 14,
@@ -257,6 +314,7 @@ const styles = StyleSheet.create({
     color: TEXT,
     marginBottom: 10,
   },
+  sectionTitleDark: { color: Colors.dark.text },
   input: {
     backgroundColor: "white",
     borderWidth: 1,
@@ -268,6 +326,11 @@ const styles = StyleSheet.create({
     color: TEXT,
     marginBottom: 10,
   },
+  inputDark: {
+    backgroundColor: Colors.dark.cardMuted,
+    borderColor: Colors.dark.border,
+    color: Colors.dark.text,
+  },
   textArea: { height: 110, textAlignVertical: "top" },
   choiceRow: { flexDirection: "row", gap: 10 },
   choicePill: {
@@ -278,8 +341,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: "white",
   },
+  choicePillDark: {
+    borderColor: Colors.dark.border,
+    backgroundColor: Colors.dark.cardMuted,
+  },
   choicePillActive: { backgroundColor: TEAL, borderColor: TEAL },
   choiceText: { fontSize: 13, color: MUTED, fontWeight: "600" },
+  choiceTextDark: { color: Colors.dark.mutedText },
   choiceTextActive: { color: "white" },
   primaryBtn: {
     marginTop: 6,

@@ -20,6 +20,8 @@ type Question = {
   options: { id: string; label: string; icon: keyof typeof Feather.glyphMap }[];
 };
 
+const API_BASE = "http://127.0.0.1:8001";
+
 export const QUESTIONS: Question[] = [
   {
     key: "sleep",
@@ -109,7 +111,7 @@ export default function Form() {
     // Fetch user info to get user_id
     let user_id = null;
     try {
-      const meRes = await fetch("http://localhost:8001/auth/me", {
+      const meRes = await fetch(`${API_BASE}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (meRes.ok) {
@@ -124,7 +126,40 @@ export default function Form() {
       return;
     }
 
+    // If the user is editing their profile, some fields (like location/radius)
+    // might not be present in the current in-memory context. Fetch saved values
+    // so we don't accidentally omit them when confirming.
+    let saved: any = null;
+    try {
+      const savedRes = await fetch(`${API_BASE}/seeker/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (savedRes.ok) {
+        saved = await savedRes.json();
+      }
+    } catch {
+      saved = null;
+    }
+
+    const savedDefaults = saved
+      ? {
+          looking_for: saved.looking_for,
+          location: saved.location,
+          radius: saved.radius,
+          age: saved.age,
+          gender: saved.gender,
+          occupation: saved.occupation,
+          image_url: saved.image_url,
+          sleep_schedule: saved.sleep_schedule,
+          cleanliness: saved.cleanliness,
+          social_life: saved.social_life,
+          guests: saved.guests,
+          work_style: saved.work_style,
+        }
+      : {};
+
     const profileData = {
+      ...savedDefaults,
       ...profile,
       user_id,
       sleep_schedule: answers.sleep,
@@ -135,7 +170,7 @@ export default function Form() {
     };
 
     try {
-      const response = await fetch("http://localhost:8001/seeker/", {
+      const response = await fetch(`${API_BASE}/seeker/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

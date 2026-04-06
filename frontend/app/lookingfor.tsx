@@ -139,9 +139,10 @@ export default function LookingFor() {
       router.push("/location");
       return;
     }
-    // If only roommate, skip location and set location data undefined, go to form
+    // If only roommate, skip location and go to profile completion.
+    // Do NOT clear location/radius here, because users might already have saved values
+    // (and editing/confirming should keep them if unchanged).
     if (looking_for === "roommate") {
-      updateProfile({ location: undefined, radius: undefined });
       router.push("/completeprofile");
       return;
     }

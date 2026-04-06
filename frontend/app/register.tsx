@@ -11,6 +11,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function Register() {
   const router = useRouter();
@@ -23,6 +25,8 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
 
   const handleContinue = async () => {
     if (password !== confirmPassword) {
@@ -69,7 +73,9 @@ export default function Register() {
     }
   };
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={[styles.container, isDark && styles.containerDark]}
+    >
       <LinearGradient
         colors={["#F4896B", "#7ECEC4"]}
         start={{ x: 0, y: 0 }}
@@ -85,7 +91,7 @@ export default function Register() {
         </Text>
       </LinearGradient>
 
-      <View style={styles.formCard}>
+      <View style={[styles.formCard, isDark && styles.formCardDark]}>
         <InputField
           label="Full Name"
           icon="user"
@@ -123,12 +129,12 @@ export default function Register() {
         <TouchableOpacity
           onPress={() => router.push({ pathname: "/login", params: { role } })}
         >
-          <Text style={styles.footerText}>
+          <Text style={[styles.footerText, isDark && styles.footerTextDark]}>
             Already have an account? <Text style={styles.link}>Sign In</Text>
           </Text>
         </TouchableOpacity>
 
-        <Text style={styles.terms}>
+        <Text style={[styles.terms, isDark && styles.termsDark]}>
           By creating an account, you agree to our Terms of Service and Privacy
           Policy
         </Text>
@@ -146,24 +152,35 @@ const InputField = ({
   value,
   onChangeText,
 }: any) => (
+  (() => {
+    const scheme = useColorScheme();
+    const isDark = scheme === "dark";
+    return (
   <View style={styles.inputWrapper}>
     <Text style={styles.label}>{label}</Text>
-    <View style={styles.inputContainer}>
-      <Feather name={icon} size={18} color="#999" />
+    <View style={[styles.inputContainer, isDark && styles.inputContainerDark]}>
+      <Feather
+        name={icon}
+        size={18}
+        color={isDark ? Colors.dark.mutedText : "#999"}
+      />
       <TextInput
-        style={styles.input}
+        style={[styles.input, isDark && styles.inputDark]}
         placeholder={placeholder}
         secureTextEntry={secure}
-        placeholderTextColor="#CCC"
+        placeholderTextColor={isDark ? Colors.dark.mutedText : "#CCC"}
         value={value}
         onChangeText={onChangeText}
       />
     </View>
   </View>
+    );
+  })()
 );
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: "#FFF7F3" },
+  containerDark: { backgroundColor: Colors.dark.background },
   header: { padding: 40, paddingTop: 60 },
   headerTitle: {
     fontSize: 28,
@@ -180,6 +197,7 @@ const styles = StyleSheet.create({
     padding: 30,
     alignItems: "center",
   },
+  formCardDark: { backgroundColor: Colors.dark.background },
   inputWrapper: { width: "100%", marginBottom: 20 },
   label: {
     color: "#F4896B",
@@ -197,7 +215,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     height: 55,
   },
+  inputContainerDark: {
+    borderColor: Colors.dark.border,
+    backgroundColor: Colors.dark.card,
+  },
   input: { flex: 1, marginLeft: 10, color: "#333" },
+  inputDark: { color: Colors.dark.text },
   btnPrimary: {
     backgroundColor: "#7ECEC4",
     width: "100%",
@@ -209,6 +232,7 @@ const styles = StyleSheet.create({
   },
   btnText: { color: "white", fontSize: 16, fontWeight: "bold" },
   footerText: { marginTop: 25, color: "#666" },
+  footerTextDark: { color: Colors.dark.mutedText },
   link: { color: "#7ECEC4", fontWeight: "bold" },
   terms: {
     textAlign: "center",
@@ -217,4 +241,5 @@ const styles = StyleSheet.create({
     marginTop: 30,
     lineHeight: 18,
   },
+  termsDark: { color: Colors.dark.mutedText },
 });

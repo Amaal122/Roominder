@@ -16,6 +16,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAuthToken } from "../state/auth";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
 
 // ─── Types ─────────────────────────────────────────────────────
 type Listing = {
@@ -68,6 +70,8 @@ const AnimatedTabIcon = ({
   onPress?: () => void;
 }) => {
   const translateY = useRef(new Animated.Value(0)).current;
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
 
   const handlePress = () => {
     Animated.sequence([
@@ -96,7 +100,13 @@ const AnimatedTabIcon = ({
       <Animated.Text style={[styles.tabIcon, { transform: [{ translateY }] }]}>
         {icon}
       </Animated.Text>
-      <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
+      <Text
+        style={[
+          styles.tabLabel,
+          isDark && styles.tabLabelDark,
+          active && styles.tabLabelActive,
+        ]}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -114,12 +124,14 @@ const ListingCard = ({
   onPress,
 }: Listing & { onPress: () => void }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
 
 
 
   return (
     <Pressable
-      style={styles.listingCard}
+      style={[styles.listingCard, isDark && styles.listingCardDark]}
       onPress={onPress}>
       <View style={styles.imageWrapper}>
         {image && !image.startsWith('blob:') && (
@@ -135,16 +147,16 @@ const ListingCard = ({
       </View>
 
       <View style={styles.cardBody}>
-        <Text style={styles.listingTitle}>{title}</Text>
+        <Text style={[styles.listingTitle, isDark && styles.listingTitleDark]}>{title}</Text>
         <View style={styles.locationRow}>
           <Text style={styles.locationPin}>📍</Text>
-          <Text style={styles.locationText}>{location}</Text>
+          <Text style={[styles.locationText, isDark && styles.mutedTextDark]}>{location}</Text>
         </View>
 
         <View style={styles.cardFooter}>
           <Text style={styles.price}>
             {price}
-            <Text style={styles.perMonth}>/month</Text>
+            <Text style={[styles.perMonth, isDark && styles.mutedTextDark]}>/month</Text>
           </Text>
           <View style={styles.roomsBadge}>
             <Text style={styles.roomsText}>{rooms}</Text>
@@ -191,6 +203,8 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({ new_listings: 0, best_match: 0 });
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
 
   useEffect(() => {
     let isMounted = true;
@@ -317,10 +331,19 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" backgroundColor={CORAL} />
-        <View style={styles.container}>
-          <Text style={{ textAlign: "center", marginTop: 24, color: INK }}>
+      <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
+        <StatusBar
+          barStyle={isDark ? "light-content" : "dark-content"}
+          backgroundColor={isDark ? Colors.dark.background : "#FFFFFF"}
+        />
+        <View style={[styles.container, isDark && styles.containerDark]}>
+          <Text
+            style={{
+              textAlign: "center",
+              marginTop: 24,
+              color: isDark ? Colors.dark.text : INK,
+            }}
+          >
             Loading recommendations...
           </Text>
           {error ? (
@@ -335,16 +358,20 @@ export default function HomeScreen() {
 
   return (
     <LinearGradient
-      colors={["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]}
+      colors={
+        isDark
+          ? [Colors.dark.background, Colors.dark.background]
+          : ["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]
+      }
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
       style={styles.gradient}
     >
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
         <StatusBar barStyle="light-content" backgroundColor={CORAL} />
 
         <ScrollView
-          style={styles.container}
+          style={[styles.container, isDark && styles.containerDark]}
           showsVerticalScrollIndicator={false}
         >
           {/* ── HERO ── */}
@@ -378,8 +405,14 @@ export default function HomeScreen() {
             </View>
 
             {showRoommates ? (
-              <View style={styles.toggleContainer}>
-                <TouchableOpacity style={[styles.toggleBtn, styles.toggleActive]}>
+              <View style={[styles.toggleContainer, isDark && styles.toggleContainerDark]}>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleBtn,
+                    styles.toggleActive,
+                    isDark && styles.toggleActiveDark,
+                  ]}
+                >
                   <Text style={styles.toggleIconActive}>🏠</Text>
                   <Text style={styles.toggleTextActive}>Housing</Text>
                 </TouchableOpacity>
@@ -387,13 +420,19 @@ export default function HomeScreen() {
                   style={styles.toggleBtn}
                   onPress={() => router.push("/roomatematch")}
                 >
-                  <Text style={styles.toggleIcon}>👥</Text>
-                  <Text style={styles.toggleText}>Roommates</Text>
+                  <Text style={[styles.toggleIcon, isDark && styles.toggleIconDark]}>👥</Text>
+                  <Text style={[styles.toggleText, isDark && styles.toggleTextDark]}>Roommates</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={styles.toggleContainer}>
-                <TouchableOpacity style={[styles.toggleBtn, styles.toggleActive]}>
+              <View style={[styles.toggleContainer, isDark && styles.toggleContainerDark]}>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleBtn,
+                    styles.toggleActive,
+                    isDark && styles.toggleActiveDark,
+                  ]}
+                >
                   <Text style={styles.toggleIconActive}>🏠</Text>
                   <Text style={styles.toggleTextActive}>Housing</Text>
                 </TouchableOpacity>
@@ -403,13 +442,13 @@ export default function HomeScreen() {
 
           {/* ── STATS ── */}
           <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>📈 New Listings</Text>
-              <Text style={[styles.statValue, styles.statValueTeal]}>{stats.new_listings}</Text>
+            <View style={[styles.statCard, isDark && styles.statCardDark]}>
+              <Text style={[styles.statLabel, isDark && styles.statLabelDark]}>📈 New Listings</Text>
+              <Text style={[styles.statValue, styles.statValueTeal, isDark && styles.statValueDark]}>{stats.new_listings}</Text>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>✨ Best Match</Text>
-              <Text style={[styles.statValue, styles.statValueAccent]}>
+            <View style={[styles.statCard, isDark && styles.statCardDark]}>
+              <Text style={[styles.statLabel, isDark && styles.statLabelDark]}>✨ Best Match</Text>
+              <Text style={[styles.statValue, styles.statValueAccent, isDark && styles.statValueDark]}>
                 {stats.best_match}%
               </Text>
             </View>
@@ -417,9 +456,13 @@ export default function HomeScreen() {
 
           {/* ── LISTINGS ── */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recommended for{"\n"}You</Text>
+            <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
+              Recommended for{"\n"}You
+            </Text>
             <TouchableOpacity>
-              <Text style={styles.viewAll}>View{"\n"}All</Text>
+              <Text style={[styles.viewAll, isDark && styles.viewAllDark]}>
+                View{"\n"}All
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -432,9 +475,11 @@ export default function HomeScreen() {
           ))}
 
           {!listings.length && error ? (
-            <View style={styles.feedbackCard}>
-              <Text style={styles.feedbackTitle}>No properties to show</Text>
-              <Text style={styles.feedbackText}>{error}</Text>
+            <View style={[styles.feedbackCard, isDark && styles.feedbackCardDark]}>
+              <Text style={[styles.feedbackTitle, isDark && styles.feedbackTitleDark]}>
+                No properties to show
+              </Text>
+              <Text style={[styles.feedbackText, isDark && styles.feedbackTextDark]}>{error}</Text>
               <TouchableOpacity
                 style={styles.feedbackButton}
                 onPress={() => void fetchListings()}
@@ -448,7 +493,7 @@ export default function HomeScreen() {
         </ScrollView>
 
         {/* ── BOTTOM TAB BAR ── */}
-        <View style={styles.tabBar}>
+        <View style={[styles.tabBar, isDark && styles.tabBarDark]}>
           {tabs.map((tab) => (
             <AnimatedTabIcon
               key={tab.label}
@@ -474,6 +519,8 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: "transparent" },
   container: { flex: 1 },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
+  containerDark: { backgroundColor: Colors.dark.background },
 
   // HERO
   hero: {
@@ -524,6 +571,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 4,
   },
+  toggleContainerDark: {
+    backgroundColor: Colors.dark.card,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
   toggleBtn: {
     flex: 1,
     flexDirection: "row",
@@ -541,10 +593,15 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  toggleActiveDark: {
+    backgroundColor: Colors.dark.cardMuted,
+  },
   toggleIcon: { fontSize: 16 },
   toggleIconActive: { fontSize: 16 },
+  toggleIconDark: { color: Colors.dark.mutedText },
   toggleText: { fontSize: 14, color: TEAL, fontWeight: "600" },
   toggleTextActive: { fontSize: 14, color: CORAL, fontWeight: "700" },
+  toggleTextDark: { color: Colors.dark.mutedText },
 
   // STATS
   statsRow: {
@@ -568,6 +625,12 @@ const styles = StyleSheet.create({
   },
   statLabel: { fontSize: 11, color: "#7A6D6A", marginBottom: 4 },
   statValue: { fontSize: 26, fontWeight: "800", color: INK },
+  statCardDark: {
+    backgroundColor: Colors.dark.card,
+    borderColor: Colors.dark.border,
+  },
+  statLabelDark: { color: Colors.dark.mutedText },
+  statValueDark: { color: Colors.dark.text },
   statValueTeal: { color: TEAL },
   statValueAccent: { color: TEAL },
 
@@ -586,12 +649,14 @@ const styles = StyleSheet.create({
     color: INK,
     lineHeight: 24,
   },
+  sectionTitleDark: { color: Colors.dark.text },
   viewAll: {
     fontSize: 13,
     color: TEAL,
     fontWeight: "600",
     textAlign: "right",
   },
+  viewAllDark: { color: TEAL },
 
   // LISTING CARD
   listingCard: {
@@ -607,6 +672,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
+  },
+  listingCardDark: {
+    backgroundColor: Colors.dark.card,
+    borderColor: Colors.dark.border,
   },
   imageWrapper: { position: "relative" },
   listingImage: { width: "100%", height: 190 },
@@ -632,9 +701,11 @@ const styles = StyleSheet.create({
     color: INK,
     marginBottom: 4,
   },
+  listingTitleDark: { color: Colors.dark.text },
   locationRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   locationPin: { fontSize: 12, marginRight: 4 },
   locationText: { fontSize: 12, color: "#7A6D6A" },
+  mutedTextDark: { color: Colors.dark.mutedText },
   cardFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -660,17 +731,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
+  feedbackCardDark: {
+    backgroundColor: Colors.dark.card,
+    borderColor: Colors.dark.border,
+  },
   feedbackTitle: {
     fontSize: 16,
     fontWeight: "800",
     color: INK,
   },
+  feedbackTitleDark: { color: Colors.dark.text },
   feedbackText: {
     fontSize: 13,
     color: "#7A6D6A",
     textAlign: "center",
     lineHeight: 18,
   },
+  feedbackTextDark: { color: Colors.dark.mutedText },
   feedbackButton: {
     backgroundColor: CORAL,
     borderRadius: 999,
@@ -692,8 +769,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: CORAL_PASTEL,
   },
+  tabBarDark: {
+    backgroundColor: Colors.dark.card,
+    borderTopColor: Colors.dark.border,
+  },
   tabItem: { flex: 1, alignItems: "center" },
   tabIcon: { fontSize: 20, marginBottom: 2 },
   tabLabel: { fontSize: 10, color: "#AAAAAA", fontWeight: "500" },
+  tabLabelDark: { color: Colors.dark.mutedText },
   tabLabelActive: { color: CORAL, fontWeight: "700" },
 });

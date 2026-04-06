@@ -3,6 +3,8 @@ import { useRouter, type Href } from "expo-router";
 import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 import { getAuthToken } from "./state/auth"; // adjust path to yours
 import { useRef, useState, useEffect } from "react";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
 
 
 import {
@@ -47,6 +49,7 @@ function formatLifestyleIcon(label: string) {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F4F2FA" },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   header: {
     paddingHorizontal: 20,
     paddingTop: 18,
@@ -84,6 +87,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
   },
+  cardDark: { backgroundColor: Colors.dark.card },
   shadow: {
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
@@ -111,13 +115,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  matchBadgeDark: {
+    borderColor: Colors.dark.border,
+    backgroundColor: "rgba(0,0,0,0.25)",
+  },
   matchText: { fontSize: 18, fontWeight: "800", color: "#7ECEC4" },
   cardBody: { padding: 16 },
   nameRow: { flexDirection: "row", alignItems: "baseline", gap: 8 },
   name: { fontSize: 22, fontWeight: "800", color: "#1A1A2E" },
+  titleDark: { color: Colors.dark.text },
   metaRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
   metaIcon: { fontSize: 13, marginRight: 6 },
   metaText: { fontSize: 13, color: "#61677A" },
+  mutedTextDark: { color: Colors.dark.mutedText },
   sectionTitle: {
     fontSize: 15,
     fontWeight: "800",
@@ -135,6 +145,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     gap: 6,
   },
+  chipDark: { backgroundColor: Colors.dark.cardMuted },
   chipIcon: { fontSize: 13 },
   chipText: { fontSize: 12, color: "#7ECEC4", fontWeight: "700" },
   actionsRow: {
@@ -173,6 +184,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(76,175,80,0.14)",
   },
   stampText: { fontSize: 14, fontWeight: "800", color: "#1A1A2E" },
+  stampTextDark: { color: Colors.dark.text },
   emptyCard: {
     alignItems: "center",
     padding: 28,
@@ -180,6 +192,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 20, fontWeight: "800", color: "#1A1A2E" },
   emptySubtitle: { color: "#6B7280", textAlign: "center", lineHeight: 20 },
+  emptySubtitleDark: { color: Colors.dark.mutedText },
   primaryButton: {
     marginTop: 6,
     backgroundColor: "#7ECEC4",
@@ -216,12 +229,19 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#EEE",
   },
+  tabBarDark: {
+    backgroundColor: Colors.dark.card,
+    borderTopColor: Colors.dark.border,
+  },
+  tabLabelDark: { color: Colors.dark.mutedText },
 });
 
 export default function RoomateMatch() {
   const { width } = Dimensions.get("window");
   const SWIPE_THRESHOLD = width * 0.25;
   const router = useRouter();
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
   const { profile } = useSeekerProfile();
   let showRoommates = true;
   if (profile.looking_for === "house") {
@@ -343,30 +363,32 @@ useEffect(() => {
         {profile.image ? (
           <Image source={{ uri: profile.image }} style={styles.photo} />
         ) : null}
-        <View style={styles.matchBadge}>
+        <View style={[styles.matchBadge, isDark && styles.matchBadgeDark]}>
           <Text style={styles.matchText}>{profile.match}%</Text>
         </View>
       </View>
       <View style={styles.cardBody}>
         <View style={styles.nameRow}>
-          <Text style={styles.name}>
+          <Text style={[styles.name, isDark && styles.titleDark]}>
             {profile.name}, {profile.age}
           </Text>
         </View>
         <View style={styles.metaRow}>
           <Text style={styles.metaIcon}>💼</Text>
-          <Text style={styles.metaText}>{profile.role}</Text>
+          <Text style={[styles.metaText, isDark && styles.mutedTextDark]}>{profile.role}</Text>
         </View>
         <View style={styles.metaRow}>
           <Text style={styles.metaIcon}>📍</Text>
-          <Text style={styles.metaText}>{profile.location}</Text>
+          <Text style={[styles.metaText, isDark && styles.mutedTextDark]}>{profile.location}</Text>
         </View>
-        <Text style={styles.sectionTitle}>About</Text>
-        <Text style={styles.about}>{profile.about}</Text>
-        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Lifestyle</Text>
+        <Text style={[styles.sectionTitle, isDark && styles.titleDark]}>About</Text>
+        <Text style={[styles.about, isDark && styles.mutedTextDark]}>{profile.about}</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 10 }, isDark && styles.titleDark]}>
+          Lifestyle
+        </Text>
         <View style={styles.chipRow}>
           {profile.lifestyle.map((item: string) => (
-            <View key={item} style={styles.chip}>
+            <View key={item} style={[styles.chip, isDark && styles.chipDark]}>
               <Text style={styles.chipIcon}>{formatLifestyleIcon(item)}</Text>
               <Text style={styles.chipText}>{item}</Text>
             </View>
@@ -375,14 +397,14 @@ useEffect(() => {
       </View>
     </>
   );
-  const [activeTab, setActiveTab] = useState("Match");
+  const [activeTab, setActiveTab] = useState("Home");
   const handleTabPress = (label: string, route: Href) => {
     setActiveTab(label);
-    if (label === "Match") return;
+    if (label === "Home") return;
     router.push(route);
   };
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
       <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
@@ -406,8 +428,8 @@ useEffect(() => {
       </LinearGradient>
       <View style={styles.deckArea}>
         {loading ? (
-          <View style={[styles.card, styles.shadow, styles.emptyCard]}>
-            <Text style={styles.emptyTitle}>Finding matches...</Text>
+          <View style={[styles.card, isDark && styles.cardDark, styles.shadow, styles.emptyCard]}>
+            <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>Finding matches...</Text>
           </View>
         ) : null}
         {nextProfile && (
@@ -415,6 +437,7 @@ useEffect(() => {
             pointerEvents="none"
             style={[
               styles.card,
+              isDark && styles.cardDark,
               styles.shadow,
               styles.nextCard,
               { transform: [{ scale: nextCardScale }, { translateY: 12 }] },
@@ -427,6 +450,7 @@ useEffect(() => {
           <Animated.View
             style={[
               styles.card,
+              isDark && styles.cardDark,
               styles.shadow,
               {
                 transform: [
@@ -440,18 +464,18 @@ useEffect(() => {
           >
             <View
               style={[styles.stamp, styles.passStamp, { opacity: nopeOpacity }]}>
-              <Text style={styles.stampText}>PASS</Text>
+              <Text style={[styles.stampText, isDark && styles.stampTextDark]}>PASS</Text>
             </View>
             <View
               style={[styles.stamp, styles.saveStamp, { opacity: likeOpacity }]}>
-              <Text style={styles.stampText}>SAVE</Text>
+              <Text style={[styles.stampText, isDark && styles.stampTextDark]}>SAVE</Text>
             </View>
             {renderProfile(currentProfile)}
           </Animated.View>
         ) : (
-          <View style={[styles.card, styles.shadow, styles.emptyCard]}>
-            <Text style={styles.emptyTitle}>All caught up</Text>
-            <Text style={styles.emptySubtitle}>
+          <View style={[styles.card, isDark && styles.cardDark, styles.shadow, styles.emptyCard]}>
+            <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>All caught up</Text>
+            <Text style={[styles.emptySubtitle, isDark && styles.emptySubtitleDark]}>
               You have seen everyone for now. We will refresh suggestions soon.
             </Text>
             <Pressable style={styles.primaryButton} onPress={() => setIndex(0)}>
@@ -475,7 +499,7 @@ useEffect(() => {
         </Pressable>
       </View>
       {/* BOTTOM TAB BAR */}
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, isDark && styles.tabBarDark]}>
         {tabs.map((tab) => (
           <AnimatedTabIcon
             key={tab.label}
@@ -502,6 +526,8 @@ function AnimatedTabIcon({
   onPress?: () => void;
 }) {
   const translateY = useRef(new Animated.Value(0)).current;
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
 
   const handlePress = () => {
     Animated.sequence([
@@ -527,7 +553,15 @@ function AnimatedTabIcon({
       activeOpacity={0.8}
     >
       <Animated.Text style={[styles.tabIcon, { transform: [{ translateY }] }]}>{icon}</Animated.Text>
-      <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{label}</Text>
+      <Text
+        style={[
+          styles.tabLabel,
+          isDark && styles.tabLabelDark,
+          active && styles.tabLabelActive,
+        ]}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }

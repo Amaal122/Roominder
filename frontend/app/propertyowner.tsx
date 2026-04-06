@@ -13,9 +13,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { usePendingCount, useStats, loadStats } from "./state/ownerDashboard";
 import { loadMyProperties, useProperties } from "./state/properties";
+import { useTranslation } from "react-i18next";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function PropertyOwner() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
   const pendingCount = usePendingCount();
   const properties = useProperties();
   const stats = useStats();
@@ -33,35 +39,39 @@ export default function PropertyOwner() {
 
   return (
     <LinearGradient
-      colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
+      colors={
+        isDark
+          ? [Colors.dark.background, Colors.dark.background]
+          : ["#F4896B", "#F7B89A", "#7ECEC4"]
+      }
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.gradient}
     >
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
         <ScrollView
-          style={styles.scroll}
+          style={[styles.scroll, isDark && styles.scrollDark]}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           {/* ── Header ────────────────────────────────── */}
-          <View style={styles.headerCard}>
+          <View style={[styles.headerCard, isDark && styles.headerCardDark]}>
             <View style={styles.headerTopRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.headerTitle}>My Properties</Text>
+                <Text style={styles.headerTitle}>{t("properties.title")}</Text>
                 <Text style={styles.headerSubtitle}>
-                  {properties.length} active listings
+                  {t("properties.active_listings", { count: properties.length })}
                 </Text>
               </View>
               <View style={styles.headerActions}>
                 <TouchableOpacity
-                  style={styles.iconBtn}
+                  style={[styles.iconBtn, isDark && styles.iconBtnDark]}
                   onPress={() => router.push("/notifications")}
                 >
                   <Feather name="bell" size={18} color="#fff" />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.iconBtn}
+                  style={[styles.iconBtn, isDark && styles.iconBtnDark]}
                   onPress={() => router.push("/settings")}
                 >
                   <Feather name="settings" size={18} color="#fff" />
@@ -81,7 +91,7 @@ export default function PropertyOwner() {
                 style={styles.addBtn}
               >
                 <Feather name="plus" size={18} color="#fff" />
-                <Text style={styles.addBtnText}>Add New Property</Text>
+                <Text style={styles.addBtnText}>{t("properties.add_new")}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -90,49 +100,57 @@ export default function PropertyOwner() {
           <View style={styles.statsRow}>
 
             {/* Monthly */}
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, isDark && styles.statCardDark]}>
               <View style={[styles.statIconWrap, { backgroundColor: "#10B98115" }]}>
                 <Feather name="dollar-sign" size={18} color="#10B981" />
               </View>
               <Text style={[styles.statValue, { color: "#10B981" }]}>
                 {stats.monthly_revenue} {stats.currency}
               </Text>
-              <Text style={styles.statLabel}>Monthly</Text>
+              <Text style={[styles.statLabel, isDark && styles.mutedTextDark]}>
+                {t("properties.monthly")}
+              </Text>
             </View>
 
             {/* Occupancy */}
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, isDark && styles.statCardDark]}>
               <View style={[styles.statIconWrap, { backgroundColor: "#6366F115" }]}>
                 <Feather name="trending-up" size={18} color="#6366F1" />
               </View>
               <Text style={[styles.statValue, { color: "#6366F1" }]}>
                 {stats.occupancy_percent}%
               </Text>
-              <Text style={styles.statLabel}>Occupancy</Text>
+              <Text style={[styles.statLabel, isDark && styles.mutedTextDark]}>
+                {t("properties.occupancy")}
+              </Text>
             </View>
 
             {/* Pending */}
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, isDark && styles.statCardDark]}>
               <View style={[styles.statIconWrap, { backgroundColor: "#F59E0B15" }]}>
                 <Feather name="clock" size={18} color="#F59E0B" />
               </View>
               <Text style={[styles.statValue, { color: "#F59E0B" }]}>
                 {String(pendingCount)}
               </Text>
-              <Text style={styles.statLabel}>Pending</Text>
+              <Text style={[styles.statLabel, isDark && styles.mutedTextDark]}>
+                {t("properties.pending")}
+              </Text>
             </View>
 
           </View>
 
           {/* ── Properties List ───────────────────────── */}
-          <Text style={styles.sectionTitle}>Your Properties</Text>
+          <Text style={[styles.sectionTitle, isDark && styles.titleDark]}>
+            {t("properties.your_properties")}
+          </Text>
 
           <View style={styles.propertiesList}>
             {properties.map((property) => (
               <TouchableOpacity
                 key={property.id}
                 activeOpacity={0.9}
-                style={styles.propertyCard}
+                style={[styles.propertyCard, isDark && styles.propertyCardDark]}
                 onPress={() =>
                   router.push({
                     pathname: "/propertyownerdetail",
@@ -156,7 +174,7 @@ export default function PropertyOwner() {
                 {property.image && !property.image.startsWith("blob:") && (
                   <Image
                     source={{ uri: property.image }}
-                    style={styles.propertyImage}
+                    style={[styles.propertyImage, isDark && styles.propertyImageDark]}
                     resizeMode="cover"
                   />
                 )}
@@ -189,20 +207,36 @@ export default function PropertyOwner() {
                           : styles.statusTextOccupied,
                       ]}
                     >
-                      {property.status}
+                      {property.status === "Available"
+                        ? t("properties.available")
+                        : property.status === "Occupied"
+                          ? t("properties.occupied")
+                          : property.status}
                     </Text>
                   </View>
                 </View>
 
                 <View style={styles.propertyBody}>
-                  <Text style={styles.propertyTitle}>{property.title}</Text>
+                  <Text style={[styles.propertyTitle, isDark && styles.titleDark]}>
+                    {property.title}
+                  </Text>
                   <View style={styles.locationRow}>
-                    <Feather name="map-pin" size={14} color="#6B7280" />
-                    <Text style={styles.locationText}>{property.location}</Text>
+                    <Feather
+                      name="map-pin"
+                      size={14}
+                      color={isDark ? Colors.dark.mutedText : "#6B7280"}
+                    />
+                    <Text style={[styles.locationText, isDark && styles.mutedTextDark]}>
+                      {property.location}
+                    </Text>
                   </View>
                   <View style={styles.priceRow}>
-                    <Text style={styles.priceText}>{property.price}/month</Text>
-                    <Text style={styles.tenantsText}>{property.tenants}</Text>
+                    <Text style={styles.priceText}>
+                      {property.price} {t("properties.per_month")}
+                    </Text>
+                    <Text style={[styles.tenantsText, isDark && styles.mutedTextDark]}>
+                      {property.tenants}
+                    </Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -218,7 +252,9 @@ export default function PropertyOwner() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   safeArea: { flex: 1 },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   scroll: { flex: 1 },
+  scrollDark: { backgroundColor: Colors.dark.background },
   scrollContent: { padding: 16, paddingBottom: 28, gap: 16 },
   headerCard: {
     backgroundColor: "rgba(255,255,255,0.12)",
@@ -229,6 +265,13 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
+  },
+  headerCardDark: {
+    backgroundColor: Colors.dark.cardMuted,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   headerTopRow: {
     flexDirection: "row",
@@ -250,6 +293,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.18)",
     justifyContent: "center",
     alignItems: "center",
+  },
+  iconBtnDark: {
+    backgroundColor: Colors.dark.card,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
   },
   addBtnWrapper: { borderRadius: 16, overflow: "hidden" },
   addBtn: {
@@ -276,6 +324,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
+  statCardDark: {
+    backgroundColor: Colors.dark.card,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   statIconWrap: {
     width: 36,
     height: 36,
@@ -294,12 +349,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#6B7280",
   },
+  mutedTextDark: { color: Colors.dark.mutedText },
   sectionTitle: {
     fontSize: 22,
     fontWeight: "800",
     color: "#1F2937",
     marginTop: 6,
   },
+  titleDark: { color: Colors.dark.text },
   propertiesList: {
     gap: 16,
   },
@@ -314,11 +371,19 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 5,
   },
+  propertyCardDark: {
+    backgroundColor: Colors.dark.card,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   propertyImage: {
     width: "100%",
     height: 190,
     backgroundColor: "#E5E7EB",
   },
+  propertyImageDark: { backgroundColor: Colors.dark.border },
   statusBadgeWrapper: {
     position: "absolute",
     top: 14,

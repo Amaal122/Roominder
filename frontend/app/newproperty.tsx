@@ -18,6 +18,7 @@ import {
   getPropertyById,
   updateProperty,
 } from "./state/properties";
+import { useTranslation } from "react-i18next";
 
 const resolveImageUrl = (value?: string | null) => {
   if (!value) return null;
@@ -39,6 +40,7 @@ const resolveImageUrl = (value?: string | null) => {
 
 export default function NewProperty() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ id?: string }>();
   const editingId = params.id ?? "";
   const editingProperty = editingId ? getPropertyById(editingId) : undefined;
@@ -154,7 +156,7 @@ export default function NewProperty() {
       router.replace("/propertyowner");
     } catch (error) {
       console.error(error);
-      alert("Error while saving property. Please login again and retry.");
+      alert(t("new_property.save_error"));
     }
   };
 
@@ -193,12 +195,12 @@ export default function NewProperty() {
           </TouchableOpacity>
 
           <Text style={styles.stepLabel}>
-            {editingId ? "Edit Property" : "Add New Property"}
+            {editingId ? t("new_property.edit_property") : t("new_property.add_new_property")}
           </Text>
           <Text style={styles.title}>
             {editingId
-              ? "Update the property details"
-              : "Fill in the property details"}
+              ? t("new_property.update_details")
+              : t("new_property.fill_details")}
           </Text>
 
           <ScrollView
@@ -212,11 +214,11 @@ export default function NewProperty() {
               onPress={handlePickPhotos}
             >
               <Feather name="image" size={26} color="#F4896B" />
-              <Text style={styles.uploadTitle}>Upload Photos</Text>
+              <Text style={styles.uploadTitle}>{t("new_property.upload_photos")}</Text>
               <Text style={styles.uploadHint}>
                 {photos.length > 0
-                  ? `${photos.length} selected`
-                  : "Tap to browse your gallery"}
+                  ? t("new_property.photos_selected", { count: photos.length })
+                  : t("new_property.tap_to_browse")}
               </Text>
             </TouchableOpacity>
             {photos.length > 0 ? (
@@ -232,23 +234,23 @@ export default function NewProperty() {
             ) : null}
 
             <InputField
-              label="Property Title"
+              label={t("new_property.property_title")}
               icon="home"
-              placeholder="Modern studio with balcony"
+              placeholder={t("new_property.property_title_placeholder")}
               value={title}
               onChangeText={setTitle}
             />
             <InputField
-              label="Location / Address"
+              label={t("new_property.location_address")}
               icon="map-pin"
-              placeholder="12 rue de Rivoli, Paris"
+              placeholder={t("new_property.location_address_placeholder")}
               value={address}
               onChangeText={setAddress}
             />
             <InputField
-              label="Monthly Rent (€)"
+              label={t("new_property.monthly_rent")}
               icon="dollar-sign"
-              placeholder="1200"
+              placeholder={t("new_property.monthly_rent_placeholder")}
               value={rent}
               onChangeText={setRent}
               keyboardType="numeric"
@@ -257,9 +259,9 @@ export default function NewProperty() {
             <View style={styles.inlineRow}>
               <View style={styles.inlineThird}>
                 <InputField
-                  label="Beds"
+                  label={t("new_property.beds")}
                   icon="layers"
-                  placeholder="2"
+                  placeholder={t("new_property.beds_placeholder")}
                   value={beds}
                   onChangeText={setBeds}
                   keyboardType="numeric"
@@ -267,9 +269,9 @@ export default function NewProperty() {
               </View>
               <View style={styles.inlineThird}>
                 <InputField
-                  label="Baths"
+                  label={t("new_property.baths")}
                   icon="droplet"
-                  placeholder="1"
+                  placeholder={t("new_property.baths_placeholder")}
                   value={baths}
                   onChangeText={setBaths}
                   keyboardType="numeric"
@@ -279,7 +281,7 @@ export default function NewProperty() {
                 <InputField
                   label="m²"
                   icon="maximize-2"
-                  placeholder="70"
+                  placeholder={t("new_property.size_placeholder")}
                   value={size}
                   onChangeText={setSize}
                   keyboardType="numeric"
@@ -288,11 +290,11 @@ export default function NewProperty() {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={styles.label}>Description</Text>
+              <Text style={styles.label}>{t("new_property.description")}</Text>
               <View style={[styles.inputContainer, styles.textArea]}>
                 <TextInput
                   style={[styles.input, styles.textAreaInput]}
-                  placeholder="Describe your property..."
+                  placeholder={t("new_property.description_placeholder")}
                   placeholderTextColor="#9CA3AF"
                   multiline
                   value={description}
@@ -309,7 +311,7 @@ export default function NewProperty() {
           onPress={handlePublish}
         >
           <Text style={styles.ctaText}>
-            {editingId ? "Save Changes" : "Publish Property"}
+            {editingId ? t("new_property.save_changes") : t("new_property.publish_property")}
           </Text>
         </TouchableOpacity>
       </SafeAreaView>

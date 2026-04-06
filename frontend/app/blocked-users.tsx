@@ -9,10 +9,12 @@ import {
     View,
 } from "react-native";
 import { updateSettings, useSettings } from "./state/settings";
+import { useTranslation } from "react-i18next";
 
 export default function BlockedUsers() {
   const router = useRouter();
   const settings = useSettings();
+  const { t } = useTranslation();
 
   const unblock = (name: string) => {
     updateSettings({
@@ -35,12 +37,12 @@ export default function BlockedUsers() {
           >
             <Feather name="arrow-left" size={20} color="#2B2B33" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Blocked Users</Text>
+          <Text style={styles.headerTitle}>{t("settings.blocked_users")}</Text>
         </View>
 
         <View style={styles.card}>
           {settings.blockedUsers.length === 0 ? (
-            <Text style={styles.emptyText}>No blocked users.</Text>
+            <Text style={styles.emptyText}>{t("settings.no_blocked_users")}</Text>
           ) : (
             settings.blockedUsers.map((name) => (
               <View key={name} style={styles.row}>
@@ -49,7 +51,7 @@ export default function BlockedUsers() {
                   style={styles.unblockBtn}
                   onPress={() => unblock(name)}
                 >
-                  <Text style={styles.unblockText}>Unblock</Text>
+                  <Text style={styles.unblockText}>{t("settings.unblock")}</Text>
                 </TouchableOpacity>
               </View>
             ))

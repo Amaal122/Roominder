@@ -11,7 +11,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
 import { getAuthToken } from "./state/auth";
+import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 
 const API_BASE = "http://127.0.0.1:8001";
 
@@ -40,13 +43,27 @@ const formatTime = (isoDate: string) => {
 
 export default function Chat() {
   const router = useRouter();
-  const tabs: { icon: string; label: string; route: Href }[] = [
-    { icon: "🏠", label: "Home", route: "/homescreen" },
-    { icon: "👥", label: "Match", route: "/match" },
-    { icon: "💬", label: "Chat", route: "/chat" },
-    { icon: "❤️", label: "Favorites", route: "/favorite" },
-    { icon: "👤", label: "Profile", route: "/profile" },
-  ];
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+
+  const { profile } = useSeekerProfile();
+  const tabs: { icon: string; label: string; route: Href }[] = useMemo(() => {
+    const lookingFor = profile?.looking_for;
+    const showMatch = lookingFor !== "house";
+    const showFavorites = lookingFor !== "roommate";
+    const homeRoute =
+      (lookingFor === "roommate" ? "/roomatematch" : "/homescreen") as Href;
+
+    return [
+      { icon: "🏠", label: "Home", route: homeRoute },
+      ...(showMatch ? [{ icon: "👥", label: "Match", route: "/match" as Href }] : []),
+      { icon: "💬", label: "Chat", route: "/chat" },
+      ...(showFavorites
+        ? [{ icon: "❤️", label: "Favorites", route: "/favorite" as Href }]
+        : []),
+      { icon: "👤", label: "Profile", route: "/profile" },
+    ];
+  }, [profile?.looking_for]);
   const [activeTab, setActiveTab] = useState("Chat");
   const [isOwner, setIsOwner] = useState(false);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
@@ -153,33 +170,51 @@ useFocusEffect(
 
   return (
     <LinearGradient
-      colors={["#F4896B", "#78CFC7", "#78CFC7"]}
+      colors={
+        isDark
+          ? [Colors.dark.background, Colors.dark.background]
+          : ["#F4896B", "#78CFC7", "#78CFC7"]
+      }
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.gradient}
     >
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => router.back()}
-            style={styles.iconBtn}
+            style={[styles.iconBtn, isDark && styles.iconBtnDark]}
           >
-            <Ionicons name="chevron-back" size={22} color="#fff" />
+            <Ionicons
+              name="chevron-back"
+              size={22}
+              color={isDark ? Colors.dark.text : "#fff"}
+            />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Messages</Text>
-          <TouchableOpacity style={styles.iconBtn}>
-            <Ionicons name="ellipsis-vertical" size={18} color="#fff" />
+          <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
+            Messages
+          </Text>
+          <TouchableOpacity style={[styles.iconBtn, isDark && styles.iconBtnDark]}>
+            <Ionicons
+              name="ellipsis-vertical"
+              size={18}
+              color={isDark ? Colors.dark.text : "#fff"}
+            />
           </TouchableOpacity>
         </View>
 
         {/* Search */}
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color="#d9cfff" />
+        <View style={[styles.searchBox, isDark && styles.searchBoxDark]}>
+          <Ionicons
+            name="search"
+            size={18}
+            color={isDark ? Colors.dark.mutedText : "#d9cfff"}
+          />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, isDark && styles.searchInputDark]}
             placeholder="Search messages..."
-            placeholderTextColor="#d9cfff"
+            placeholderTextColor={isDark ? Colors.dark.mutedText : "#d9cfff"}
             value={query}
             onChangeText={setQuery}
           />
@@ -188,24 +223,44 @@ useFocusEffect(
         {/* Messages list */}
         <ScrollView
           contentContainerStyle={[styles.listContent, isOwner ? { paddingBottom: 24 } : null]}
-          style={styles.list}
+          style={[styles.list, isDark && styles.listDark]}
           showsVerticalScrollIndicator={false}
         >
           {loading ? (
-            <Text style={{ textAlign: "center", marginTop: 40, color: "#aaa" }}>
+            <Text
+              style={{
+                textAlign: "center",
+                marginTop: 40,
+                color: isDark ? Colors.dark.mutedText : "#aaa",
+              }}
+            >
               Loading...
             </Text>
           ) : error ? (
             <View style={styles.emptyState}>
-              <Ionicons name="alert-circle-outline" size={56} color="#b7bdd1" />
-              <Text style={styles.emptyTitle}>Something went wrong</Text>
-              <Text style={styles.emptySubtitle}>{error}</Text>
+              <Ionicons
+                name="alert-circle-outline"
+                size={56}
+                color={isDark ? Colors.dark.mutedText : "#b7bdd1"}
+              />
+              <Text style={[styles.emptyTitle, isDark && styles.emptyTitleDark]}>
+                Something went wrong
+              </Text>
+              <Text style={[styles.emptySubtitle, isDark && styles.emptySubtitleDark]}>
+                {error}
+              </Text>
             </View>
           ) : filteredConversations.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="chatbubble-ellipses-outline" size={56} color="#b7bdd1" />
-              <Text style={styles.emptyTitle}>No messages yet</Text>
-              <Text style={styles.emptySubtitle}>
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={56}
+                color={isDark ? Colors.dark.mutedText : "#b7bdd1"}
+              />
+              <Text style={[styles.emptyTitle, isDark && styles.emptyTitleDark]}>
+                No messages yet
+              </Text>
+              <Text style={[styles.emptySubtitle, isDark && styles.emptySubtitleDark]}>
                 Your conversations will appear here.
               </Text>
             </View>
@@ -213,7 +268,7 @@ useFocusEffect(
             filteredConversations.map((item) => (
               <TouchableOpacity
                 key={item.other_user_id}
-                style={styles.card}
+                style={[styles.card, isDark && styles.cardDark]}
                 activeOpacity={0.9}
                 onPress={() =>
                   router.push({
@@ -230,11 +285,18 @@ useFocusEffect(
 
                 <View style={styles.cardBody}>
                   <View style={styles.cardTopRow}>
-                    <Text style={styles.name}>{item.other_user_name}</Text>
-                    <Text style={styles.time}>{formatTime(item.last_message_at)}</Text>
+                    <Text style={[styles.name, isDark && styles.titleDark]}>
+                      {item.other_user_name}
+                    </Text>
+                    <Text style={[styles.time, isDark && styles.mutedTextDark]}>
+                      {formatTime(item.last_message_at)}
+                    </Text>
                   </View>
                   <View style={styles.cardBottomRow}>
-                    <Text style={styles.preview} numberOfLines={1}>
+                    <Text
+                      style={[styles.preview, isDark && styles.mutedTextDark]}
+                      numberOfLines={1}
+                    >
                       {item.last_message}
                     </Text>
                     {item.unread_count > 0 ? (
@@ -251,7 +313,7 @@ useFocusEffect(
 
         {/* Bottom nav (hide for owners) */}
         {!isOwner ? (
-          <View style={styles.tabBar}>
+          <View style={[styles.tabBar, isDark && styles.tabBarDark]}>
             {tabs.map((tab) => (
               <TouchableOpacity
                 key={tab.label}
@@ -263,6 +325,7 @@ useFocusEffect(
                 <Text
                   style={[
                     styles.tabLabel,
+                    isDark && styles.tabLabelDark,
                     activeTab === tab.label && styles.tabLabelActive,
                   ]}
                 >
@@ -280,6 +343,7 @@ useFocusEffect(
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   safeArea: { flex: 1 },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -293,6 +357,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#fff",
   },
+  headerTitleDark: { color: Colors.dark.text },
   iconBtn: {
     width: 34,
     height: 34,
@@ -300,6 +365,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.14)",
+  },
+  iconBtnDark: {
+    backgroundColor: Colors.dark.cardMuted,
   },
   searchBox: {
     marginHorizontal: 18,
@@ -313,11 +381,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 46,
   },
+  searchBoxDark: {
+    backgroundColor: Colors.dark.card,
+    borderColor: Colors.dark.border,
+  },
   searchInput: {
     flex: 1,
     marginLeft: 8,
     color: "#fff",
     fontSize: 15,
+  },
+  searchInputDark: {
+    color: Colors.dark.text,
   },
   list: {
     flex: 1,
@@ -325,6 +400,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
   },
+  listDark: { backgroundColor: Colors.dark.background },
   listContent: {
     flexGrow: 1,
     paddingTop: 16,
@@ -343,6 +419,11 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
     elevation: 10,
+  },
+  cardDark: {
+    backgroundColor: Colors.dark.card,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   avatarWrap: { marginRight: 12 },
   avatarCircle: {
@@ -369,6 +450,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   preview: { color: "#7a7d8a", fontSize: 13, flex: 1 },
+  titleDark: { color: Colors.dark.text },
+  mutedTextDark: { color: Colors.dark.mutedText },
   unreadBadge: {
     minWidth: 20,
     height: 20,
@@ -391,7 +474,9 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#2b2b33",
   },
+  emptyTitleDark: { color: Colors.dark.text },
   emptySubtitle: { color: "#7a7d8a", fontSize: 13, marginTop: 8, textAlign: "center" },
+  emptySubtitleDark: { color: Colors.dark.mutedText },
   tabBar: {
     flexDirection: "row",
     backgroundColor: "#fff",
@@ -400,8 +485,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#eceef4",
   },
+  tabBarDark: {
+    backgroundColor: Colors.dark.card,
+    borderTopColor: Colors.dark.border,
+  },
   tabItem: { flex: 1, alignItems: "center" },
   tabIcon: { fontSize: 20, marginBottom: 2 },
   tabLabel: { fontSize: 10, color: "#AAAAAA", fontWeight: "500" },
+  tabLabelDark: { color: Colors.dark.mutedText },
   tabLabelActive: { color: "#7d5dff", fontWeight: "700" },
 });

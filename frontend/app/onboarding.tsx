@@ -8,12 +8,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function SafeSecureScreen() {
   const router = useRouter();
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDark && styles.containerDark]}>
       <ImageBackground
         source={{
           uri: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80",
@@ -30,9 +34,11 @@ export default function SafeSecureScreen() {
         </LinearGradient>
       </ImageBackground>
 
-      <View style={styles.bottomSection}>
-        <Text style={styles.title}>Safe & Secure Platform</Text>
-        <Text style={styles.description}>
+      <View style={[styles.bottomSection, isDark && styles.bottomSectionDark]}>
+        <Text style={[styles.title, isDark && styles.titleDark]}>
+          Safe & Secure Platform
+        </Text>
+        <Text style={[styles.description, isDark && styles.mutedTextDark]}>
           Digital contracts, verified profiles, and secure communication for a
           trustworthy colocation experience.
         </Text>
@@ -46,8 +52,12 @@ export default function SafeSecureScreen() {
           style={styles.sliderButton}
           onPress={() => router.push("/findhome")}
         >
-          <View style={styles.sliderThumb}>
-            <AntDesign name="right" size={20} color="#6D28D9" />
+          <View style={[styles.sliderThumb, isDark && styles.sliderThumbDark]}>
+            <AntDesign
+              name="right"
+              size={20}
+              color={isDark ? Colors.dark.text : "#6D28D9"}
+            />
           </View>
           <Text style={styles.sliderText}>Get Started</Text>
         </TouchableOpacity>
@@ -58,6 +68,7 @@ export default function SafeSecureScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFF7F3" },
+  containerDark: { backgroundColor: Colors.dark.background },
   topSection: { flex: 1.2 },
   overlay: { flex: 1, justifyContent: "center", alignItems: "center" },
   iconBox: {
@@ -73,13 +84,16 @@ const styles = StyleSheet.create({
     marginTop: -30,
     backgroundColor: "#FFF",
   },
+  bottomSectionDark: { backgroundColor: Colors.dark.background },
   title: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#2B2B33",
     marginBottom: 15,
   },
+  titleDark: { color: Colors.dark.text },
   description: { fontSize: 16, color: "#7A6D6A", lineHeight: 24 },
+  mutedTextDark: { color: Colors.dark.mutedText },
   pagination: {
     flexDirection: "row",
     marginVertical: 30,
@@ -114,6 +128,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  sliderThumbDark: { backgroundColor: Colors.dark.card },
   sliderText: {
     color: "#FFF",
     fontSize: 18,

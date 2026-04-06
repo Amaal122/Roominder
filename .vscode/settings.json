@@ -3,6 +3,10 @@
     "./backend"
   ],
   "typescript.tsserver.exclude": [
-    "**/node_modules/**"
-  ]
+    "**/node_modules/**",
+    "c:/Users/bougu/node_modules/**"
+  ],
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+  "javascript.tsserver.experimental.enableProjectDiagnostics": false,
+  "typescript.disableAutomaticTypeAcquisition": true
 }

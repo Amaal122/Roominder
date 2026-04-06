@@ -11,22 +11,65 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { getAuthToken } from "./state/auth";
+import { useTranslation } from "react-i18next";
+
+const API_URL = "http://127.0.0.1:8001";
 
 export default function ChangePassword() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
 
   const canSave = next.length >= 6 && next === confirm && current.length > 0;
 
-  const handleSave = () => {
-    if (!canSave) return;
-    Alert.alert("Password updated", "Your password was changed successfully.");
+const handleSave = async () => {
+  if (!canSave) return;
+
+  try {
+    const token = await getAuthToken();
+
+    const res = await fetch(`${API_URL}/auth/change-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        current_password: current,
+        new_password: next,
+      }),
+    });
+
+    const raw = await res.text();
+    let data: any = null;
+    if (raw) {
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        data = null;
+      }
+    }
+
+    if (!res.ok) {
+      Alert.alert(
+        t("common.error"),
+        data?.detail ?? raw ?? t("common.something_went_wrong"),
+      );
+      return;
+    }
+
+    Alert.alert(t("common.success"), t("auth.password_change_success"));
     setCurrent("");
     setNext("");
     setConfirm("");
-  };
+    router.back();
+  } catch (e) {
+    Alert.alert(t("common.error"), t("common.could_not_connect"));
+  }
+};
 
   return (
     <LinearGradient
@@ -40,11 +83,11 @@ export default function ChangePassword() {
           <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
             <Feather name="arrow-left" size={20} color="#2B2B33" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Change Password</Text>
+          <Text style={styles.headerTitle}>{t("settings.change_password")}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.label}>Current password</Text>
+          <Text style={styles.label}>{t("auth.current_password")}</Text>
           <TextInput
             style={styles.input}
             value={current}
@@ -52,20 +95,20 @@ export default function ChangePassword() {
             placeholder="••••••••"
             secureTextEntry
           />
-          <Text style={styles.label}>New password</Text>
+          <Text style={styles.label}>{t("auth.new_password")}</Text>
           <TextInput
             style={styles.input}
             value={next}
             onChangeText={setNext}
-            placeholder="Minimum 6 characters"
+            placeholder={t("auth.password_min", { count: 6 })}
             secureTextEntry
           />
-          <Text style={styles.label}>Confirm password</Text>
+          <Text style={styles.label}>{t("auth.confirm_password")}</Text>
           <TextInput
             style={styles.input}
             value={confirm}
             onChangeText={setConfirm}
-            placeholder="Repeat new password"
+            placeholder={t("auth.repeat_new_password")}
             secureTextEntry
           />
 
@@ -75,7 +118,7 @@ export default function ChangePassword() {
             activeOpacity={0.85}
             disabled={!canSave}
           >
-            <Text style={styles.ctaText}>Save</Text>
+            <Text style={styles.ctaText}>{t("common.save")}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

@@ -12,52 +12,73 @@ import {
   View,
 } from "react-native";
 import { setAuthToken } from "./state/auth";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function Login() {
   const router = useRouter();
   const { role } = useLocalSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
 
   const { updateProfile } = useSeekerProfile();
   const handleContinue = async () => {
     try {
+      const resolvedRole = Array.isArray(role) ? role[0] : role;
+
       const response = await fetch("http://127.0.0.1:8001/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email,
+          email: email.trim(),
           password,
-          role,
+          ...(resolvedRole ? { role: resolvedRole } : {}),
         }),
       });
 
-      const data = await response.json();
+      const raw = await response.text();
+      let data: any = null;
+      if (raw) {
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          data = raw;
+        }
+      }
 
       if (!response.ok) {
-        alert(data.error || "Login failed");
-        if (data.correct_role) {
-          alert("You should login as: " + data.correct_role);
+        const message =
+          (data && typeof data === "object" && (data.error || data.detail)) ||
+          (typeof data === "string" && data) ||
+          "Login failed";
+
+        alert(String(message));
+        if (data && typeof data === "object" && data.correct_role) {
+          alert("You should login as: " + String(data.correct_role));
         }
         return;
       }
 
-      if (data.access_token) {
-        await setAuthToken(data.access_token);
+      const token = data?.access_token;
+
+      if (token) {
+        await setAuthToken(token);
       }
 
-      const resolvedRole = data.role || role;
+      const nextRole = (data && typeof data === "object" && data.role) || resolvedRole;
 
-      if (resolvedRole === "owner") {
+      if (nextRole === "owner") {
         router.push("/propertyowner");
         return;
       }
 
       // Fetch seeker profile after login
       const seekerRes = await fetch("http://127.0.0.1:8001/seeker/me", {
-        headers: { Authorization: `Bearer ${data.access_token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (seekerRes.ok) {
         const seekerProfile = await seekerRes.json();
@@ -80,7 +101,9 @@ export default function Login() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={[styles.container, isDark && styles.containerDark]}
+    >
       <LinearGradient
         colors={["#F4896B", "#7ECEC4"]}
         start={{ x: 0, y: 0 }}
@@ -96,7 +119,7 @@ export default function Login() {
         </Text>
       </LinearGradient>
 
-      <View style={styles.formCard}>
+      <View style={[styles.formCard, isDark && styles.formCardDark]}>
         <InputField
           label="Email Address"
           icon="mail"
@@ -122,12 +145,12 @@ export default function Login() {
             router.push({ pathname: "/register", params: { role } })
           }
         >
-          <Text style={styles.footerText}>
+          <Text style={[styles.footerText, isDark && styles.footerTextDark]}>
             New here? <Text style={styles.link}>Create Account</Text>
           </Text>
         </TouchableOpacity>
 
-        <Text style={styles.terms}>
+        <Text style={[styles.terms, isDark && styles.termsDark]}>
           By signing in, you agree to our Terms of Service and Privacy Policy
         </Text>
       </View>
@@ -144,24 +167,35 @@ const InputField = ({
   value,
   onChangeText,
 }: any) => (
+  (() => {
+    const scheme = useColorScheme();
+    const isDark = scheme === "dark";
+    return (
   <View style={styles.inputWrapper}>
     <Text style={styles.label}>{label}</Text>
-    <View style={styles.inputContainer}>
-      <Feather name={icon} size={18} color="#999" />
+    <View style={[styles.inputContainer, isDark && styles.inputContainerDark]}>
+      <Feather
+        name={icon}
+        size={18}
+        color={isDark ? Colors.dark.mutedText : "#999"}
+      />
       <TextInput
-        style={styles.input}
+        style={[styles.input, isDark && styles.inputDark]}
         placeholder={placeholder}
         secureTextEntry={secure}
-        placeholderTextColor="#CCC"
+        placeholderTextColor={isDark ? Colors.dark.mutedText : "#CCC"}
         value={value}
         onChangeText={onChangeText}
       />
     </View>
   </View>
+    );
+  })()
 );
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: "#FFF7F3" },
+  containerDark: { backgroundColor: Colors.dark.background },
   header: { padding: 40, paddingTop: 60 },
   headerTitle: {
     fontSize: 32,
@@ -182,6 +216,9 @@ const styles = StyleSheet.create({
     padding: 30,
     alignItems: "center",
   },
+  formCardDark: {
+    backgroundColor: Colors.dark.background,
+  },
   inputWrapper: { width: "100%", marginBottom: 20 },
   label: {
     color: "#F4896B",
@@ -199,7 +236,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     height: 55,
   },
+  inputContainerDark: {
+    borderColor: Colors.dark.border,
+    backgroundColor: Colors.dark.card,
+  },
   input: { flex: 1, marginLeft: 10, color: "#333" },
+  inputDark: { color: Colors.dark.text },
   btnPrimary: {
     backgroundColor: "#7ECEC4",
     width: "100%",
@@ -211,6 +253,7 @@ const styles = StyleSheet.create({
   },
   btnText: { color: "white", fontSize: 16, fontWeight: "bold" },
   footerText: { marginTop: 25, color: "#666" },
+  footerTextDark: { color: Colors.dark.mutedText },
   link: { color: "#7ECEC4", fontWeight: "bold" },
   terms: {
     textAlign: "center",
@@ -219,4 +262,5 @@ const styles = StyleSheet.create({
     marginTop: 30,
     lineHeight: 18,
   },
+  termsDark: { color: Colors.dark.mutedText },
 });
