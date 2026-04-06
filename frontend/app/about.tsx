@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 import { clearAuthToken, getAuthToken } from "./state/auth";
@@ -48,6 +49,7 @@ const formatMemberSince = (value?: string) => {
 export default function About() {
   const router = useRouter();
   const { resetProfile } = useSeekerProfile();
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<CurrentUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -105,11 +107,11 @@ export default function About() {
 
   const displayName = useMemo(() => {
     if (!profile) {
-      return "Owner";
+      return t("about.owner_fallback");
     }
 
     return profile.full_name?.trim() || profile.email;
-  }, [profile]);
+  }, [profile, t]);
 
   const initials = useMemo(() => {
     const source = displayName.trim();
@@ -124,13 +126,13 @@ export default function About() {
   const roleLabel = useMemo(() => {
     const role = profile?.role?.trim().toLowerCase();
     if (role === "owner") {
-      return "Property Owner";
+      return t("about.role_owner");
     }
     if (role === "seeker") {
-      return "Seeker";
+      return t("about.role_seeker");
     }
-    return profile?.role || "Member";
-  }, [profile]);
+    return profile?.role || t("about.role_member");
+  }, [profile, t]);
 
   const performLogout = async () => {
     try {
@@ -150,7 +152,7 @@ export default function About() {
       router.replace(target);
     } catch (logoutError) {
       console.error("Failed to log out:", logoutError);
-      Alert.alert("Logout failed", "Could not log out right now. Please try again.");
+      Alert.alert(t("about.logout_failed_title"), t("about.logout_failed_body"));
     } finally {
       setLoggingOut(false);
     }
@@ -159,7 +161,7 @@ export default function About() {
   const handleLogout = () => {
     if (Platform.OS === "web" && typeof window !== "undefined") {
       const confirmed = window.confirm(
-        "Do you want to disconnect from this profile?",
+        t("about.logout_confirm_body"),
       );
       if (!confirmed) {
         return;
@@ -169,12 +171,12 @@ export default function About() {
     }
 
     Alert.alert(
-      "Log out",
-      "Do you want to disconnect from this profile?",
+      t("about.logout_confirm_title"),
+      t("about.logout_confirm_body"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Log out",
+          text: t("about.logout_action"),
           style: "destructive",
           onPress: () => {
             void performLogout();
@@ -197,8 +199,8 @@ export default function About() {
             <Feather name="arrow-left" size={20} color="#2B2B33" />
           </TouchableOpacity>
           <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>About</Text>
-            <Text style={styles.headerSub}>Roominder & owner profile</Text>
+            <Text style={styles.headerTitle}>{t("settings.about")}</Text>
+            <Text style={styles.headerSub}>{t("about.subtitle")}</Text>
           </View>
         </View>
 
@@ -212,25 +214,21 @@ export default function About() {
               <Feather name="home" size={16} color="#fff" />
               <Text style={styles.heroBadgeText}>Roominder</Text>
             </View>
-            <Text style={styles.heroTitle}>Manage homes, visits, and applications in one place.</Text>
-            <Text style={styles.heroBody}>
-              Roominder helps owners publish listings, review visit requests,
-              accept applications, and stay close to renters through fast,
-              simple communication.
-            </Text>
+            <Text style={styles.heroTitle}>{t("about.hero_title")}</Text>
+            <Text style={styles.heroBody}>{t("about.hero_body")}</Text>
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Owner Profile</Text>
+            <Text style={styles.sectionTitle}>{t("about.owner_profile_title")}</Text>
 
             {loading ? (
               <View style={styles.loadingWrap}>
                 <ActivityIndicator color="#F4896B" />
-                <Text style={styles.loadingText}>Loading owner details...</Text>
+                <Text style={styles.loadingText}>{t("about.loading_owner")}</Text>
               </View>
             ) : error ? (
               <View style={styles.errorWrap}>
-                <Text style={styles.errorTitle}>Could not load profile</Text>
+                <Text style={styles.errorTitle}>{t("about.load_profile_error_title")}</Text>
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : (
@@ -248,15 +246,21 @@ export default function About() {
                 </View>
 
                 <View style={styles.detailsWrap}>
-                  <DetailRow label="Full name" value={profile?.full_name?.trim() || "Not set"} />
-                  <DetailRow label="Email" value={profile?.email || "Unknown"} />
-                  <DetailRow label="Role" value={roleLabel} />
                   <DetailRow
-                    label="Account status"
-                    value={profile?.is_active ? "Active" : "Inactive"}
+                    label={t("about.full_name")}
+                    value={profile?.full_name?.trim() || t("about.not_set")}
                   />
                   <DetailRow
-                    label="Member since"
+                    label={t("about.email")}
+                    value={profile?.email || t("about.unknown")}
+                  />
+                  <DetailRow label={t("about.role")} value={roleLabel} />
+                  <DetailRow
+                    label={t("about.account_status")}
+                    value={profile?.is_active ? t("about.active") : t("about.inactive")}
+                  />
+                  <DetailRow
+                    label={t("about.member_since")}
                     value={formatMemberSince(profile?.created_at)}
                   />
                 </View>
@@ -272,7 +276,7 @@ export default function About() {
           >
             <Feather name="log-out" size={18} color="#fff" />
             <Text style={styles.logoutText}>
-              {loggingOut ? "Logging out..." : "Log Out"}
+              {loggingOut ? t("about.logging_out") : t("about.logout")}
             </Text>
           </TouchableOpacity>
         </ScrollView>

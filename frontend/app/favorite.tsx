@@ -12,8 +12,11 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
 import { useFavoritesStore } from "../store/favoriteStore";
 import { getAuthToken } from "./state/auth";
+import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 
 const API_BASE = "http://127.0.0.1:8001";
 
@@ -36,13 +39,27 @@ type FavoriteOut = {
 export default function Favorite() {
   const localFavorites = useFavoritesStore();
   const router = useRouter();
-  const tabs: { icon: string; label: string; route: Href }[] = [
-    { icon: "🏠", label: "Home", route: "/homescreen" },
-    { icon: "👥", label: "Match", route: "/match" },
-    { icon: "💬", label: "Chat", route: "/chat" },
-    { icon: "❤️", label: "Favorites", route: "/favorite" },
-    { icon: "👤", label: "Profile", route: "/homescreen" },
-  ];
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+
+  const { profile } = useSeekerProfile();
+  const tabs: { icon: string; label: string; route: Href }[] = useMemo(() => {
+    const lookingFor = profile?.looking_for;
+    const showMatch = lookingFor !== "house";
+    const showFavorites = lookingFor !== "roommate";
+    const homeRoute =
+      (lookingFor === "roommate" ? "/roomatematch" : "/homescreen") as Href;
+
+    return [
+      { icon: "🏠", label: "Home", route: homeRoute },
+      ...(showMatch ? [{ icon: "👥", label: "Match", route: "/match" as Href }] : []),
+      { icon: "💬", label: "Chat", route: "/chat" },
+      ...(showFavorites
+        ? [{ icon: "❤️", label: "Favorites", route: "/favorite" as Href }]
+        : []),
+      { icon: "👤", label: "Profile", route: "/profile" },
+    ];
+  }, [profile?.looking_for]);
   const [activeTab, setActiveTab] = useState("Favorites");
   const [items, setItems] = useState(localFavorites);
   const [loading, setLoading] = useState(false);
@@ -137,38 +154,46 @@ export default function Favorite() {
 
   return (
     <LinearGradient
-      colors={["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]}
+      colors={
+        isDark
+          ? [Colors.dark.background, Colors.dark.background]
+          : ["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]
+      }
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
       style={styles.gradient}
     >
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
         <View style={styles.header}>
           <TouchableOpacity
-            style={styles.iconBtn}
+            style={[styles.iconBtn, isDark && styles.iconBtnDark]}
             onPress={() => router.push("/homescreen")}
           >
-            <Text style={styles.iconText}>←</Text>
+            <Text style={[styles.iconText, isDark && styles.iconTextDark]}>←</Text>
           </TouchableOpacity>
           <View>
-            <Text style={styles.title}>Favorites</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, isDark && styles.titleDark]}>Favorites</Text>
+            <Text style={[styles.subtitle, isDark && styles.mutedTextDark]}>
               {items.length} saved {items.length === 1 ? "place" : "places"}
             </Text>
           </View>
           <View style={styles.iconPlaceholder} />
         </View>
 
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, isDark && styles.sheetDark]}>
           {loading ? (
             <View style={styles.empty}>
               <ActivityIndicator color="#7d5dff" />
-              <Text style={styles.emptyCopy}>Loading favorites...</Text>
+              <Text style={[styles.emptyCopy, isDark && styles.mutedTextDark]}>
+                Loading favorites...
+              </Text>
             </View>
           ) : items.length === 0 ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No favorites yet</Text>
-              <Text style={styles.emptyCopy}>
+              <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>
+                No favorites yet
+              </Text>
+              <Text style={[styles.emptyCopy, isDark && styles.mutedTextDark]}>
                 Tap the heart on a property to add it here.
               </Text>
               <TouchableOpacity
@@ -184,7 +209,7 @@ export default function Favorite() {
               contentContainerStyle={{ paddingBottom: 100 }}
             >
               {items.map((item) => (
-                <View key={item.id} style={styles.card}>
+                <View key={item.id} style={[styles.card, isDark && styles.cardDark]}>
                   {item.image && !item.image.startsWith('blob:') ? (
                     <Image
                       source={{ uri: item.image }}
@@ -193,12 +218,18 @@ export default function Favorite() {
                     />
                   ) : null}
                   <View style={styles.cardText}>
-                    <Text style={styles.cardTitle}>{item.title}</Text>
+                    <Text style={[styles.cardTitle, isDark && styles.titleDark]}>
+                      {item.title}
+                    </Text>
                     {item.location ? (
-                      <Text style={styles.cardMeta}>{item.location}</Text>
+                      <Text style={[styles.cardMeta, isDark && styles.mutedTextDark]}>
+                        {item.location}
+                      </Text>
                     ) : null}
                     {item.price ? (
-                      <Text style={styles.cardMeta}>{item.price}</Text>
+                      <Text style={[styles.cardMeta, isDark && styles.mutedTextDark]}>
+                        {item.price}
+                      </Text>
                     ) : null}
                   </View>
                   <TouchableOpacity
@@ -225,7 +256,7 @@ export default function Favorite() {
         </View>
 
         {/* Bottom nav */}
-        <View style={styles.tabBar}>
+        <View style={[styles.tabBar, isDark && styles.tabBarDark]}>
           {tabs.map((tab) => (
             <TouchableOpacity
               key={tab.label}
@@ -237,6 +268,7 @@ export default function Favorite() {
               <Text
                 style={[
                   styles.tabLabel,
+                  isDark && styles.tabLabelDark,
                   activeTab === tab.label && styles.tabLabelActive,
                 ]}
               >
@@ -253,6 +285,7 @@ export default function Favorite() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   safeArea: { flex: 1 },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -270,9 +303,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  iconBtnDark: {
+    backgroundColor: Colors.dark.cardMuted,
+    borderColor: Colors.dark.border,
+  },
   iconText: { fontSize: 16, fontWeight: "700", color: "#2b2b33" },
+  iconTextDark: { color: Colors.dark.text },
   title: { fontSize: 22, fontWeight: "800", color: "#2b2b33" },
   subtitle: { color: "#6c6f7d", fontSize: 12, marginTop: 2 },
+  titleDark: { color: Colors.dark.text },
+  mutedTextDark: { color: Colors.dark.mutedText },
   iconPlaceholder: { width: 40, height: 40 },
   sheet: {
     flex: 1,
@@ -283,6 +323,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 18,
   },
+  sheetDark: { backgroundColor: Colors.dark.background },
   empty: { alignItems: "center", paddingTop: 40, paddingHorizontal: 16 },
   emptyTitle: { fontSize: 20, fontWeight: "800", color: "#2b2b33" },
   emptyCopy: {
@@ -310,6 +351,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
+  cardDark: {
+    backgroundColor: Colors.dark.card,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   cardImage: {
     width: "100%",
     height: 140,
@@ -335,8 +381,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#e6e9ef",
   },
+  tabBarDark: {
+    backgroundColor: Colors.dark.card,
+    borderTopColor: Colors.dark.border,
+  },
   tabItem: { flex: 1, alignItems: "center" },
   tabIcon: { fontSize: 20, marginBottom: 2 },
   tabLabel: { fontSize: 10, color: "#AAAAAA", fontWeight: "500" },
+  tabLabelDark: { color: Colors.dark.mutedText },
   tabLabelActive: { color: "#F4896B", fontWeight: "700" },
 });

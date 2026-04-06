@@ -31,6 +31,17 @@ export default function LocationStep() {
     console.log("[Location] profile snapshot", profile);
   }, [profile]);
 
+  // If the profile is loaded from the backend after this screen mounts,
+  // prefill the inputs (but don't overwrite if the user already typed).
+  useEffect(() => {
+    if (!location && profile.location) {
+      setLocation(profile.location);
+    }
+    if (radius === 10 && typeof profile.radius === "number") {
+      setRadius(profile.radius);
+    }
+  }, [profile.location, profile.radius, location, radius]);
+
   const radiusPercent = useMemo(() => {
     const clamped = Math.max(1, Math.min(50, radius));
     return ((clamped - 1) / 49) * 100;

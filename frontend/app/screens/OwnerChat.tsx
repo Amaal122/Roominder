@@ -13,9 +13,15 @@ import {
   View,
 } from "react-native";
 
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
+
 type Message = { id: string; from: "owner" | "me"; text: string };
 
 export default function OwnerChat() {
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+
   const params = useLocalSearchParams<{ ownerName?: string }>();
   const ownerName = params.ownerName ?? "Amina Diallo";
   const [input, setInput] = useState("");
@@ -41,19 +47,30 @@ export default function OwnerChat() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
       <LinearGradient
-        colors={["#F4896B", "#7ECEC4"]}
+        colors={
+          isDark
+            ? [Colors.dark.card, Colors.dark.card]
+            : ["#F4896B", "#7ECEC4"]
+        }
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.header}
+        style={[styles.header, isDark && styles.headerDark]}
       >
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backIcon}>←</Text>
+        <TouchableOpacity
+          style={[styles.backBtn, isDark && styles.backBtnDark]}
+          onPress={() => router.back()}
+        >
+          <Text style={[styles.backIcon, isDark && styles.backIconDark]}>←</Text>
         </TouchableOpacity>
         <View>
-          <Text style={styles.headerTitle}>{ownerName}</Text>
-          <Text style={styles.headerSub}>Owner · Typically replies in 2h</Text>
+          <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
+            {ownerName}
+          </Text>
+          <Text style={[styles.headerSub, isDark && styles.headerSubDark]}>
+            Owner · Typically replies in 2h
+          </Text>
         </View>
       </LinearGradient>
 
@@ -62,7 +79,7 @@ export default function OwnerChat() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
-          style={styles.chat}
+          style={[styles.chat, isDark && styles.chatDark]}
           contentContainerStyle={{ paddingBottom: 24 }}
         >
           {messages.map((m) => (
@@ -71,12 +88,14 @@ export default function OwnerChat() {
               style={[
                 styles.bubble,
                 m.from === "me" ? styles.bubbleMe : styles.bubbleOwner,
+                isDark && m.from === "owner" && styles.bubbleOwnerDark,
               ]}
             >
               <Text
                 style={[
                   styles.bubbleText,
                   m.from === "me" ? styles.bubbleTextMe : styles.bubbleTextOwner,
+                  isDark && m.from === "owner" && styles.bubbleTextOwnerDark,
                 ]}
               >
                 {m.text}
@@ -85,13 +104,15 @@ export default function OwnerChat() {
           ))}
         </ScrollView>
 
-        <View style={styles.inputBar}>
+        <View style={[styles.inputBar, isDark && styles.inputBarDark]}>
           <TextInput
             value={input}
             onChangeText={setInput}
             placeholder="Type a message..."
-            placeholderTextColor="#9FA2B8"
-            style={styles.input}
+            placeholderTextColor={
+              isDark ? Colors.dark.mutedText : "#9FA2B8"
+            }
+            style={[styles.input, isDark && styles.inputDark]}
           />
           <TouchableOpacity
             style={[styles.sendBtn, !canSend && styles.sendDisabled]}
@@ -116,6 +137,7 @@ const BORDER = "#F1E3DC";
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   flex: { flex: 1 },
   header: {
     flexDirection: "row",
@@ -126,6 +148,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.4)",
   },
+  headerDark: { borderBottomColor: Colors.dark.border },
   backBtn: {
     width: 34,
     height: 34,
@@ -139,7 +162,15 @@ const styles = StyleSheet.create({
   backIcon: { fontSize: 16, color: TEXT },
   headerTitle: { fontSize: 16, fontWeight: "700", color: "white" },
   headerSub: { fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 2 },
+  backBtnDark: {
+    backgroundColor: Colors.dark.card,
+    borderColor: Colors.dark.border,
+  },
+  backIconDark: { color: Colors.dark.text },
+  headerTitleDark: { color: Colors.dark.text },
+  headerSubDark: { color: Colors.dark.mutedText },
   chat: { flex: 1, padding: 16 },
+  chatDark: { backgroundColor: Colors.dark.background },
   bubble: {
     maxWidth: "80%",
     padding: 12,
@@ -152,10 +183,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: CORAL_PASTEL,
   },
+  bubbleOwnerDark: {
+    backgroundColor: Colors.dark.card,
+    borderColor: Colors.dark.border,
+  },
   bubbleMe: { alignSelf: "flex-end", backgroundColor: TEAL },
   bubbleText: { fontSize: 13, lineHeight: 18 },
   bubbleTextOwner: { color: TEXT },
   bubbleTextMe: { color: "white" },
+  bubbleTextOwnerDark: { color: Colors.dark.text },
   inputBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -165,6 +201,10 @@ const styles = StyleSheet.create({
     borderTopColor: BORDER,
     backgroundColor: "white",
   },
+  inputBarDark: {
+    borderTopColor: Colors.dark.border,
+    backgroundColor: Colors.dark.card,
+  },
   input: {
     flex: 1,
     backgroundColor: BG,
@@ -173,6 +213,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
     color: TEXT,
+  },
+  inputDark: {
+    backgroundColor: Colors.dark.cardMuted,
+    color: Colors.dark.text,
   },
   sendBtn: {
     backgroundColor: CORAL,

@@ -15,6 +15,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
 
 import PropertyMap from "../../components/PropertyMap";
 import { addFavorite } from "../../store/favoriteStore";
@@ -197,6 +199,8 @@ const SCORES = [
 
 function ProgressBar({ value }: { value: number }) {
   const anim = useRef(new Animated.Value(0)).current;
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
 
   useEffect(() => {
     Animated.timing(anim, {
@@ -207,7 +211,7 @@ function ProgressBar({ value }: { value: number }) {
   }, [anim, value]);
 
   return (
-    <View style={styles.progressTrack}>
+    <View style={[styles.progressTrack, isDark && styles.progressTrackDark]}>
       <Animated.View
         style={[
           styles.progressFill,
@@ -419,11 +423,14 @@ export default function PropertyDetail() {
     return () => sub.remove();
   }, [handleBack]);
 
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <ScrollView
-        style={styles.scroll}
+        style={[styles.scroll, isDark && styles.scrollDark]}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
@@ -446,60 +453,76 @@ export default function PropertyDetail() {
           />
 
           <View style={styles.heroNav}>
-            <TouchableOpacity style={styles.navBtn} onPress={handleBack}>
-              <Text style={styles.navIcon}>←</Text>
+            <TouchableOpacity
+              style={[styles.navBtn, isDark && styles.navBtnDark]}
+              onPress={handleBack}
+            >
+              <Text style={[styles.navIcon, isDark && styles.navIconDark]}>←</Text>
             </TouchableOpacity>
 
             <View style={styles.navRight}>
-              <TouchableOpacity style={styles.navBtn} onPress={handleFavorite}>
-                <Text style={styles.navIcon}>♡</Text>
+              <TouchableOpacity
+                style={[styles.navBtn, isDark && styles.navBtnDark]}
+                onPress={handleFavorite}
+              >
+                <Text style={[styles.navIcon, isDark && styles.navIconDark]}>♡</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.navBtn}>
-                <Text style={styles.navIcon}>↑</Text>
+              <TouchableOpacity style={[styles.navBtn, isDark && styles.navBtnDark]}>
+                <Text style={[styles.navIcon, isDark && styles.navIconDark]}>↑</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          <View style={styles.matchBadge}>
+          <View style={[styles.matchBadge, isDark && styles.matchBadgeDark]}>
             <Text style={styles.matchStar}>✦</Text>
-            <Text style={styles.matchText}>{match}% Match</Text>
+            <Text style={[styles.matchText, isDark && styles.matchTextDark]}>
+              {match}% Match
+            </Text>
           </View>
         </View>
 
-        <View style={styles.card}>
-          <View style={styles.pill} />
+        <View style={[styles.card, isDark && styles.cardDark]}>
+          <View style={[styles.pill, isDark && styles.pillDark]} />
 
           <View style={styles.titleRow}>
-            <Text style={styles.title}>{title}</Text>
+            <Text style={[styles.title, isDark && styles.titleDark]}>{title}</Text>
             <View>
               <Text style={styles.price}>{price}</Text>
-              <Text style={styles.pricePer}>/month</Text>
+              <Text style={[styles.pricePer, isDark && styles.mutedTextDark]}>
+                /month
+              </Text>
             </View>
           </View>
 
           <View style={styles.locationRow}>
             <Text style={styles.locationPin}>📍</Text>
-            <Text style={styles.locationText}>{location}</Text>
+            <Text style={[styles.locationText, isDark && styles.mutedTextDark]}>
+              {location}
+            </Text>
           </View>
 
           <View style={styles.specsRow}>
             {[rooms, baths, size].map((spec) => (
-              <View key={spec} style={styles.specTag}>
+              <View key={spec} style={[styles.specTag, isDark && styles.specTagDark]}>
                 <Text style={styles.specText}>{spec}</Text>
               </View>
             ))}
           </View>
 
-          <View style={styles.scoreCard}>
+          <View style={[styles.scoreCard, isDark && styles.scoreCardDark]}>
             <View style={styles.scoreTitleRow}>
               <Text style={styles.scoreStar}>✦</Text>
-              <Text style={styles.scoreTitle}>AI Compatibility Score</Text>
+              <Text style={[styles.scoreTitle, isDark && styles.titleDark]}>
+                AI Compatibility Score
+              </Text>
             </View>
 
             {SCORES.map(({ label, value }) => (
               <View key={label} style={styles.scoreRow}>
                 <View style={styles.scoreLabelRow}>
-                  <Text style={styles.scoreLabel}>{label}</Text>
+                  <Text style={[styles.scoreLabel, isDark && styles.titleDark]}>
+                    {label}
+                  </Text>
                   <Text style={styles.scoreValue}>{value}%</Text>
                 </View>
                 <ProgressBar value={value} />
@@ -509,36 +532,46 @@ export default function PropertyDetail() {
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Description</Text>
-              <Text style={styles.sectionArrow}>▲</Text>
+              <Text style={[styles.sectionTitle, isDark && styles.titleDark]}>
+                Description
+              </Text>
+              <Text style={[styles.sectionArrow, isDark && styles.mutedTextDark]}>▲</Text>
             </View>
-            <Text style={styles.descText}>{description}</Text>
+            <Text style={[styles.descText, isDark && styles.mutedTextDark]}>{description}</Text>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Amenities</Text>
+            <Text style={[styles.sectionTitle, isDark && styles.titleDark]}>
+              Amenities
+            </Text>
             <View style={styles.amenitiesGrid}>
               {AMENITIES.map(({ icon, label }) => (
                 <TouchableOpacity
                   key={label}
-                  style={styles.amenityCard}
+                  style={[styles.amenityCard, isDark && styles.amenityCardDark]}
                   activeOpacity={0.7}
                 >
                   <View style={styles.amenityIcon}>{icon}</View>
-                  <Text style={styles.amenityLabel}>{label}</Text>
+                  <Text style={[styles.amenityLabel, isDark && styles.mutedTextDark]}>
+                    {label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Location</Text>
-            <View style={styles.mapContainer}>
+            <Text style={[styles.sectionTitle, isDark && styles.titleDark]}>
+              Location
+            </Text>
+            <View style={[styles.mapContainer, isDark && styles.mapContainerDark]}>
               {Platform.OS === "web" ? (
-                <View style={styles.mapPlaceholder}>
+                <View style={[styles.mapPlaceholder, isDark && styles.mapPlaceholderDark]}>
                   <View style={styles.mapPin} />
-                  <Text style={styles.mapTitle}>Map Preview</Text>
-                  <Text style={styles.mapCoords}>
+                  <Text style={[styles.mapTitle, isDark && styles.titleDark]}>
+                    Map Preview
+                  </Text>
+                  <Text style={[styles.mapCoords, isDark && styles.mutedTextDark]}>
                     {lat.toFixed(4)}, {lng.toFixed(4)}
                   </Text>
                 </View>
@@ -550,7 +583,7 @@ export default function PropertyDetail() {
         </View>
       </ScrollView>
 
-      <View style={styles.ctaBar}>
+      <View style={[styles.ctaBar, isDark && styles.ctaBarDark]}>
         <TouchableOpacity
           style={styles.ctaBtn}
           activeOpacity={0.85}
@@ -580,7 +613,9 @@ export default function PropertyDetail() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   scroll: { flex: 1 },
+  scrollDark: { backgroundColor: Colors.dark.background },
 
   hero: { height: 300, position: "relative", overflow: "hidden" },
   heroImage: { width: "100%", height: "100%" },
@@ -705,6 +740,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   navIcon: { fontSize: 16, color: "#333" },
+  navBtnDark: {
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  navIconDark: { color: Colors.dark.text },
   navRight: { flexDirection: "row", gap: 10 },
   matchBadge: {
     position: "absolute",
@@ -725,6 +764,8 @@ const styles = StyleSheet.create({
   },
   matchStar: { fontSize: 14, color: CORAL },
   matchText: { fontSize: 13, fontWeight: "600", color: INK },
+  matchBadgeDark: { backgroundColor: "rgba(0,0,0,0.45)" },
+  matchTextDark: { color: Colors.dark.text },
 
   card: {
     backgroundColor: "white",
@@ -738,6 +779,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -2 },
     elevation: 6,
   },
+  cardDark: {
+    backgroundColor: Colors.dark.card,
+  },
   pill: {
     width: 36,
     height: 4,
@@ -746,6 +790,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 20,
   },
+  pillDark: { backgroundColor: Colors.dark.border },
   titleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -753,8 +798,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: { fontSize: 22, fontWeight: "700", color: INK, lineHeight: 28 },
+  titleDark: { color: Colors.dark.text },
   price: { fontSize: 22, fontWeight: "700", color: CORAL, textAlign: "right" },
   pricePer: { fontSize: 12, color: MUTED, textAlign: "right" },
+  mutedTextDark: { color: Colors.dark.mutedText },
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -770,6 +817,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
+  specTagDark: { backgroundColor: Colors.dark.cardMuted },
   specText: { fontSize: 12, fontWeight: "600", color: CORAL },
 
   scoreCard: {
@@ -779,6 +827,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BORDER,
     marginBottom: 24,
+  },
+  scoreCardDark: {
+    backgroundColor: Colors.dark.cardMuted,
+    borderColor: Colors.dark.border,
   },
   scoreTitleRow: {
     flexDirection: "row",
@@ -802,6 +854,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     overflow: "hidden",
   },
+  progressTrackDark: { backgroundColor: Colors.dark.border },
   progressFill: { height: 6, backgroundColor: TEAL, borderRadius: 3 },
 
   section: { marginBottom: 24 },
@@ -831,6 +884,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  amenityCardDark: {
+    backgroundColor: Colors.dark.cardMuted,
+    borderColor: Colors.dark.border,
+  },
   amenityIcon: {
     width: 32,
     height: 32,
@@ -855,11 +912,18 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
   },
+  mapContainerDark: {
+    backgroundColor: Colors.dark.cardMuted,
+    borderColor: Colors.dark.border,
+  },
   mapPlaceholder: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.6)",
+  },
+  mapPlaceholderDark: {
+    backgroundColor: "rgba(0,0,0,0.25)",
   },
   mapPin: {
     width: 12,
@@ -880,6 +944,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: BORDER,
+  },
+  ctaBarDark: {
+    backgroundColor: Colors.dark.card,
+    borderTopColor: Colors.dark.border,
   },
   ctaBtn: {
     backgroundColor: TEAL,

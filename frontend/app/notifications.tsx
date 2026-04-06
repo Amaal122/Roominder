@@ -12,6 +12,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
+
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 import { setPendingCount } from "./state/ownerDashboard";
 import {
@@ -27,12 +31,6 @@ import {
 
 type NoticeGroup = "visit-owner" | "visit-seeker" | "visit" | "system";
 
-const GROUP_LABELS: Record<NoticeGroup, string> = {
-  "visit-owner": "Owner",
-  "visit-seeker": "Seeker",
-  visit: "Visits",
-  system: "System",
-};
 const getGroup = (notification: AppNotification): NoticeGroup => {
   const audience = notification.data?.audience;
   if (audience === "owner") return "visit-owner";
@@ -102,12 +100,25 @@ const countPendingVisitDecisions = (notifications: AppNotification[]) => {
 
 export default function Notifications() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [filter, setFilter] = useState<"all" | NoticeGroup>("all");
   const [items, setItems] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actionKey, setActionKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+
+  const groupLabel = useCallback(
+    (key: NoticeGroup) => {
+      if (key === "visit-owner") return t("notifications.owner");
+      if (key === "visit-seeker") return t("notifications.seeker");
+      if (key === "visit") return t("notifications.visits");
+      return t("notifications.system");
+    },
+    [t],
+  );
 
   const loadNotifications = useCallback(async (mode: "initial" | "refresh" = "initial") => {
     try {
@@ -262,24 +273,42 @@ export default function Notifications() {
 
   return (
     <LinearGradient
-      colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
+      colors={
+        isDark
+          ? [Colors.dark.background, Colors.dark.background]
+          : ["#F4896B", "#F7B89A", "#7ECEC4"]
+      }
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.gradient}
     >
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-            <Feather name="arrow-left" size={20} color="#2B2B33" />
+          <TouchableOpacity
+            style={[styles.iconBtn, isDark && styles.iconBtnDark]}
+            onPress={() => router.back()}
+          >
+            <Feather
+              name="arrow-left"
+              size={20}
+              color={isDark ? Colors.dark.text : "#2B2B33"}
+            />
           </TouchableOpacity>
           <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>Notifications</Text>
+            <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
+              {t("notifications.title")}
+            </Text>
             <Text style={styles.headerSub}>
-              {unreadCount} unread · {items.length} total
+              {t("notifications.unread", { unread: unreadCount, total: items.length })}
             </Text>
           </View>
-          <TouchableOpacity style={styles.markBtn} onPress={handleMarkAllRead}>
-            <Text style={styles.markText}>Mark all read</Text>
+          <TouchableOpacity
+            style={[styles.markBtn, isDark && styles.markBtnDark]}
+            onPress={handleMarkAllRead}
+          >
+            <Text style={[styles.markText, isDark && styles.markTextDark]}>
+              {t("notifications.mark_all")}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -289,6 +318,7 @@ export default function Notifications() {
               key={key}
               style={[
                 styles.filterChip,
+                isDark && styles.filterChipDark,
                 filter === key && styles.filterChipActive,
               ]}
               onPress={() => setFilter(key)}
@@ -297,10 +327,11 @@ export default function Notifications() {
               <Text
                 style={[
                   styles.filterText,
+                  isDark && styles.filterTextDark,
                   filter === key && styles.filterTextActive,
                 ]}
               >
-                {key === "all" ? "All" : GROUP_LABELS[key]}
+                {key === "all" ? t("notifications.all") : groupLabel(key)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -312,28 +343,36 @@ export default function Notifications() {
           showsVerticalScrollIndicator={false}
         >
           {loading ? (
-            <View style={styles.emptyCard}>
+            <View style={[styles.emptyCard, isDark && styles.emptyCardDark]}>
               <ActivityIndicator color="#F4896B" />
-              <Text style={styles.emptySubtitle}>Loading notifications...</Text>
+              <Text style={[styles.emptySubtitle, isDark && styles.mutedTextDark]}>
+                {t("notifications.loading")}
+              </Text>
             </View>
           ) : error ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>Could not load notifications</Text>
-              <Text style={styles.emptySubtitle}>{error}</Text>
+            <View style={[styles.emptyCard, isDark && styles.emptyCardDark]}>
+              <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>
+                {t("notifications.load_error_title")}
+              </Text>
+              <Text style={[styles.emptySubtitle, isDark && styles.mutedTextDark]}>
+                {error}
+              </Text>
               <TouchableOpacity
                 style={styles.retryBtn}
                 onPress={() => loadNotifications("refresh")}
               >
                 <Text style={styles.retryText}>
-                  {refreshing ? "Refreshing..." : "Try again"}
+                  {refreshing ? t("common.refreshing") : t("common.try_again")}
                 </Text>
               </TouchableOpacity>
             </View>
           ) : filtered.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>No notifications</Text>
-              <Text style={styles.emptySubtitle}>
-                You’re all caught up for now.
+            <View style={[styles.emptyCard, isDark && styles.emptyCardDark]}>
+              <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>
+                {t("notifications.empty_title")}
+              </Text>
+              <Text style={[styles.emptySubtitle, isDark && styles.mutedTextDark]}>
+                {t("notifications.empty_subtitle")}
               </Text>
             </View>
           ) : (
@@ -352,8 +391,11 @@ export default function Notifications() {
               const applicantEmail =
                 requesterEmail ?? getStringField(payload.seeker_email);
               const ctaLabel =
-                getStringField(payload.cta_label) ?? "Fill Application Form";
+                getStringField(payload.cta_label) ?? t("notifications.fill_application");
               const isOwnerVisitRequest = notification.type === "visit_request";
+                            const displayTitle = isOwnerVisitRequest
+                              ? t("notifications.new_visit")
+                              : notification.title;
               const isAcceptedVisit = notification.type === "visit_confirmed";
               const isDeclinedVisit = notification.type === "visit_cancelled";
               const isApplicationSubmitted = notification.type === "application_submitted";
@@ -365,7 +407,7 @@ export default function Notifications() {
               return (
                 <TouchableOpacity
                   key={notification.id}
-                  style={styles.card}
+                  style={[styles.card, isDark && styles.cardDark]}
                   activeOpacity={0.92}
                   onPress={() => handleMarkRead(notification)}
                 >
@@ -378,15 +420,19 @@ export default function Notifications() {
                         ]}
                       />
                       <View style={styles.cardTextWrap}>
-                        <Text style={styles.cardTitle}>{notification.title}</Text>
-                        <Text style={styles.cardBody}>{notification.body}</Text>
+                        <Text style={[styles.cardTitle, isDark && styles.titleDark]}>
+                          {displayTitle}
+                        </Text>
+                        <Text style={[styles.cardBody, isDark && styles.mutedTextDark]}>
+                          {notification.body}
+                        </Text>
                       </View>
                     </View>
                     {!notification.is_read ? <View style={styles.unreadPill} /> : null}
                   </View>
 
                   <View style={styles.metaRow}>
-                    <Text style={styles.cardTime}>
+                    <Text style={[styles.cardTime, isDark && styles.mutedTextDark]}>
                       {formatRelativeTime(notification.created_at)}
                     </Text>
                     {notification.visit_status ? (
@@ -406,44 +452,66 @@ export default function Notifications() {
                   </View>
 
                   {propertyTitle ? (
-                    <Text style={styles.infoLine}>Property: {propertyTitle}</Text>
+                    <Text style={[styles.infoLine, isDark && styles.mutedTextDark]}>
+                      {t("notifications.property")}: {propertyTitle}
+                    </Text>
                   ) : null}
                   {propertyLocation ? (
-                    <Text style={styles.infoLine}>Location: {propertyLocation}</Text>
+                    <Text style={[styles.infoLine, isDark && styles.mutedTextDark]}>
+                      {t("notifications.location")}: {propertyLocation}
+                    </Text>
                   ) : null}
                   {isOwnerVisitRequest && requesterName ? (
-                    <Text style={styles.infoLine}>User: {requesterName}</Text>
+                    <Text style={[styles.infoLine, isDark && styles.mutedTextDark]}>
+                      {t("notifications.user")}: {requesterName}
+                    </Text>
                   ) : null}
                   {!isOwnerVisitRequest && ownerName ? (
-                    <Text style={styles.infoLine}>Owner: {ownerName}</Text>
+                    <Text style={[styles.infoLine, isDark && styles.mutedTextDark]}>
+                      {t("notifications.owner")}: {ownerName}
+                    </Text>
                   ) : null}
                   {isOwnerVisitRequest && requesterEmail ? (
-                    <Text style={styles.infoLine}>Email: {requesterEmail}</Text>
+                    <Text style={[styles.infoLine, isDark && styles.mutedTextDark]}>
+                      Email: {requesterEmail}
+                    </Text>
                   ) : null}
                   {isOwnerVisitRequest && requesterPhone ? (
-                    <Text style={styles.infoLine}>Phone: {requesterPhone}</Text>
+                    <Text style={[styles.infoLine, isDark && styles.mutedTextDark]}>
+                      {t("notifications.phone")}: {requesterPhone}
+                    </Text>
                   ) : null}
                   {preferredTime ? (
-                    <Text style={styles.infoLine}>Preferred time: {preferredTime}</Text>
+                    <Text style={[styles.infoLine, isDark && styles.mutedTextDark]}>
+                      {t("notifications.preferred_time")}: {preferredTime}
+                    </Text>
                   ) : null}
                   {isOwnerVisitRequest && message ? (
-                    <Text style={styles.infoLine}>Message: {message}</Text>
+                    <Text style={[styles.infoLine, isDark && styles.mutedTextDark]}>
+                      Message: {message}
+                    </Text>
                   ) : null}
                   {isOwnerApplicationSubmission && applicantName ? (
-                    <Text style={styles.infoLine}>Applicant: {applicantName}</Text>
+                    <Text style={[styles.infoLine, isDark && styles.mutedTextDark]}>
+                      Applicant: {applicantName}
+                    </Text>
                   ) : null}
                   {isOwnerApplicationSubmission && applicantEmail ? (
-                    <Text style={styles.infoLine}>
+                    <Text style={[styles.infoLine, isDark && styles.mutedTextDark]}>
                       Email: {applicantEmail}
                     </Text>
                   ) : null}
                   {isOwnerApplicationSubmission && message ? (
-                    <Text style={styles.infoLine}>Message: {message}</Text>
+                    <Text style={[styles.infoLine, isDark && styles.mutedTextDark]}>
+                      Message: {message}
+                    </Text>
                   ) : null}
                   {isAcceptedVisit ? (
-                    <View style={styles.userNoticeBox}>
-                      <Text style={styles.userNoticeTitle}>Next step</Text>
-                      <Text style={styles.userNoticeText}>
+                    <View style={[styles.userNoticeBox, isDark && styles.userNoticeBoxDark]}>
+                      <Text style={[styles.userNoticeTitle, isDark && styles.titleDark]}>
+                        Next step
+                      </Text>
+                      <Text style={[styles.userNoticeText, isDark && styles.mutedTextDark]}>
                         Your visit was accepted. Complete the application form so the owner
                         can review your file.
                       </Text>
@@ -457,18 +525,22 @@ export default function Notifications() {
                   ) : null}
 
                   {isDeclinedVisit ? (
-                    <View style={styles.userNoticeBox}>
-                      <Text style={styles.userNoticeTitle}>Update</Text>
-                      <Text style={styles.userNoticeText}>
+                    <View style={[styles.userNoticeBox, isDark && styles.userNoticeBoxDark]}>
+                      <Text style={[styles.userNoticeTitle, isDark && styles.titleDark]}>
+                        Update
+                      </Text>
+                      <Text style={[styles.userNoticeText, isDark && styles.mutedTextDark]}>
                         This visit request was declined. You can keep exploring other homes
                         and send a new request anytime.
                       </Text>
                     </View>
                   ) : null}
                   {isOwnerApplicationSubmission ? (
-                    <View style={styles.userNoticeBox}>
-                      <Text style={styles.userNoticeTitle}>Application Details</Text>
-                      <Text style={styles.userNoticeText}>
+                    <View style={[styles.userNoticeBox, isDark && styles.userNoticeBoxDark]}>
+                      <Text style={[styles.userNoticeTitle, isDark && styles.titleDark]}>
+                        Application Details
+                      </Text>
+                      <Text style={[styles.userNoticeText, isDark && styles.mutedTextDark]}>
                         Review the applicant documents below, then decide whether to accept
                         or reject this rental application.
                       </Text>
@@ -481,7 +553,7 @@ export default function Notifications() {
                         url ? (
                           <TouchableOpacity
                             key={label as string}
-                            style={styles.docLink}
+                            style={[styles.docLink, isDark && styles.docLinkDark]}
                             onPress={() => {
                               // Open the Cloudinary URL in browser
                               const { Linking } = require("react-native");
@@ -494,11 +566,11 @@ export default function Notifications() {
                       )}
                       <View style={styles.actionsRow}>
                         <TouchableOpacity
-                          style={styles.rejectBtn}
+                          style={[styles.rejectBtn, isDark && styles.rejectBtnDark]}
                           onPress={() => void handleApplicationDecision(notification, "rejected")}
                           disabled={Boolean(actionKey)}
                         >
-                          <Text style={styles.rejectText}>
+                          <Text style={[styles.rejectText, isDark && styles.rejectTextDark]}>
                             {actionKey === `${notification.id}-application-rejected`
                               ? "Rejecting..."
                               : "Reject"}
@@ -519,18 +591,22 @@ export default function Notifications() {
                     </View>
                   ) : null}
                   {isApplicationAccepted ? (
-                    <View style={styles.userNoticeBox}>
-                      <Text style={styles.userNoticeTitle}>Application update</Text>
-                      <Text style={styles.userNoticeText}>
+                    <View style={[styles.userNoticeBox, isDark && styles.userNoticeBoxDark]}>
+                      <Text style={[styles.userNoticeTitle, isDark && styles.titleDark]}>
+                        Application update
+                      </Text>
+                      <Text style={[styles.userNoticeText, isDark && styles.mutedTextDark]}>
                         Your rental application was accepted. You can continue with the owner
                         to finalize the next steps.
                       </Text>
                     </View>
                   ) : null}
                   {isApplicationRejected ? (
-                    <View style={styles.userNoticeBox}>
-                      <Text style={styles.userNoticeTitle}>Application update</Text>
-                      <Text style={styles.userNoticeText}>
+                    <View style={[styles.userNoticeBox, isDark && styles.userNoticeBoxDark]}>
+                      <Text style={[styles.userNoticeTitle, isDark && styles.titleDark]}>
+                        Application update
+                      </Text>
+                      <Text style={[styles.userNoticeText, isDark && styles.mutedTextDark]}>
                         Your rental application was declined. You can keep exploring other
                         homes and submit a new application anytime.
                       </Text>
@@ -540,11 +616,11 @@ export default function Notifications() {
                   {notification.can_act && notification.visit_status === "pending" ? (
                     <View style={styles.actionsRow}>
                       <TouchableOpacity
-                        style={styles.rejectBtn}
+                        style={[styles.rejectBtn, isDark && styles.rejectBtnDark]}
                         onPress={() => handleVisitDecision(notification, "cancelled")}
                         disabled={Boolean(actionKey)}
                       >
-                        <Text style={styles.rejectText}>
+                        <Text style={[styles.rejectText, isDark && styles.rejectTextDark]}>
                           {actionKey === `${notification.id}-cancelled`
                             ? "Declining..."
                             : "Decline"}
@@ -576,6 +652,7 @@ export default function Notifications() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   safeArea: { flex: 1, padding: 16 },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -590,8 +667,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  iconBtnDark: { backgroundColor: Colors.dark.cardMuted, borderWidth: 1, borderColor: Colors.dark.border },
   headerText: { flex: 1 },
   headerTitle: { fontSize: 20, fontWeight: "800", color: "#fff" },
+  headerTitleDark: { color: Colors.dark.text },
   headerSub: { fontSize: 12, color: "rgba(255,255,255,0.85)" },
   markBtn: {
     backgroundColor: "rgba(255,255,255,0.9)",
@@ -599,7 +678,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 10,
   },
+  markBtnDark: { backgroundColor: Colors.dark.cardMuted, borderWidth: 1, borderColor: Colors.dark.border },
   markText: { fontSize: 12, fontWeight: "700", color: "#2B2B33" },
+  markTextDark: { color: Colors.dark.text },
   filters: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   filterChip: {
     backgroundColor: "rgba(255,255,255,0.75)",
@@ -607,8 +688,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
+  filterChipDark: { backgroundColor: Colors.dark.cardMuted, borderWidth: 1, borderColor: Colors.dark.border },
   filterChipActive: { backgroundColor: "#7ECEC4" },
   filterText: { fontSize: 12, fontWeight: "700", color: "#2B2B33" },
+  filterTextDark: { color: Colors.dark.text },
   filterTextActive: { color: "#fff" },
   list: { marginTop: 12 },
   card: {
@@ -622,6 +705,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 3,
   },
+  cardDark: { backgroundColor: Colors.dark.card, shadowOpacity: 0, elevation: 0, borderWidth: 1, borderColor: Colors.dark.border },
   cardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -668,6 +752,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
   },
   rejectText: { color: "#7A6D6A", fontWeight: "700", fontSize: 12 },
+  rejectBtnDark: { backgroundColor: Colors.dark.cardMuted, borderWidth: 1, borderColor: Colors.dark.border },
+  rejectTextDark: { color: Colors.dark.text },
   approveBtn: {
     flex: 1,
     borderRadius: 12,
@@ -697,8 +783,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  emptyCardDark: { backgroundColor: Colors.dark.card, borderWidth: 1, borderColor: Colors.dark.border },
   emptyTitle: { fontSize: 16, fontWeight: "800", color: "#2B2B33" },
   emptySubtitle: { fontSize: 12, color: "#7A6D6A", marginTop: 4, textAlign: "center" },
+  titleDark: { color: Colors.dark.text },
+  mutedTextDark: { color: Colors.dark.mutedText },
   retryBtn: {
     marginTop: 8,
     backgroundColor: "#F4896B",
@@ -715,6 +804,10 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
     padding: 12,
     gap: 8,
+  },
+  userNoticeBoxDark: {
+    backgroundColor: Colors.dark.cardMuted,
+    borderColor: Colors.dark.border,
   },
   userNoticeTitle: {
     fontSize: 12,
@@ -745,6 +838,7 @@ const styles = StyleSheet.create({
   paddingVertical: 10,
   paddingHorizontal: 12,
 },
+  docLinkDark: { backgroundColor: Colors.dark.card },
 docLinkText: {
   fontSize: 12,
   fontWeight: "700",

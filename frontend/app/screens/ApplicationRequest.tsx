@@ -14,6 +14,9 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
+
 import { getAuthToken } from "../state/auth";
 
 const API_BASE = "http://127.0.0.1:8001";
@@ -21,6 +24,9 @@ const API_BASE = "http://127.0.0.1:8001";
 type DocKey = "id" | "income" | "employment" | "guarantor";
 
 export default function ApplicationRequest() {
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+
   const params = useLocalSearchParams<{
     id?: string;
     application_id?: string;
@@ -68,48 +74,70 @@ export default function ApplicationRequest() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
       >
         <LinearGradient
-          colors={["#F4896B", "#7ECEC4"]}
+          colors={
+            isDark
+              ? [Colors.dark.card, Colors.dark.card]
+              : ["#F4896B", "#7ECEC4"]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.header}
+          style={[styles.header, isDark && styles.headerDark]}
         >
           <TouchableOpacity
-            style={styles.backBtn}
+            style={[styles.backBtn, isDark && styles.backBtnDark]}
             onPress={() => router.back()}
           >
-            <Text style={styles.backIcon}>←</Text>
+            <Text style={[styles.backIcon, isDark && styles.backIconDark]}>
+              ←
+            </Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Application & Documents</Text>
+          <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
+            Application & Documents
+          </Text>
         </LinearGradient>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Property</Text>
-          <Text style={styles.propertyTitle}>{title}</Text>
-          <Text style={styles.propertyLocation}>{location}</Text>
+        <View style={[styles.card, isDark && styles.cardDark]}>
+          <Text style={[styles.cardTitle, isDark && styles.cardTitleDark]}>
+            Property
+          </Text>
+          <Text style={[styles.propertyTitle, isDark && styles.propertyTitleDark]}>
+            {title}
+          </Text>
+          <Text
+            style={[styles.propertyLocation, isDark && styles.propertyLocationDark]}
+          >
+            {location}
+          </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Contact</Text>
+          <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
+            Contact
+          </Text>
           <TextInput
             placeholder="Email"
             value={email}
             onChangeText={setEmail}
-            style={styles.input}
-            placeholderTextColor="#A0A0B5"
+            style={[styles.input, isDark && styles.inputDark]}
+            placeholderTextColor={
+              isDark ? Colors.dark.mutedText : "#A0A0B5"
+            }
             keyboardType="email-address"
             autoCapitalize="none"
           />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Documents (Scanned)</Text>
+          <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
+            Documents (Scanned)
+          </Text>
           <View style={styles.scanGrid}>
             {[
               ["id", "Identity document"],
@@ -121,7 +149,7 @@ export default function ApplicationRequest() {
               return (
                 <View key={key} style={styles.scanItem}>
                   <TouchableOpacity
-                    style={styles.scanFrame}
+                    style={[styles.scanFrame, isDark && styles.scanFrameDark]}
                     onPress={() => pickImage(key as DocKey)}
                     activeOpacity={0.85}
                   >
@@ -134,29 +162,49 @@ export default function ApplicationRequest() {
                       </>
                     ) : (
                       <View style={styles.scanPlaceholder}>
-                        <Text style={styles.scanPlaceholderTitle}>Upload</Text>
-                        <Text style={styles.scanPlaceholderHint}>3:4 scan</Text>
+                        <Text
+                          style={[
+                            styles.scanPlaceholderTitle,
+                            isDark && styles.scanPlaceholderTitleDark,
+                          ]}
+                        >
+                          Upload
+                        </Text>
+                        <Text
+                          style={[
+                            styles.scanPlaceholderHint,
+                            isDark && styles.scanPlaceholderHintDark,
+                          ]}
+                        >
+                          3:4 scan
+                        </Text>
                       </View>
                     )}
                   </TouchableOpacity>
-                  <Text style={styles.scanLabel}>{label}</Text>
+                  <Text style={[styles.scanLabel, isDark && styles.scanLabelDark]}>
+                    {label}
+                  </Text>
                 </View>
               );
             })}
           </View>
-          <Text style={styles.helperText}>
+          <Text style={[styles.helperText, isDark && styles.helperTextDark]}>
             Tap each frame to upload a scanned image.
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notes (optional)</Text>
+          <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
+            Notes (optional)
+          </Text>
           <TextInput
             placeholder="Any extra info for the owner..."
             value={notes}
             onChangeText={setNotes}
-            style={[styles.input, styles.textArea]}
-            placeholderTextColor="#A0A0B5"
+            style={[styles.input, styles.textArea, isDark && styles.inputDark]}
+            placeholderTextColor={
+              isDark ? Colors.dark.mutedText : "#A0A0B5"
+            }
             multiline
           />
         </View>
@@ -344,6 +392,7 @@ const BORDER = "#F1E3DC";
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   scroll: { flex: 1, padding: 20 },
   header: {
     flexDirection: "row",
@@ -352,6 +401,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 16,
     borderRadius: 16,
+  },
+  headerDark: {
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
   },
   backBtn: {
     width: 34,
@@ -365,6 +418,12 @@ const styles = StyleSheet.create({
   },
   backIcon: { fontSize: 16, color: TEXT },
   headerTitle: { fontSize: 18, fontWeight: "700", color: "white" },
+  backBtnDark: {
+    backgroundColor: Colors.dark.card,
+    borderColor: Colors.dark.border,
+  },
+  backIconDark: { color: Colors.dark.text },
+  headerTitleDark: { color: Colors.dark.text },
   card: {
     backgroundColor: "white",
     borderRadius: 16,
@@ -376,6 +435,13 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 12, color: MUTED, marginBottom: 6 },
   propertyTitle: { fontSize: 16, fontWeight: "700", color: TEXT },
   propertyLocation: { fontSize: 13, color: MUTED, marginTop: 2 },
+  cardDark: {
+    backgroundColor: Colors.dark.card,
+    borderColor: Colors.dark.border,
+  },
+  cardTitleDark: { color: Colors.dark.mutedText },
+  propertyTitleDark: { color: Colors.dark.text },
+  propertyLocationDark: { color: Colors.dark.mutedText },
   section: { marginBottom: 18 },
   sectionTitle: {
     fontSize: 14,
@@ -383,6 +449,7 @@ const styles = StyleSheet.create({
     color: TEXT,
     marginBottom: 10,
   },
+  sectionTitleDark: { color: Colors.dark.text },
   input: {
     backgroundColor: "white",
     borderWidth: 1,
@@ -393,6 +460,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: TEXT,
     marginBottom: 10,
+  },
+  inputDark: {
+    backgroundColor: Colors.dark.cardMuted,
+    borderColor: Colors.dark.border,
+    color: Colors.dark.text,
   },
   textArea: { height: 110, textAlignVertical: "top" },
   scanGrid: {
@@ -412,6 +484,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  scanFrameDark: {
+    borderColor: Colors.dark.border,
+    backgroundColor: Colors.dark.cardMuted,
+  },
   scanImage: { width: "100%", height: "100%", resizeMode: "cover" },
   scanOverlay: {
     position: "absolute",
@@ -430,8 +506,12 @@ const styles = StyleSheet.create({
   },
   scanPlaceholderTitle: { fontSize: 14, fontWeight: "700", color: TEXT },
   scanPlaceholderHint: { fontSize: 12, color: MUTED },
+  scanPlaceholderTitleDark: { color: Colors.dark.text },
+  scanPlaceholderHintDark: { color: Colors.dark.mutedText },
   scanLabel: { fontSize: 12, color: TEXT, marginTop: 8 },
+  scanLabelDark: { color: Colors.dark.text },
   helperText: { fontSize: 12, color: MUTED, marginTop: 8 },
+  helperTextDark: { color: Colors.dark.mutedText },
   primaryBtn: {
     marginTop: 6,
     backgroundColor: TEAL,

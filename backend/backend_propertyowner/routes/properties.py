@@ -7,9 +7,13 @@ from typing import List
 import shutil
 import uuid
 import os
-import cloudinary
-import cloudinary.uploader
 from dotenv import load_dotenv
+
+try:
+    import cloudinary  # type: ignore
+    import cloudinary.uploader  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    cloudinary = None
 
 from backend.db import get_db
 from backend.backend_user.auth import get_current_user   # retourne l'utilisateur connecté via JWT
@@ -91,13 +95,20 @@ def get_my_properties(
 #staic routes 
 load_dotenv()
 
-cloudinary.config(
-    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key    = os.getenv("CLOUDINARY_API_KEY"),
-    api_secret = os.getenv("CLOUDINARY_API_SECRET"),
-)
 @router.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
+    if cloudinary is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Cloudinary is not installed on the server.",
+        )
+
+    cloudinary.config(
+        cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+        api_key=os.getenv("CLOUDINARY_API_KEY"),
+        api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    )
+
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Invalid file type")
     contents = await file.read()

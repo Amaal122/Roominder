@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
@@ -32,6 +32,17 @@ class Settings(BaseSettings):
 		description="SQLAlchemy connection string",
 		validation_alias=AliasChoices("ROOMINDER_DATABASE_URL", "DATABASE_URL"),
 	)
+
+	@field_validator("database_url", mode="before")
+	@classmethod
+	def _fallback_when_blank_database_url(cls, value):
+		"""Allow env vars like DATABASE_URL= (blank) without breaking startup."""
+
+		if value is None:
+			return cls.model_fields["database_url"].default
+		if isinstance(value, str) and value.strip() == "":
+			return cls.model_fields["database_url"].default
+		return value
 	jwt_secret: str = Field(default="change-me", description="Secret key for JWT signing")
 	jwt_algorithm: str = Field(default="HS256", description="JWT signing algorithm")
 	access_token_expire_minutes: int = Field(default=60 * 24, description="Token lifetime in minutes")

@@ -9,16 +9,30 @@ import {
     View,
 } from "react-native";
 import { AppTheme, updateSettings, useSettings } from "./state/settings";
+import { useTranslation } from "react-i18next";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
 
-const THEMES: AppTheme[] = ["Light", "Dark", "System"];
+const THEMES: Array<{ value: AppTheme; key: "light" | "dark" | "system" }> = [
+  { value: "Light", key: "light" },
+  { value: "Dark", key: "dark" },
+  { value: "System", key: "system" },
+];
 
 export default function Theme() {
   const router = useRouter();
   const settings = useSettings();
+  const { t } = useTranslation();
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
 
   return (
     <LinearGradient
-      colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
+      colors={
+        isDark
+          ? [Colors.dark.background, Colors.dark.background, Colors.dark.background]
+          : ["#F4896B", "#F7B89A", "#7ECEC4"]
+      }
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.gradient}
@@ -31,22 +45,26 @@ export default function Theme() {
           >
             <Feather name="arrow-left" size={20} color="#2B2B33" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Theme</Text>
+          <Text style={styles.headerTitle}>{t("settings.theme")}</Text>
         </View>
 
-        <View style={styles.card}>
-          {THEMES.map((theme) => {
-            const active = settings.theme === theme;
+        <View style={[styles.card, isDark && styles.cardDark]}>
+          {THEMES.map(({ value, key }) => {
+            const active = settings.theme === value;
             return (
               <TouchableOpacity
-                key={theme}
-                style={[styles.row, active && styles.rowActive]}
-                onPress={() => updateSettings({ theme })}
+                key={value}
+                style={[styles.row, isDark && styles.rowDark, active && styles.rowActive]}
+                onPress={() => updateSettings({ theme: value })}
               >
                 <Text
-                  style={[styles.rowLabel, active && styles.rowLabelActive]}
+                  style={[
+                    styles.rowLabel,
+                    isDark && styles.rowLabelDark,
+                    active && styles.rowLabelActive,
+                  ]}
                 >
-                  {theme}
+                  {t(`settings.${key}`)}
                 </Text>
                 {active ? <Text style={styles.check}>✓</Text> : null}
               </TouchableOpacity>
@@ -81,6 +99,11 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 8,
   },
+  cardDark: {
+    backgroundColor: Colors.dark.card,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
   row: {
     paddingVertical: 12,
     paddingHorizontal: 12,
@@ -88,8 +111,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
+  rowDark: {
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
   rowActive: { backgroundColor: "#F9D4C2" },
   rowLabel: { fontSize: 14, fontWeight: "700", color: "#2B2B33" },
+  rowLabelDark: { color: Colors.dark.text },
   rowLabelActive: { color: "#F4896B" },
   check: { fontSize: 14, fontWeight: "800", color: "#F4896B" },
 });

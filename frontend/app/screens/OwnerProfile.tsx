@@ -11,10 +11,16 @@ import {
   View,
 } from "react-native";
 
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
+
 const getSingleParam = (value?: string | string[]) =>
   Array.isArray(value) ? value[0] : value;
 
 export default function OwnerProfile() {
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+
   const params = useLocalSearchParams<{
     id?: string;
     title?: string;
@@ -94,48 +100,75 @@ export default function OwnerProfile() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
       >
         <LinearGradient
-          colors={["#F4896B", "#7ECEC4"]}
+          colors={
+            isDark
+              ? [Colors.dark.card, Colors.dark.card]
+              : ["#F4896B", "#7ECEC4"]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.header}
+          style={[styles.header, isDark && styles.headerDark]}
         >
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backIcon}>←</Text>
+          <TouchableOpacity
+            style={[styles.backBtn, isDark && styles.backBtnDark]}
+            onPress={() => router.back()}
+          >
+            <Text style={[styles.backIcon, isDark && styles.backIconDark]}>
+              ←
+            </Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Owner Profile</Text>
+          <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
+            Owner Profile
+          </Text>
         </LinearGradient>
 
-        <View style={styles.card}>
+        <View style={[styles.card, isDark && styles.cardDark]}>
           <Image source={{ uri: ownerAvatar }} style={styles.avatar} />
           <View style={styles.ownerInfo}>
-            <Text style={styles.ownerName}>{ownerName ?? "Unknown Owner"}</Text>
-            <Text style={styles.ownerMeta}>
+            <Text style={[styles.ownerName, isDark && styles.ownerNameDark]}>
+              {ownerName ?? "Unknown Owner"}
+            </Text>
+            <Text style={[styles.ownerMeta, isDark && styles.ownerMetaDark]}>
               Verified · {ownerRating} ★ · {ownerResponse}
             </Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Property</Text>
-          <Text style={styles.propertyTitle}>{title}</Text>
-          <Text style={styles.propertyLocation}>{location}</Text>
+          <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
+            Property
+          </Text>
+          <Text style={[styles.propertyTitle, isDark && styles.propertyTitleDark]}>
+            {title}
+          </Text>
+          <Text
+            style={[styles.propertyLocation, isDark && styles.propertyLocationDark]}
+          >
+            {location}
+          </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.aboutText}>{description}</Text>
+          <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
+            About
+          </Text>
+          <Text style={[styles.aboutText, isDark && styles.aboutTextDark]}>
+            {description}
+          </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Next Step</Text>
-          <Text style={styles.aboutText}>
+          <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
+            Next Step
+          </Text>
+          <Text style={[styles.aboutText, isDark && styles.aboutTextDark]}>
             Your application was received. Start a chat to confirm the visit
             time.
           </Text>
@@ -151,7 +184,7 @@ export default function OwnerProfile() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.secondaryBtn}
+            style={[styles.secondaryBtn, isDark && styles.secondaryBtnDark]}
             activeOpacity={0.85}
             onPress={handleChatWithOwner}
           >
@@ -173,6 +206,7 @@ const BORDER = "#F1E3DC";
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   scroll: { flex: 1, padding: 20 },
   header: {
     flexDirection: "row",
@@ -181,6 +215,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 16,
     borderRadius: 16,
+  },
+  headerDark: {
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
   },
   backBtn: {
     width: 34,
@@ -194,6 +232,12 @@ const styles = StyleSheet.create({
   },
   backIcon: { fontSize: 16, color: "#2B2B33" },
   headerTitle: { fontSize: 18, fontWeight: "700", color: "white" },
+  backBtnDark: {
+    backgroundColor: Colors.dark.card,
+    borderColor: Colors.dark.border,
+  },
+  backIconDark: { color: Colors.dark.text },
+  headerTitleDark: { color: Colors.dark.text },
   card: {
     backgroundColor: "white",
     borderRadius: 16,
@@ -205,6 +249,10 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 20,
   },
+  cardDark: {
+    backgroundColor: Colors.dark.card,
+    borderColor: Colors.dark.border,
+  },
   avatar: {
     width: 56,
     height: 56,
@@ -214,6 +262,8 @@ const styles = StyleSheet.create({
   ownerInfo: { flex: 1 },
   ownerName: { fontSize: 16, fontWeight: "700", color: TEXT },
   ownerMeta: { fontSize: 12, color: MUTED, marginTop: 4 },
+  ownerNameDark: { color: Colors.dark.text },
+  ownerMetaDark: { color: Colors.dark.mutedText },
   section: { marginBottom: 18 },
   sectionTitle: {
     fontSize: 14,
@@ -221,9 +271,13 @@ const styles = StyleSheet.create({
     color: TEXT,
     marginBottom: 8,
   },
+  sectionTitleDark: { color: Colors.dark.text },
   propertyTitle: { fontSize: 15, fontWeight: "600", color: TEXT },
   propertyLocation: { fontSize: 13, color: MUTED, marginTop: 4 },
   aboutText: { fontSize: 13, color: MUTED, lineHeight: 20 },
+  propertyTitleDark: { color: Colors.dark.text },
+  propertyLocationDark: { color: Colors.dark.mutedText },
+  aboutTextDark: { color: Colors.dark.mutedText },
   primaryBtn: {
     marginTop: 6,
     backgroundColor: TEAL,
@@ -241,6 +295,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: CORAL,
+  },
+  secondaryBtnDark: {
+    backgroundColor: Colors.dark.cardMuted,
   },
   secondaryText: { color: CORAL, fontSize: 15, fontWeight: "700" },
 });

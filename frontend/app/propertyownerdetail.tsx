@@ -14,6 +14,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { removeProperty } from "./state/properties";
+import { useTranslation } from "react-i18next";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
 
 type Params = {
   id?: string;
@@ -33,6 +36,9 @@ type Params = {
 export default function PropertyDetails() {
   const router = useRouter();
   const params = useLocalSearchParams<Params>();
+  const { t } = useTranslation();
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
   const propertyId = params.id ?? "";
   const [deleting, setDeleting] = useState(false);
 
@@ -60,7 +66,7 @@ export default function PropertyDetails() {
       return;
     }
 
-    Alert.alert("Delete failed", message);
+    Alert.alert(t("properties.delete_failed_title"), message);
   };
 
   const deletePropertyAndExit = async () => {
@@ -89,7 +95,7 @@ export default function PropertyDetails() {
 
     if (Platform.OS === "web" && typeof globalThis.confirm === "function") {
       const confirmed = globalThis.confirm(
-        "Delete this property and all its related requests?",
+        t("properties.delete_confirm_body"),
       );
       if (confirmed) {
         void deletePropertyAndExit();
@@ -98,12 +104,12 @@ export default function PropertyDetails() {
     }
 
     Alert.alert(
-      "Delete property",
-      "This will permanently remove this property and its related requests.",
+      t("properties.delete_confirm_title"),
+      t("properties.delete_confirm_body"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("properties.delete_action"),
           style: "destructive",
           onPress: () => {
             void deletePropertyAndExit();
@@ -115,14 +121,18 @@ export default function PropertyDetails() {
 
   return (
     <LinearGradient
-      colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
+      colors={
+        isDark
+          ? [Colors.dark.background, Colors.dark.background]
+          : ["#F4896B", "#F7B89A", "#7ECEC4"]
+      }
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.gradient}
     >
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
         <ScrollView
-          style={styles.scroll}
+          style={[styles.scroll, isDark && styles.scrollDark]}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -136,14 +146,18 @@ export default function PropertyDetails() {
             )}
             <View style={styles.heroActions}>
               <TouchableOpacity
-                style={styles.roundBtn}
+                style={[styles.roundBtn, isDark && styles.roundBtnDark]}
                 onPress={() => router.back()}
               >
-                <Feather name="arrow-left" size={18} color="#111827" />
+                <Feather
+                  name="arrow-left"
+                  size={18}
+                  color={isDark ? Colors.dark.text : "#111827"}
+                />
               </TouchableOpacity>
               <View style={{ flexDirection: "row", gap: 10 }}>
                 <TouchableOpacity
-                  style={styles.roundBtn}
+                  style={[styles.roundBtn, isDark && styles.roundBtnDark]}
                   onPress={() =>
                     router.push({
                       pathname: "/newproperty",
@@ -151,10 +165,18 @@ export default function PropertyDetails() {
                     })
                   }
                 >
-                  <Feather name="edit-2" size={16} color="#111827" />
+                  <Feather
+                    name="edit-2"
+                    size={16}
+                    color={isDark ? Colors.dark.text : "#111827"}
+                  />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.roundBtn, deleting && styles.roundBtnDisabled]}
+                  style={[
+                    styles.roundBtn,
+                    isDark && styles.roundBtnDark,
+                    deleting && styles.roundBtnDisabled,
+                  ]}
                   disabled={deleting}
                   onPress={handleDelete}
                 >
@@ -164,12 +186,12 @@ export default function PropertyDetails() {
             </View>
           </View>
 
-          <View style={styles.tabsCard}>
+          <View style={[styles.tabsCard, isDark && styles.cardDark]}>
             <TouchableOpacity
               style={[styles.tab, styles.tabActive]}
               activeOpacity={1}
             >
-              <Text style={styles.tabActiveText}>Overview</Text>
+              <Text style={styles.tabActiveText}>{t("properties.overview")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.tab}
@@ -188,42 +210,46 @@ export default function PropertyDetails() {
                 })
               }
             >
-              <Text style={styles.tabText}>Applications</Text>
+              <Text style={[styles.tabText, isDark && styles.mutedTextDark]}>
+                {t("properties.applications")}
+              </Text>
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{details.applications}</Text>
               </View>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.title}>{details.title}</Text>
-            <Text style={styles.location}>{details.location}</Text>
+          <View style={[styles.card, isDark && styles.cardDark]}>
+            <Text style={[styles.title, isDark && styles.titleDark]}>{details.title}</Text>
+            <Text style={[styles.location, isDark && styles.mutedTextDark]}>{details.location}</Text>
 
             <View style={styles.metaRow}>
-              <MetaChip icon="home" label={`${details.beds} Beds`} />
+              <MetaChip icon="home" label={`${details.beds} ${t("properties.beds")}`} />
               <MetaChip
                 icon="droplet"
-                label={`${details.baths} Bath${details.baths > 1 ? "s" : ""}`}
+                label={`${details.baths} ${t("properties.bath")}${details.baths > 1 ? "s" : ""}`}
               />
               <MetaChip icon="maximize-2" label={`${details.size} m²`} />
             </View>
 
             <Text style={styles.price}>
               {details.price}
-              <Text style={styles.perMonth}> per month</Text>
+              <Text style={[styles.perMonth, isDark && styles.mutedTextDark]}>
+                {" "}{t("properties.per_month")}
+              </Text>
             </Text>
           </View>
 
           <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Views</Text>
-              <Text style={styles.statValue}>{details.views}</Text>
-              <Text style={styles.statSub}>+15% this week</Text>
+            <View style={[styles.statCard, isDark && styles.cardDark]}>
+              <Text style={[styles.statLabel, isDark && styles.mutedTextDark]}>{t("properties.views")}</Text>
+              <Text style={[styles.statValue, isDark && styles.titleDark]}>{details.views}</Text>
+              <Text style={styles.statSub}>{t("properties.this_week")}</Text>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Applications</Text>
-              <Text style={styles.statValue}>{details.applications}</Text>
-              <Text style={styles.statSub}>Pending review</Text>
+            <View style={[styles.statCard, isDark && styles.cardDark]}>
+              <Text style={[styles.statLabel, isDark && styles.mutedTextDark]}>{t("properties.applications")}</Text>
+              <Text style={[styles.statValue, isDark && styles.titleDark]}>{details.applications}</Text>
+              <Text style={styles.statSub}>{t("properties.pending_review")}</Text>
             </View>
           </View>
         </ScrollView>
@@ -236,7 +262,11 @@ type MetaChipProps = { icon: keyof typeof Feather.glyphMap; label: string };
 
 const MetaChip = ({ icon, label }: MetaChipProps) => (
   <View style={styles.chip}>
-    <Feather name={icon} size={14} color="#6B7280" />
+    <Feather
+      name={icon}
+      size={14}
+      color={useColorScheme() === "dark" ? Colors.dark.mutedText : "#6B7280"}
+    />
     <Text style={styles.chipText}>{label}</Text>
   </View>
 );
@@ -244,7 +274,9 @@ const MetaChip = ({ icon, label }: MetaChipProps) => (
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   safeArea: { flex: 1 },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   scroll: { flex: 1 },
+  scrollDark: { backgroundColor: Colors.dark.background },
   scrollContent: { paddingBottom: 28, gap: 16 },
   heroWrapper: { position: "relative" },
   heroImage: { width: "100%", height: 230 },
@@ -270,6 +302,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
+  roundBtnDark: {
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
   roundBtnDisabled: {
     opacity: 0.6,
   },
@@ -286,6 +321,9 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginTop: -30,
   },
+  cardDark: {
+    backgroundColor: Colors.dark.card,
+  },
   tab: {
     flex: 1,
     alignItems: "center",
@@ -298,6 +336,7 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: "#F4896B" },
   tabActiveText: { color: "#fff", fontWeight: "800" },
   tabText: { color: "#7A6D6A", fontWeight: "700" },
+  mutedTextDark: { color: Colors.dark.mutedText },
   badge: {
     backgroundColor: "#DDF3F1",
     borderRadius: 10,
@@ -318,6 +357,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   title: { fontSize: 20, fontWeight: "800", color: "#2B2B33" },
+  titleDark: { color: Colors.dark.text },
   location: { color: "#7A6D6A", fontSize: 14 },
   metaRow: { flexDirection: "row", gap: 10 },
   chip: {

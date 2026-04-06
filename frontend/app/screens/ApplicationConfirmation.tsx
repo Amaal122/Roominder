@@ -8,7 +8,13 @@ import {
   View,
 } from "react-native";
 
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
+
 export default function ApplicationConfirmation() {
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+
   const params = useLocalSearchParams<{
     title?: string;
     location?: string;
@@ -20,15 +26,17 @@ export default function ApplicationConfirmation() {
   const location = params.location ?? "Le Marais, Paris";
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.card}>
+    <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
+      <View style={[styles.card, isDark && styles.cardDark]}>
         <View style={styles.iconCircle}>
           <Text style={styles.iconCheck}>✓</Text>
         </View>
-        <Text style={styles.title}>Application Done</Text>
-        <Text style={styles.subtitle}>{title}</Text>
-        <Text style={styles.meta}>{location}</Text>
-        <Text style={styles.note}>
+        <Text style={[styles.title, isDark && styles.titleDark]}>
+          Application Done
+        </Text>
+        <Text style={[styles.subtitle, isDark && styles.titleDark]}>{title}</Text>
+        <Text style={[styles.meta, isDark && styles.mutedTextDark]}>{location}</Text>
+        <Text style={[styles.note, isDark && styles.mutedTextDark]}>
           Your documents were submitted successfully. The owner will review your
           application and reply soon.
         </Text>
@@ -56,7 +64,7 @@ export default function ApplicationConfirmation() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.secondaryBtn}
+          style={[styles.secondaryBtn, isDark && styles.secondaryBtnDark]}
           activeOpacity={0.85}
           onPress={() => router.replace("/screens/HomeScreen")}
         >
@@ -82,6 +90,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 20,
   },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   card: {
     width: "100%",
     backgroundColor: "white",
@@ -90,6 +99,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: BORDER,
+  },
+  cardDark: {
+    backgroundColor: Colors.dark.card,
+    borderColor: Colors.dark.border,
   },
   iconCircle: {
     width: 56,
@@ -111,6 +124,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 10,
   },
+  titleDark: { color: Colors.dark.text },
+  mutedTextDark: { color: Colors.dark.mutedText },
   primaryBtn: {
     marginTop: 16,
     backgroundColor: CORAL,
@@ -127,6 +142,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     borderWidth: 1,
     borderColor: CORAL,
+  },
+  secondaryBtnDark: {
+    backgroundColor: Colors.dark.cardMuted,
   },
   secondaryText: { color: CORAL, fontSize: 14, fontWeight: "700" },
 });

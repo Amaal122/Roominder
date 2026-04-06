@@ -220,6 +220,9 @@ def login_user(payload: UserLogin, db: Session = Depends(get_db)):
 def read_me(current_user: User = Depends(get_current_user)):
 	return current_user
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
 
 seeker_router = APIRouter(prefix="/seeker", tags=["seeker"])
 
@@ -292,27 +295,79 @@ class SeekerProfileRead(SeekerProfileCreate):
 
 # ------------------ ROUTES ------------------
 
+@auth_router.post("/change-password", status_code=status.HTTP_200_OK)
+def change_password(
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_password_len(payload.new_password)
+
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+
+    current_user.hashed_password = get_password_hash(payload.new_password)
+    db.commit()
+    return {"message": "Password updated successfully"}
+
 @seeker_router.post("/", response_model=SeekerProfileRead)
 def create_seeker_profile(
 	profile: SeekerProfileCreate,
 	db: Session = Depends(get_db),
 ):
-	# Completely open endpoint for now to unblock frontend; optionally ties to user_id if provided
-	payload = profile.dict(exclude={"user_id"})
-	if not payload.get("looking_for"):
-		payload["looking_for"] = "both"
+	# Completely open endpoint for now to unblock frontend; optionally ties to user_id if provided.
+	# NOTE: seeker_profiles.user_id is unique, so this endpoint must be idempotent when user_id is present.
+	payload = profile.dict(exclude={"user_id"}, exclude_none=True)
 
-	new_profile = SeekerProfile(
-		user_id=profile.user_id,
-		**payload,
-	)
+	# Only default looking_for on brand new profiles.
+	if profile.user_id is not None:
+		existing = (
+			db.query(SeekerProfile)
+			.filter(SeekerProfile.user_id == profile.user_id)
+			.first()
+		)
+		if existing:
+			# Update only provided (non-null) fields so we don't accidentally wipe stored values.
+			for key, value in payload.items():
+				setattr(existing, key, value)
+			db.commit()
+			db.refresh(existing)
+			export_seeker_profile_to_excel(db, existing)
+			return existing
+
+	# Create a new profile
+	create_payload = dict(payload)
+	if not create_payload.get("looking_for"):
+		create_payload["looking_for"] = "both"
+
+	new_profile = SeekerProfile(user_id=profile.user_id, **create_payload)
 	db.add(new_profile)
-	db.commit()
+	try:
+		db.commit()
+	except IntegrityError:
+		# If the same user submits twice (or race condition), fall back to updating the existing row.
+		db.rollback()
+		if profile.user_id is None:
+			raise
+		existing = (
+			db.query(SeekerProfile)
+			.filter(SeekerProfile.user_id == profile.user_id)
+			.first()
+		)
+		if not existing:
+			raise
+		for key, value in create_payload.items():
+			setattr(existing, key, value)
+		db.commit()
+		db.refresh(existing)
+		export_seeker_profile_to_excel(db, existing)
+		return existing
+
 	db.refresh(new_profile)
-
-	# Export to Excel after creation
 	export_seeker_profile_to_excel(db, new_profile)
-
 	return new_profile
 
 

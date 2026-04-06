@@ -14,6 +14,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
 
 import { getAuthToken } from "./state/auth";
 
@@ -71,6 +74,9 @@ const formatRelativeTime = (isoDate: string) => {
 export default function PropertyOwnerApplications() {
   const router = useRouter();
   const params = useLocalSearchParams<Params>();
+  const { t } = useTranslation();
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
   const propertyIdParam = getSingleParam(params.id);
   const propertyId = propertyIdParam ? Number(propertyIdParam) : NaN;
 
@@ -160,7 +166,7 @@ export default function PropertyOwnerApplications() {
       );
     } catch (updateError) {
       console.error("Failed to update application:", updateError);
-      Alert.alert("Error", "Could not update this application right now.");
+      Alert.alert(t("common.error"), t("applications.update_error"));
     } finally {
       setActionKey(null);
     }
@@ -182,7 +188,7 @@ export default function PropertyOwnerApplications() {
       await Linking.openURL(url);
     } catch (linkError) {
       console.error("Failed to open document:", linkError);
-      Alert.alert("Error", "Could not open this document.");
+      Alert.alert(t("common.error"), t("applications.open_doc_error"));
     }
   };
 
@@ -190,14 +196,18 @@ export default function PropertyOwnerApplications() {
 
   return (
     <LinearGradient
-      colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
+      colors={
+        isDark
+          ? [Colors.dark.background, Colors.dark.background]
+          : ["#F4896B", "#F7B89A", "#7ECEC4"]
+      }
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.gradient}
     >
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
         <ScrollView
-          style={styles.scroll}
+          style={[styles.scroll, isDark && styles.scrollDark]}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -206,52 +216,69 @@ export default function PropertyOwnerApplications() {
               <Image source={{ uri: details.image }} style={styles.heroImage} resizeMode="cover" />
             ) : null}
             <View style={styles.heroActions}>
-              <TouchableOpacity style={styles.roundBtn} onPress={() => router.back()}>
-                <Feather name="arrow-left" size={18} color="#111827" />
+              <TouchableOpacity
+                style={[styles.roundBtn, isDark && styles.roundBtnDark]}
+                onPress={() => router.back()}
+              >
+                <Feather
+                  name="arrow-left"
+                  size={18}
+                  color={isDark ? Colors.dark.text : "#111827"}
+                />
               </TouchableOpacity>
               <View style={styles.heroSpacer} />
             </View>
           </View>
 
-          <View style={styles.tabsCard}>
+          <View style={[styles.tabsCard, isDark && styles.cardDark]}>
             <TouchableOpacity style={styles.tab} activeOpacity={0.9} onPress={() => router.back()}>
-              <Text style={styles.tabText}>Overview</Text>
+              <Text style={[styles.tabText, isDark && styles.mutedTextDark]}>
+                {t("properties.overview")}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.tab, styles.tabActive]} activeOpacity={1}>
-              <Text style={styles.tabActiveText}>Applications</Text>
+              <Text style={styles.tabActiveText}>{t("properties.applications")}</Text>
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{applicationsCount}</Text>
               </View>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.title}>{details.title}</Text>
-            <Text style={styles.location}>{details.location}</Text>
+          <View style={[styles.card, isDark && styles.cardDark]}>
+            <Text style={[styles.title, isDark && styles.titleDark]}>{details.title}</Text>
+            <Text style={[styles.location, isDark && styles.mutedTextDark]}>{details.location}</Text>
             <Text style={styles.price}>
               {details.price}
-              <Text style={styles.perMonth}> per month</Text>
+              <Text style={[styles.perMonth, isDark && styles.mutedTextDark]}>
+                {" "}{t("properties.per_month")}
+              </Text>
             </Text>
           </View>
 
           {loading ? (
-            <View style={styles.emptyCard}>
+            <View style={[styles.emptyCard, isDark && styles.cardDark]}>
               <ActivityIndicator color="#F4896B" />
-              <Text style={styles.emptySubtitle}>Loading applications...</Text>
+              <Text style={[styles.emptySubtitle, isDark && styles.mutedTextDark]}>
+                {t("applications.loading")}
+              </Text>
             </View>
           ) : error ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>Could not load applications</Text>
-              <Text style={styles.emptySubtitle}>{error}</Text>
+            <View style={[styles.emptyCard, isDark && styles.cardDark]}>
+              <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>
+                {t("applications.load_error_title")}
+              </Text>
+              <Text style={[styles.emptySubtitle, isDark && styles.mutedTextDark]}>{error}</Text>
               <TouchableOpacity style={styles.retryBtn} onPress={() => void loadApplications()}>
-                <Text style={styles.retryText}>Try again</Text>
+                <Text style={styles.retryText}>{t("common.try_again")}</Text>
               </TouchableOpacity>
             </View>
           ) : applicationsCount === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>Pas encore d'applications</Text>
-              <Text style={styles.emptySubtitle}>
-                Les formulaires remplis par les locataires apparaissent ici.
+            <View style={[styles.emptyCard, isDark && styles.cardDark]}>
+              <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>
+                {t("properties.no_applications")}
+              </Text>
+              <Text style={[styles.emptySubtitle, isDark && styles.mutedTextDark]}>
+                {t("properties.no_applications_sub")}
               </Text>
             </View>
           ) : (
@@ -262,14 +289,14 @@ export default function PropertyOwnerApplications() {
                   application.seeker_email ||
                   `Applicant #${application.seeker_id}`;
                 const docLinks = [
-                  ["Identity document", application.id_doc_url],
-                  ["Proof of income", application.income_doc_url],
-                  ["Employment letter", application.employment_doc_url],
-                  ["Guarantor info", application.guarantor_doc_url],
+                  [t("applications.doc_identity"), application.id_doc_url],
+                  [t("applications.doc_income"), application.income_doc_url],
+                  [t("applications.doc_employment"), application.employment_doc_url],
+                  [t("applications.doc_guarantor"), application.guarantor_doc_url],
                 ].filter(([, url]) => Boolean(url)) as Array<[string, string]>;
 
                 return (
-                  <View key={application.id} style={styles.appCard}>
+                  <View key={application.id} style={[styles.appCard, isDark && styles.cardDark]}>
                     <View style={styles.avatar}>
                       <Text style={styles.avatarText}>
                         {applicantName.trim().charAt(0).toUpperCase()}
@@ -277,9 +304,9 @@ export default function PropertyOwnerApplications() {
                     </View>
 
                     <View style={styles.appInfo}>
-                      <Text style={styles.appName}>{applicantName}</Text>
-                      <Text style={styles.appRole}>
-                        {application.seeker_email || "No email provided"}
+                      <Text style={[styles.appName, isDark && styles.titleDark]}>{applicantName}</Text>
+                      <Text style={[styles.appRole, isDark && styles.mutedTextDark]}>
+                        {application.seeker_email || t("applications.no_email")}
                       </Text>
 
                       <View style={styles.appMetaRow}>
@@ -301,7 +328,9 @@ export default function PropertyOwnerApplications() {
                       </View>
 
                       {application.message ? (
-                        <Text style={styles.messageText}>{application.message}</Text>
+                        <Text style={[styles.messageText, isDark && styles.mutedTextDark]}>
+                          {application.message}
+                        </Text>
                       ) : null}
 
                       {docLinks.length > 0 ? (
@@ -309,7 +338,7 @@ export default function PropertyOwnerApplications() {
                           {docLinks.map(([label, url]) => (
                             <TouchableOpacity
                               key={label}
-                              style={styles.docLink}
+                              style={[styles.docLink, isDark && styles.docLinkDark]}
                               onPress={() => void openDocument(url)}
                             >
                               <Text style={styles.docLinkText}>{label}</Text>
@@ -321,15 +350,19 @@ export default function PropertyOwnerApplications() {
                       {application.status === "pending" ? (
                         <View style={styles.actionsRow}>
                           <TouchableOpacity
-                            style={styles.rejectBtn}
+                            style={[styles.rejectBtn, isDark && styles.rejectBtnDark]}
                             onPress={() => void updateApplicationStatus(application, "rejected")}
                             disabled={Boolean(actionKey)}
                           >
-                            <Feather name="x" size={14} color="#6B7280" />
-                            <Text style={styles.rejectText}>
+                            <Feather
+                              name="x"
+                              size={14}
+                              color={isDark ? Colors.dark.mutedText : "#6B7280"}
+                            />
+                            <Text style={[styles.rejectText, isDark && styles.mutedTextDark]}>
                               {actionKey === `${application.id}-rejected`
-                                ? "Saving..."
-                                : "Reject"}
+                                ? t("common.saving")
+                                : t("applications.reject")}
                             </Text>
                           </TouchableOpacity>
 
@@ -341,8 +374,8 @@ export default function PropertyOwnerApplications() {
                             <Feather name="check" size={14} color="#fff" />
                             <Text style={styles.approveText}>
                               {actionKey === `${application.id}-accepted`
-                                ? "Saving..."
-                                : "Approve"}
+                                ? t("common.saving")
+                                : t("applications.approve")}
                             </Text>
                           </TouchableOpacity>
                         </View>
@@ -362,7 +395,9 @@ export default function PropertyOwnerApplications() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   safeArea: { flex: 1 },
+  safeAreaDark: { backgroundColor: Colors.dark.background },
   scroll: { flex: 1 },
+  scrollDark: { backgroundColor: Colors.dark.background },
   scrollContent: { paddingBottom: 28, gap: 16 },
   heroWrapper: { position: "relative" },
   heroImage: { width: "100%", height: 230 },
@@ -389,6 +424,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
+  roundBtnDark: {
+    backgroundColor: Colors.dark.cardMuted,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   tabsCard: {
     marginHorizontal: 18,
     backgroundColor: "#fff",
@@ -402,6 +444,13 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginTop: -30,
   },
+  cardDark: {
+    backgroundColor: Colors.dark.card,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   tab: {
     flex: 1,
     alignItems: "center",
@@ -414,6 +463,7 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: "#F4896B" },
   tabActiveText: { color: "#fff", fontWeight: "800" },
   tabText: { color: "#7A6D6A", fontWeight: "700" },
+  mutedTextDark: { color: Colors.dark.mutedText },
   badge: {
     backgroundColor: "#DDF3F1",
     borderRadius: 10,
@@ -434,6 +484,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: { fontSize: 18, fontWeight: "800", color: "#2B2B33" },
+  titleDark: { color: Colors.dark.text },
   location: { color: "#7A6D6A", fontSize: 13 },
   price: { color: "#F4896B", fontSize: 20, fontWeight: "800" },
   perMonth: { color: "#7A6D6A", fontSize: 12, fontWeight: "600" },
@@ -509,6 +560,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  docLinkDark: { backgroundColor: Colors.dark.cardMuted },
   docLinkText: { color: "#4F46E5", fontWeight: "700", fontSize: 12 },
   actionsRow: { flexDirection: "row", gap: 10, marginTop: 6 },
   rejectBtn: {
@@ -519,6 +571,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 12,
     backgroundColor: "#F3F4F6",
+  },
+  rejectBtnDark: {
+    backgroundColor: Colors.dark.cardMuted,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
   },
   rejectText: { color: "#7A6D6A", fontWeight: "700", fontSize: 12 },
   approveBtn: {
