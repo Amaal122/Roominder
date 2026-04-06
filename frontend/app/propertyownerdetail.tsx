@@ -17,6 +17,8 @@ import { removeProperty } from "./state/properties";
 import { useTranslation } from "react-i18next";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Colors } from "@/constants/theme";
+import { useSettings } from "./state/settings";
+import { formatMoney } from "./utils/money";
 
 type Params = {
   id?: string;
@@ -39,6 +41,7 @@ export default function PropertyDetails() {
   const { t } = useTranslation();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
+  const settings = useSettings();
   const propertyId = params.id ?? "";
   const [deleting, setDeleting] = useState(false);
 
@@ -233,7 +236,7 @@ export default function PropertyDetails() {
             </View>
 
             <Text style={styles.price}>
-              {details.price}
+              {formatMoney(details.price, settings.currency)}
               <Text style={[styles.perMonth, isDark && styles.mutedTextDark]}>
                 {" "}{t("properties.per_month")}
               </Text>

@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 
 export type AppTheme = "Light" | "Dark" | "System";
 export type AppLanguage = "English" | "French" | "Arabic";
+export type AppCurrency = "Dollar" | "Euro" | "DT";
 
 type SettingsStoreState = {
   pushEnabled: boolean;
   emailEnabled: boolean;
-  smsEnabled: boolean;
   twoFactorEnabled: boolean;
   language: AppLanguage;
+  currency: AppCurrency;
   theme: AppTheme;
   blockedUsers: string[];
 };
@@ -16,9 +17,9 @@ type SettingsStoreState = {
 let settings: SettingsStoreState = {
   pushEnabled: true,
   emailEnabled: true,
-  smsEnabled: false,
   twoFactorEnabled: false,
   language: "English",
+  currency: "DT",
   theme: "Light",
   blockedUsers: ["Samir K.", "Nadine B."],
 };

@@ -17,6 +17,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Colors } from "@/constants/theme";
+import { useSettings } from "./state/settings";
+import { formatMoney } from "./utils/money";
 
 import { getAuthToken } from "./state/auth";
 
@@ -77,6 +79,7 @@ export default function PropertyOwnerApplications() {
   const { t } = useTranslation();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
+  const settings = useSettings();
   const propertyIdParam = getSingleParam(params.id);
   const propertyId = propertyIdParam ? Number(propertyIdParam) : NaN;
 
@@ -248,7 +251,7 @@ export default function PropertyOwnerApplications() {
             <Text style={[styles.title, isDark && styles.titleDark]}>{details.title}</Text>
             <Text style={[styles.location, isDark && styles.mutedTextDark]}>{details.location}</Text>
             <Text style={styles.price}>
-              {details.price}
+              {formatMoney(details.price, settings.currency)}
               <Text style={[styles.perMonth, isDark && styles.mutedTextDark]}>
                 {" "}{t("properties.per_month")}
               </Text>
