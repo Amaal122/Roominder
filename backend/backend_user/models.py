@@ -17,6 +17,9 @@ class User(Base):
     role            = Column(String(50), nullable=True)
     is_active       = Column(Boolean, default=True)
     created_at      = Column(DateTime, default=datetime.utcnow)
+    two_factor_enabled    = Column(Boolean, default=False)
+    two_factor_secret     = Column(String, nullable=True)
+    two_factor_temp_secret = Column(String, nullable=True)
 
 
 class Notification(Base):

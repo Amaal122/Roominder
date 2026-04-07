@@ -27,6 +27,13 @@ from .matchs import router as matches_router
 from backend.backend_user.applicationrequest import router as rental_applications_router
 from ..backend_propertyowner.routes.stats import router as stats_router
 from .listings_bestmatch import router as seeker_dashboard_router
+from .two_factor import router as two_factor_router
+
+Base.metadata.create_all(bind=engine)  # create tables on startup
+
+
+
+
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -43,6 +50,8 @@ app.add_middleware(
 	allow_origins=[
 		"http://localhost:8081",   # Expo web dev server
 		"http://127.0.0.1:8081",   # Expo web dev server (IP)
+		"http://localhost:8082",   # Expo web dev server (alternate port)
+		"http://127.0.0.1:8082",   # Expo web dev server (alternate port, IP)
 		"http://localhost:19006",  # Expo go
 		"http://127.0.0.1:19006",  # Expo go (IP)
 		"http://localhost:3000",   # fallback dev port
@@ -72,6 +81,7 @@ app.include_router(visits_router)
 app.include_router(rental_applications_router)
 app.include_router(stats_router)
 app.include_router(seeker_dashboard_router)
+app.include_router(two_factor_router)
 # ──────────────────────────────────────────────────────────────────────────────
 
 
@@ -83,13 +93,30 @@ def _create_tables_on_startup() -> None:
 	with engine.connect() as conn:
 		conn.execute(text(
 			"""
+			ALTER TABLE IF EXISTS users
+			ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN DEFAULT FALSE,
+			ADD COLUMN IF NOT EXISTS two_factor_secret VARCHAR,
+			ADD COLUMN IF NOT EXISTS two_factor_temp_secret VARCHAR;
+			"""
+		))
+		conn.execute(text(
+			"""
+			ALTER TABLE IF EXISTS seeker_profiles
+			ADD COLUMN IF NOT EXISTS interests VARCHAR,
+			ADD COLUMN IF NOT EXISTS "values" VARCHAR;
+			"""
+		))
+		conn.execute(text(
+			"""
 			ALTER TABLE IF EXISTS seeker_profiles
 			ALTER COLUMN sleep_schedule TYPE VARCHAR USING sleep_schedule::VARCHAR,
 			ALTER COLUMN cleanliness TYPE VARCHAR USING cleanliness::VARCHAR,
 			ALTER COLUMN social_life TYPE VARCHAR USING social_life::VARCHAR,
 			ALTER COLUMN guests TYPE VARCHAR USING guests::VARCHAR,
 			ALTER COLUMN work_style TYPE VARCHAR USING work_style::VARCHAR,
-			ALTER COLUMN looking_for TYPE VARCHAR USING looking_for::VARCHAR;
+			ALTER COLUMN looking_for TYPE VARCHAR USING looking_for::VARCHAR,
+			ALTER COLUMN interests TYPE VARCHAR USING interests::VARCHAR,
+			ALTER COLUMN "values" TYPE VARCHAR USING "values"::VARCHAR;
 			"""
 		))
 		conn.execute(text(

@@ -3,11 +3,12 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
 
+import bcrypt
+import pyotp
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.exc import IntegrityError
@@ -17,9 +18,11 @@ from ..backend_propertyowner.models import Property
 from ..backend_propertyowner.schemas import PropertyOut
 from ..config import settings
 from ..db import Base, get_db
-from .models import User
 from .export_excel import export_seeker_profile_to_excel
-import bcrypt
+from .models import User
+
+
+
 
 
 class UserCreate(BaseModel):
@@ -33,6 +36,7 @@ class UserLogin(BaseModel):
 	email: EmailStr
 	password: str
 	role: Optional[str] = None
+	totp_token: Optional[str] = None
 
 
 class UserRead(BaseModel):
@@ -42,6 +46,7 @@ class UserRead(BaseModel):
 	role: Optional[str] = None
 	is_active: bool
 	created_at: datetime
+	two_factor_enabled: bool = False
 
 	model_config = {
 		"from_attributes": True,
@@ -54,6 +59,32 @@ class Token(BaseModel):
 	role: Optional[str] = None
 
 
+class LoginResponse(BaseModel):
+	access_token: Optional[str] = None
+	token_type: str = "bearer"
+	role: Optional[str] = None
+	requires_2fa: bool = False
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> User:
+	try:
+		payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+		user_id_raw = payload.get("sub")
+		user_id = int(user_id_raw) if user_id_raw is not None else None
+		if user_id is None:
+			raise HTTPException(status_code=401, detail="Invalid token")
+	except JWTError:
+		raise HTTPException(status_code=401, detail="Invalid token")
+
+	user = db.query(User).filter(User.id == user_id).first()
+	if not user:
+		raise HTTPException(status_code=404, detail="User not found")
+	return user
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
@@ -191,7 +222,7 @@ def register_user(payload: UserCreate, db: Session = Depends(get_db)):
 	return {"access_token": token, "token_type": "bearer", "role": user.role}
 
 
-@auth_router.post("/login", response_model=Token)
+@auth_router.post("/login", response_model=LoginResponse)
 def login_user(payload: UserLogin, db: Session = Depends(get_db)):
 	_ensure_password_len(payload.password)
 	user = get_user_by_email(db, payload.email)
@@ -208,12 +239,22 @@ def login_user(payload: UserLogin, db: Session = Depends(get_db)):
 			},
 		)
 
+	# 2FA check: if enabled, require a valid TOTP token.
+	if getattr(user, "two_factor_enabled", False):
+		if not payload.totp_token:
+			return {"requires_2fa": True, "role": user.role, "token_type": "bearer"}
+		if not getattr(user, "two_factor_secret", None):
+			raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="2FA is enabled but no secret is configured")
+		totp = pyotp.TOTP(user.two_factor_secret)
+		if not totp.verify(payload.totp_token, valid_window=1):
+			raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid 2FA code")
+
 	claims = {"sub": str(user.id)}
 	if user.role:
 		claims["role"] = user.role
-	
+
 	token = create_access_token(claims)
-	return {"access_token": token, "token_type": "bearer", "role": user.role}
+	return {"access_token": token, "token_type": "bearer", "role": user.role, "requires_2fa": False}
 
 
 @auth_router.get("/me", response_model=UserRead)
@@ -253,6 +294,10 @@ class SeekerProfile(Base):
     guests = Column(String, nullable=True)
     work_style = Column(String, nullable=True)
 
+
+    interests = Column(String, nullable=True)
+    values = Column("values", String, nullable=True, quote=True)
+
     user = relationship("User", back_populates="seeker_profile")
 
 
@@ -282,6 +327,10 @@ class SeekerProfileCreate(BaseModel):
 	social_life: Optional[str] = None
 	guests: Optional[str] = None
 	work_style: Optional[str] = None
+
+	# Free-text fields
+	interests: Optional[str] = None
+	values: Optional[str] = None
 
 
 class SeekerProfileRead(SeekerProfileCreate):
