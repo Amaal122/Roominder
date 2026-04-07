@@ -29,6 +29,8 @@ from ..backend_propertyowner.routes.stats import router as stats_router
 from .listings_bestmatch import router as seeker_dashboard_router
 
 
+from ..Ai_housing.routes.matching import router as ai_router
+
 # ──────────────────────────────────────────────────────────────────────────────
 
 app = FastAPI(title="Roominder API")
@@ -72,6 +74,9 @@ app.include_router(visits_router)
 app.include_router(rental_applications_router)
 app.include_router(stats_router)
 app.include_router(seeker_dashboard_router)
+
+
+app.include_router(ai_router)
 # ──────────────────────────────────────────────────────────────────────────────
 
 

@@ -193,7 +193,7 @@ const AMENITIES = [
 
 const SCORES = [
   { label: "Location", value: 98 },
-  { label: "Price", value: 92 },
+  { label:"Budget", value: 92 },
   { label: "Lifestyle", value: 95 },
 ];
 
@@ -255,7 +255,7 @@ export default function PropertyDetail() {
     id?: string;
     title?: string;
     location?: string;
-    price?: string;
+    budget?: string;
     rooms?: string;
     match?: string;
     image?: string;
@@ -273,7 +273,7 @@ export default function PropertyDetail() {
 
   const propertyId = getSingleParam(params.id);
   const title = getSingleParam(params.title) ?? "Modern Loft\nin Marais";
-  const price = getSingleParam(params.price) ?? "DT 1200";
+  const budget = getSingleParam(params.budget) ?? "DT 1200";
   const location = getSingleParam(params.location) ?? "Le Marais, Paris";
   const rooms = getSingleParam(params.rooms) ?? "2 Beds";
   const match = getSingleParam(params.match) ?? "95";
@@ -406,7 +406,7 @@ export default function PropertyDetail() {
 
   const handleFavorite = () => {
     const id = propertyId ?? `${title}-${location}`;
-    addFavorite({ id, title, location, price, image });
+    addFavorite({ id, title, location, budget, image });
   };
 
   const handleBack = useCallback(() => {
@@ -487,8 +487,8 @@ export default function PropertyDetail() {
           <View style={styles.titleRow}>
             <Text style={[styles.title, isDark && styles.titleDark]}>{title}</Text>
             <View>
-              <Text style={styles.price}>{price}</Text>
-              <Text style={[styles.pricePer, isDark && styles.mutedTextDark]}>
+              <Text style={styles.budget}>{budget}</Text>
+              <Text style={[styles.budgetPer, isDark && styles.mutedTextDark]}>
                 /month
               </Text>
             </View>
@@ -799,8 +799,8 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 22, fontWeight: "700", color: INK, lineHeight: 28 },
   titleDark: { color: Colors.dark.text },
-  price: { fontSize: 22, fontWeight: "700", color: CORAL, textAlign: "right" },
-  pricePer: { fontSize: 12, color: MUTED, textAlign: "right" },
+  budget: { fontSize: 22, fontWeight: "700", color: CORAL, textAlign: "right" },
+  budgetPer: { fontSize: 12, color: MUTED, textAlign: "right" },
   mutedTextDark: { color: Colors.dark.mutedText },
   locationRow: {
     flexDirection: "row",
