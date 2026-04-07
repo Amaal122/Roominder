@@ -31,6 +31,9 @@ class ProfileMeOut(BaseModel):
     guests: Optional[str] = None
     work_style: Optional[str] = None
 
+    interests: Optional[str] = None
+    values: Optional[str] = None
+
 
 @router.get("/me", response_model=ProfileMeOut)
 def get_my_profile_card(
@@ -56,4 +59,6 @@ def get_my_profile_card(
         social_life=getattr(seeker, "social_life", None),
         guests=getattr(seeker, "guests", None),
         work_style=getattr(seeker, "work_style", None),
+        interests=getattr(seeker, "interests", None),
+        values=getattr(seeker, "values", None),
     )

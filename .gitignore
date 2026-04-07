@@ -34,6 +34,16 @@ yarn-error.*
 .env*.local
 backend/.env
 
+# generated exports / local artifacts
+backend/seeker_profiles.xlsx
+
+# Ai_roomate generated datasets/vectors (can contain PII and are re-generatable)
+backend/Ai_roomate/*.json
+backend/Ai_roomate/*.csv
+
+# Legacy/experimental routes folder (not used by app entrypoint)
+backend/backend_user/routes/
+
 # python
 __pycache__/
 *.pyc

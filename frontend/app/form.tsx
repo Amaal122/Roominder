@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -17,6 +18,9 @@ import { getAuthToken } from "./state/auth";
 type Question = {
   key: string;
   title: string;
+  minChars: number;
+  maxChars: number;
+  placeholder?: string;
   options: { id: string; label: string; icon: keyof typeof Feather.glyphMap }[];
 };
 
@@ -26,6 +30,9 @@ export const QUESTIONS: Question[] = [
   {
     key: "sleep",
     title: "Sleep Schedule",
+    minChars: 2,
+    maxChars: 160,
+    placeholder: "Describe your sleep schedule...",
     options: [
       { id: "early", label: "Early Bird", icon: "sunrise" },
       { id: "night", label: "Night Owl", icon: "moon" },
@@ -34,6 +41,9 @@ export const QUESTIONS: Question[] = [
   {
     key: "cleanliness",
     title: "Cleanliness",
+    minChars: 2,
+    maxChars: 160,
+    placeholder: "Describe your cleanliness habits...",
     options: [
       { id: "tidy", label: "Very Organized", icon: "check-circle" },
       { id: "relaxed", label: "Relaxed", icon: "wind" },
@@ -42,6 +52,9 @@ export const QUESTIONS: Question[] = [
   {
     key: "social",
     title: "Social Life",
+    minChars: 2,
+    maxChars: 160,
+    placeholder: "Describe your social life...",
     options: [
       { id: "party", label: "Love Parties", icon: "music" },
       { id: "quiet", label: "Quiet Time", icon: "coffee" },
@@ -50,6 +63,9 @@ export const QUESTIONS: Question[] = [
   {
     key: "guests",
     title: "Guests",
+    minChars: 2,
+    maxChars: 160,
+    placeholder: "How often do you have guests?",
     options: [
       { id: "often", label: "Guests Often", icon: "users" },
       { id: "rarely", label: "Prefer Private", icon: "shield" },
@@ -58,10 +74,29 @@ export const QUESTIONS: Question[] = [
   {
     key: "work",
     title: "Work Style",
+    minChars: 2,
+    maxChars: 160,
+    placeholder: "Describe your work style...",
     options: [
       { id: "home", label: "Work From Home", icon: "home" },
       { id: "office", label: "Office/Hybrid", icon: "briefcase" },
     ],
+  },
+  {
+    key: "interests",
+    title: "Interests",
+    minChars: 2,
+    maxChars: 220,
+    placeholder: "What are your interests/hobbies?",
+    options: [],
+  },
+  {
+    key: "values",
+    title: "Values",
+    minChars: 2,
+    maxChars: 220,
+    placeholder: "What values matter most to you in shared living?",
+    options: [],
   },
 ];
 
@@ -79,16 +114,32 @@ export default function Form() {
   }, [answers]);
 
   const allAnswered = useMemo(
-    () => QUESTIONS.every((q) => !!answers[q.key]),
+    () =>
+      QUESTIONS.every((q) => {
+        const value = (answers[q.key] ?? "").trim();
+        return value.length >= q.minChars && value.length <= q.maxChars;
+      }),
     [answers],
   );
 
-  const handleSelect = (qKey: string, optionId: string) => {
-    setAnswers((prev) => ({ ...prev, [qKey]: optionId }));
+  const handleChange = (qKey: string, text: string) => {
+    setAnswers((prev) => ({ ...prev, [qKey]: text }));
   };
 
   const handleContinue = async () => {
-    if (!allAnswered) return;
+    if (!allAnswered) {
+      const missing = QUESTIONS.filter((q) => {
+        const value = (answers[q.key] ?? "").trim();
+        return value.length < q.minChars;
+      }).map((q) => `- ${q.title} (min ${q.minChars})`);
+
+      alert(
+        missing.length
+          ? `Please answer the following questions:\n${missing.join("\n")}`
+          : "Please complete all questions.",
+      );
+      return;
+    }
 
     // merge lifestyle answers into profile context (store as strings)
     updateProfile({
@@ -97,6 +148,8 @@ export default function Form() {
       social_life: answers.social,
       guests: answers.guests,
       work_style: answers.work,
+      interests: answers.interests,
+      values: answers.values,
     });
 
     // Get auth token
@@ -155,6 +208,8 @@ export default function Form() {
           social_life: saved.social_life,
           guests: saved.guests,
           work_style: saved.work_style,
+          interests: saved.interests,
+          values: saved.values,
         }
       : {};
 
@@ -167,6 +222,8 @@ export default function Form() {
       social_life: answers.social,
       guests: answers.guests,
       work_style: answers.work,
+      interests: answers.interests,
+      values: answers.values,
     };
 
     try {
@@ -238,37 +295,24 @@ export default function Form() {
             {QUESTIONS.map((question) => (
               <View key={question.key} style={styles.questionBlock}>
                 <Text style={styles.questionTitle}>{question.title}</Text>
-                <View style={styles.optionRow}>
-                  {question.options.map((option) => {
-                    const selected = answers[question.key] === option.id;
-                    return (
-                      <TouchableOpacity
-                        key={option.id}
-                        style={[
-                          styles.optionCard,
-                          selected && styles.optionSelected,
-                        ]}
-                        activeOpacity={0.9}
-                        onPress={() => handleSelect(question.key, option.id)}
-                      >
-                        <View style={styles.optionIconCircle}>
-                          <Feather
-                            name={option.icon}
-                            size={18}
-                            color={selected ? "#36b37e" : "#6B7280"}
-                          />
-                        </View>
-                        <Text
-                          style={[
-                            styles.optionLabel,
-                            selected && styles.optionLabelSelected,
-                          ]}
-                        >
-                          {option.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                <TextInput
+                  value={answers[question.key] ?? ""}
+                  onChangeText={(text) => handleChange(question.key, text)}
+                  placeholder={question.placeholder}
+                  placeholderTextColor="#6B7280"
+                  style={styles.textInput}
+                  multiline
+                  maxLength={question.maxChars}
+                  textAlignVertical="top"
+                  autoCapitalize="sentences"
+                />
+                <View style={styles.helperRow}>
+                  <Text style={styles.helperText}>
+                    Min {question.minChars} / Max {question.maxChars} characters
+                  </Text>
+                  <Text style={styles.helperText}>
+                    {(answers[question.key] ?? "").length}/{question.maxChars}
+                  </Text>
                 </View>
               </View>
             ))}
@@ -355,38 +399,23 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 12, gap: 16 },
   questionBlock: { gap: 10 },
   questionTitle: { fontSize: 16, fontWeight: "700", color: "#111827" },
-  optionRow: { flexDirection: "row", gap: 12 },
-  optionCard: {
-    flex: 1,
+  textInput: {
+    minHeight: 86,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(54, 179, 126, 0.25)",
     backgroundColor: "rgba(255,255,255,0.6)",
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
+    color: "#111827",
     shadowColor: "#36b37e",
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.08,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    elevation: 4,
   },
-  optionSelected: {
-    borderColor: "#36b37e",
-    shadowOpacity: 0.18,
-  },
-  optionIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#eefbf4",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  optionLabel: { color: "#111827", fontSize: 14, fontWeight: "600" },
-  optionLabelSelected: { color: "#36b37e" },
+  helperRow: { flexDirection: "row", justifyContent: "space-between" },
+  helperText: { color: "#4f6a5b", fontSize: 12, fontWeight: "600" },
   cta: {
     marginHorizontal: 16,
     marginBottom: 24,

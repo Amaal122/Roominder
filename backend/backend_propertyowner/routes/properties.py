@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List
+from pathlib import Path
+import logging
 import shutil
 import uuid
 import os
@@ -23,6 +25,8 @@ from backend.backend_propertyowner.schemas import PropertyCreate, PropertyUpdate
 
 
 router = APIRouter(prefix="/properties", tags=["Properties"])
+
+logger = logging.getLogger(__name__)
 
 
 def _get_rental_application_counts(db: Session, property_ids: list[int]) -> dict[int, int]:
@@ -93,7 +97,8 @@ def get_my_properties(
     ]
 
 #staic routes 
-load_dotenv()
+_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"  # backend/.env
+load_dotenv(dotenv_path=_ENV_PATH, override=False)
 
 @router.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
@@ -103,17 +108,40 @@ async def upload_image(file: UploadFile = File(...)):
             detail="Cloudinary is not installed on the server.",
         )
 
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Invalid file type")
+
+    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME")
+    api_key = os.getenv("CLOUDINARY_API_KEY")
+    api_secret = os.getenv("CLOUDINARY_API_SECRET")
+
+    if not cloud_name or not api_key or not api_secret:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Cloudinary credentials are missing. Set CLOUDINARY_CLOUD_NAME, "
+                "CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in backend/.env"
+            ),
+        )
+
     cloudinary.config(
-        cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-        api_key=os.getenv("CLOUDINARY_API_KEY"),
-        api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+        cloud_name=cloud_name,
+        api_key=api_key,
+        api_secret=api_secret,
     )
 
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Invalid file type")
-    contents = await file.read()
-    result = cloudinary.uploader.upload(contents)
-    return {"url": result["secure_url"]}
+    try:
+        contents = await file.read()
+        result = cloudinary.uploader.upload(contents)
+        secure_url = result.get("secure_url")
+        if not secure_url:
+            raise HTTPException(status_code=502, detail="Image upload failed")
+        return {"url": secure_url}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Cloudinary upload failed")
+        raise HTTPException(status_code=502, detail="Image upload failed")
 # ─────────────────────────────────────────────
 #  GET /properties/{id}  →  un seul logement
 # ─────────────────────────────────────────────
