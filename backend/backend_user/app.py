@@ -36,6 +36,8 @@ Base.metadata.create_all(bind=engine)  # create tables on startup
 
 
 
+from ..Ai_housing.routes.matching import router as ai_router
+
 # ──────────────────────────────────────────────────────────────────────────────
 
 app = FastAPI(title="Roominder API")
@@ -82,6 +84,7 @@ app.include_router(rental_applications_router)
 app.include_router(stats_router)
 app.include_router(seeker_dashboard_router)
 app.include_router(two_factor_router)
+app.include_router(ai_router)
 # ──────────────────────────────────────────────────────────────────────────────
 
 
