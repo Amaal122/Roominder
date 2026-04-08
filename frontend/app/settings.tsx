@@ -147,11 +147,6 @@ export default function Settings() {
               value={settings.twoFactorEnabled ? t("settings.on") : t("settings.off")}
               onPress={() => router.push("/two-factor")}
             />
-            <ActionRow
-              label={t("settings.blocked_users")}
-              value={`${settings.blockedUsers.length}`}
-              onPress={() => router.push("/blocked-users")}
-            />
           </View>
 
           <View style={[styles.card, isDark && styles.cardDark]}>

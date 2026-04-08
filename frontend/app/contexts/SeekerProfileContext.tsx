@@ -13,6 +13,8 @@ type SeekerProfile = {
   social_life?: string;
   guests?: string;
   work_style?: string;
+  interests?: string;
+  values?: string;
 };
 
 type SeekerProfileContextType = {

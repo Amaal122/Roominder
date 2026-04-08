@@ -5,12 +5,14 @@ import { initI18n } from "../i18n";
 import { useEffect, useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Colors } from "@/constants/theme";
+import { setupNotifications } from "@/utils/notifications";
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
   const scheme = useColorScheme();
 
   useEffect(() => {
+    setupNotifications();
     initI18n().then(() => setReady(true));
   }, []);
 

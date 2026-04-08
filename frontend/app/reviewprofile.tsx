@@ -31,6 +31,8 @@ const PROFILE_FIELDS = [
   { key: "social_life", label: "Social Life" },
   { key: "guests", label: "Guests" },
   { key: "work_style", label: "Work Style" },
+  { key: "interests", label: "Interests" },
+  { key: "values", label: "Values" },
 ];
 
 
