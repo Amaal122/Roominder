@@ -15,7 +15,7 @@ def export_seeker_profile_to_excel(db: Session, seeker_profile):
 
     headers = [
         "id", "user_id", "looking_for", "location", "radius", "age", "gender", "occupation", "image_url",
-        "sleep_schedule", "cleanliness", "social_life", "guests", "work_style"
+        "sleep_schedule", "cleanliness", "social_life", "guests", "work_style", "interests", "values"
     ]
     data_row = [
         seeker_profile.id,
@@ -32,6 +32,8 @@ def export_seeker_profile_to_excel(db: Session, seeker_profile):
         seeker_profile.social_life,
         seeker_profile.guests,
         seeker_profile.work_style,
+        getattr(seeker_profile, "interests", None),
+        getattr(seeker_profile, "values", None),
     ]
 
     if os.path.exists(filepath):

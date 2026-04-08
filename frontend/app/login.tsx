@@ -20,6 +20,8 @@ export default function Login() {
   const { role } = useLocalSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [requires2fa, setRequires2fa] = useState(false);
+  const [totpToken, setTotpToken] = useState("");
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
 
@@ -37,6 +39,7 @@ export default function Login() {
           email: email.trim(),
           password,
           ...(resolvedRole ? { role: resolvedRole } : {}),
+          ...(requires2fa && totpToken.trim() ? { totp_token: totpToken.trim() } : {}),
         }),
       });
 
@@ -63,6 +66,13 @@ export default function Login() {
         return;
       }
 
+      // Backend signals that 2FA is required for this account.
+      if (data && typeof data === "object" && data.requires_2fa) {
+        setRequires2fa(true);
+        alert("Enter the 6-digit code from your authenticator app.");
+        return;
+      }
+
       const token = data?.access_token;
 
       if (token) {
@@ -70,6 +80,10 @@ export default function Login() {
       }
 
       const nextRole = (data && typeof data === "object" && data.role) || resolvedRole;
+
+      // Successful login: reset 2FA state.
+      setRequires2fa(false);
+      setTotpToken("");
 
       if (nextRole === "owner") {
         router.push("/propertyowner");
@@ -125,7 +139,11 @@ export default function Login() {
           icon="mail"
           placeholder="hanine.hamrouni@supcom.tn"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(v: string) => {
+            setEmail(v);
+            setRequires2fa(false);
+            setTotpToken("");
+          }}
         />
         <InputField
           label="Password"
@@ -133,11 +151,25 @@ export default function Login() {
           placeholder="........"
           secure
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(v: string) => {
+            setPassword(v);
+            setRequires2fa(false);
+            setTotpToken("");
+          }}
         />
 
+        {requires2fa ? (
+          <InputField
+            label="2FA Code"
+            icon="key"
+            placeholder="123456"
+            value={totpToken}
+            onChangeText={setTotpToken}
+          />
+        ) : null}
+
         <TouchableOpacity style={styles.btnPrimary} onPress={handleContinue}>
-          <Text style={styles.btnText}>Sign In</Text>
+          <Text style={styles.btnText}>{requires2fa ? "Verify Code" : "Sign In"}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
