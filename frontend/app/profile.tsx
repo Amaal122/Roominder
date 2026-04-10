@@ -3,17 +3,16 @@ import { useRouter, type Href } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSeekerProfile } from "./contexts/SeekerProfileContext";
-  import { clearAuthToken } from "./state/auth";
-import { getAuthToken } from "./state/auth";
+import { clearAuthToken, getAuthToken } from "./state/auth";
 import { QUESTIONS } from "./form";
 import { useTranslation } from "react-i18next";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -56,7 +55,7 @@ const formatPreference = (field: keyof ProfileMeOut, value?: string | null) => {
 
 export default function Profile() {
   const router = useRouter();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { profile } = useSeekerProfile();
   const settings = useSettings();
   const scheme = useColorScheme();
@@ -81,7 +80,7 @@ export default function Profile() {
         : []),
       { id: "profile", icon: "👤", label: t("tabs.profile"), route: "/profile" },
     ];
-  }, [profile?.looking_for, i18n.language]);
+  }, [profile?.looking_for, t]);
   const [activeTab, setActiveTab] = useState<TabId>("profile");
   const [remote, setRemote] = useState<ProfileMeOut | null>(null);
   const [loadingRemote, setLoadingRemote] = useState(false);
@@ -140,6 +139,7 @@ export default function Profile() {
   const displayRole = (remote?.occupation ?? "").trim();
   const displayLocation = (remote?.location ?? "").trim() || "—";
   const displayAvatar = (remote?.image_url ?? "").trim();
+  const shouldShowRoommateCta = (remote?.looking_for ?? profile?.looking_for) !== "house";
 
   const preferences = useMemo(() => {
     if (!remote) return [];
@@ -241,12 +241,14 @@ export default function Profile() {
                   {t("profile.edit_profile")}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.actionPrimary]}
-                onPress={() => router.push("/match")}
-              >
-                <Text style={styles.actionLabel}>{t("profile.find_roommates")}</Text>
-              </TouchableOpacity>
+              {shouldShowRoommateCta ? (
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.actionPrimary]}
+                  onPress={() => router.push("/roomatematch")}
+                >
+                  <Text style={styles.actionLabel}>{t("profile.find_roommates")}</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
 
             <View style={styles.actionsRow}>
