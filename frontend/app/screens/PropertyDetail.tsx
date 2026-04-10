@@ -191,11 +191,6 @@ const AMENITIES = [
   { icon: <IconPeople />, label: "Flatmates" },
 ];
 
-const SCORES = [
-  { label: "Location", value: 98 },
-  { label: "Price", value: 92 },
-  { label: "Lifestyle", value: 95 },
-];
 
 function ProgressBar({ value }: { value: number }) {
   const anim = useRef(new Animated.Value(0)).current;
@@ -256,8 +251,12 @@ export default function PropertyDetail() {
     title?: string;
     location?: string;
     price?: string;
+    budget?: string;
     rooms?: string;
     match?: string;
+    scoreLocation?: string;
+    scoreBudget?: string;
+    scoreLifestyle?: string;
     image?: string;
     baths?: string;
     size?: string;
@@ -277,6 +276,10 @@ export default function PropertyDetail() {
   const location = getSingleParam(params.location) ?? "Le Marais, Paris";
   const rooms = getSingleParam(params.rooms) ?? "2 Beds";
   const match = getSingleParam(params.match) ?? "95";
+  const price = getSingleParam(params.price) ?? "DT 1200";
+  const scoreLocation = parseNumberOrFallback(getSingleParam(params.scoreLocation), 98);
+  const scoreBudget = parseNumberOrFallback(getSingleParam(params.scoreBudget), 92);
+  const scoreLifestyle = parseNumberOrFallback(getSingleParam(params.scoreLifestyle), 95);
   const image = getSingleParam(params.image);
   const baths = getSingleParam(params.baths) ?? "1 Bath";
   const size = getSingleParam(params.size) ?? "65 m²";
@@ -517,7 +520,11 @@ export default function PropertyDetail() {
               </Text>
             </View>
 
-            {SCORES.map(({ label, value }) => (
+            {[
+              { label: "Location", value: scoreLocation },
+              { label: "Budget", value: scoreBudget },
+              { label: "Lifestyle", value: scoreLifestyle },
+            ].map(({ label, value }) => (
               <View key={label} style={styles.scoreRow}>
                 <View style={styles.scoreLabelRow}>
                   <Text style={[styles.scoreLabel, isDark && styles.titleDark]}>
