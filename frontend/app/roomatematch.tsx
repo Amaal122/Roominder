@@ -1,39 +1,29 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, type Href } from "expo-router";
-import { useSeekerProfile } from "./contexts/SeekerProfileContext";
-import { getAuthToken } from "./state/auth"; // adjust path to yours
-import { useRef, useState, useEffect } from "react";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Colors } from "@/constants/theme";
-
-
+import { useFocusEffect, useRouter, type Href } from "expo-router";
+import { useCallback, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Image,
-    PanResponder,
-    Pressable,
-    StatusBar,
-    StyleSheet,
-    Text,
+  Animated,
+  Dimensions,
+  Image,
+  PanResponder,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
   TouchableOpacity,
-    View,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
-
-type Profile = {
-  id: string;
-  name: string;
-  age: number;
-  role: string;
-  location: string;
-  about: string;
-  lifestyle: string[];
-  match: number;
-  image?: string | null;
-};
+import { useSeekerProfile } from "./contexts/SeekerProfileContext";
+import {
+  loadRoommateRecommendations,
+  saveRoommateMatch,
+  type RoommateMatchProfile,
+} from "./state/roommateMatching";
 
 function formatLifestyleIcon(label: string) {
   if (label.toLowerCase().includes("cook")) return "🍳";
@@ -74,7 +64,6 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 24, fontWeight: "800", color: "#FFF" },
   headerSubtitle: { fontSize: 14, color: "#F2E8FF", marginTop: 2 },
   headerHint: { color: "#F5EFFF", marginTop: 10, fontSize: 12 },
-  infoBubble: {},
   deckArea: {
     flex: 1,
     paddingHorizontal: 18,
@@ -238,47 +227,70 @@ const styles = StyleSheet.create({
 
 export default function RoomateMatch() {
   const { width } = Dimensions.get("window");
-  const SWIPE_THRESHOLD = width * 0.25;
+  const swipeThreshold = width * 0.25;
   const router = useRouter();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
   const { profile } = useSeekerProfile();
-  let showRoommates = true;
-  if (profile.looking_for === "house") {
-    showRoommates = false;
-  }
+  const pan = useRef(new Animated.ValueXY()).current;
+
+  const showRoommates = profile.looking_for !== "house";
   const tabs: { icon: string; label: string; route: Href }[] = [
     { icon: "🏠", label: "Home", route: "/roomatematch" as Href },
     ...(showRoommates ? [{ icon: "👥", label: "Match", route: "/match" as Href }] : []),
     { icon: "💬", label: "Chat", route: "/chat" as Href },
     { icon: "👤", label: "Profile", route: "/profile" as Href },
   ];
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  const fetchMatches = async () => {
-    try {
-      const token = await getAuthToken();
-      const res = await fetch("http://127.0.0.1:8001/roommates/matches", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setProfiles(data);
-      }
-    } catch (e) {
-      console.error("Failed to fetch matches", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchMatches();
-}, []);
+  const [profiles, setProfiles] = useState<RoommateMatchProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
-  const pan = useRef(new Animated.ValueXY()).current;
+  const [activeTab, setActiveTab] = useState("Home");
+
+  const refreshMatches = useCallback(
+    async (shouldAbort?: () => boolean) => {
+      const abort = shouldAbort ?? (() => false);
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const data = await loadRoommateRecommendations();
+        if (abort()) return;
+
+        setProfiles(data);
+        setIndex(0);
+        pan.setValue({ x: 0, y: 0 });
+      } catch (fetchError) {
+        console.error("Failed to fetch matches", fetchError);
+        if (abort()) return;
+
+        setProfiles([]);
+        setError("Unable to load roommate suggestions right now.");
+      } finally {
+        if (!abort()) {
+          setLoading(false);
+        }
+      }
+    },
+    [pan],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void refreshMatches(() => cancelled);
+
+      return () => {
+        cancelled = true;
+      };
+    }, [refreshMatches]),
+  );
+
   const currentProfile = profiles[index];
   const nextProfile = profiles[index + 1];
+
   const resetPosition = () => {
     Animated.spring(pan, {
       toValue: { x: 0, y: 0 },
@@ -286,37 +298,41 @@ useEffect(() => {
       bounciness: 10,
     }).start();
   };
+
   const handleSwipeComplete = () => {
     const nextIndex = index + 1;
     pan.setValue({ x: 0, y: 0 });
+
     if (nextIndex >= profiles.length) {
       setIndex(0);
-    } else {
-      setIndex(nextIndex);
+      return;
     }
+
+    setIndex(nextIndex);
   };
+
   const forceSwipe = async (direction: "left" | "right") => {
-  if (!currentProfile) return;
+    if (!currentProfile) return;
 
-  if (direction === "right") {
-    try {
-      const token = await getAuthToken();
-      await fetch(`http://127.0.0.1:8001/matches/${currentProfile.id}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    } catch (e) {
-      console.error("Failed to save match", e);
+    if (direction === "right") {
+      try {
+        await saveRoommateMatch(currentProfile.id);
+      } catch (saveError) {
+        console.error("Failed to save match", saveError);
+        setError("Unable to save this roommate right now.");
+        resetPosition();
+        return;
+      }
     }
-  }
 
-  const destX = direction === "right" ? width * 1.2 : -width * 1.2;
-  Animated.timing(pan, {
-    toValue: { x: destX, y: 0 },
-    duration: 240,
-    useNativeDriver: false,
-  }).start(handleSwipeComplete);
-};
+    const destinationX = direction === "right" ? width * 1.2 : -width * 1.2;
+    Animated.timing(pan, {
+      toValue: { x: destinationX, y: 0 },
+      duration: 240,
+      useNativeDriver: false,
+    }).start(handleSwipeComplete);
+  };
+
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gesture) =>
@@ -325,30 +341,33 @@ useEffect(() => {
         useNativeDriver: false,
       }),
       onPanResponderRelease: (_, gesture) => {
-        if (gesture.dx > SWIPE_THRESHOLD) {
-          forceSwipe("right"); // async but fine, no need to await
+        if (gesture.dx > swipeThreshold) {
+          void forceSwipe("right");
           return;
         }
-        if (gesture.dx < -SWIPE_THRESHOLD) {
-          forceSwipe("left");
+
+        if (gesture.dx < -swipeThreshold) {
+          void forceSwipe("left");
           return;
         }
-      resetPosition();
-    },
+
+        resetPosition();
+      },
     }),
   ).current;
+
   const rotate = pan.x.interpolate({
     inputRange: [-width, 0, width],
     outputRange: ["-12deg", "0deg", "12deg"],
     extrapolate: "clamp",
   });
   const likeOpacity = pan.x.interpolate({
-    inputRange: [0, SWIPE_THRESHOLD],
+    inputRange: [0, swipeThreshold],
     outputRange: [0, 1],
     extrapolate: "clamp",
   });
   const nopeOpacity = pan.x.interpolate({
-    inputRange: [-SWIPE_THRESHOLD, 0],
+    inputRange: [-swipeThreshold, 0],
     outputRange: [1, 0],
     extrapolate: "clamp",
   });
@@ -357,55 +376,72 @@ useEffect(() => {
     outputRange: [0.95, 0.93, 0.95],
     extrapolate: "clamp",
   });
-  const renderProfile = (profile: Profile) => (
+
+  const renderProfile = (roommate: RoommateMatchProfile) => (
     <>
       <View style={styles.imageWrapper}>
-        {profile.image ? (
-          <Image source={{ uri: profile.image }} style={styles.photo} />
+        {roommate.image ? (
+          <Image source={{ uri: roommate.image }} style={styles.photo} />
         ) : null}
         <View style={[styles.matchBadge, isDark && styles.matchBadgeDark]}>
-          <Text style={styles.matchText}>{profile.match}%</Text>
+          <Text style={styles.matchText}>{roommate.match}%</Text>
         </View>
       </View>
+
       <View style={styles.cardBody}>
         <View style={styles.nameRow}>
           <Text style={[styles.name, isDark && styles.titleDark]}>
-            {profile.name}, {profile.age}
+            {roommate.name}, {roommate.age}
           </Text>
         </View>
+
         <View style={styles.metaRow}>
           <Text style={styles.metaIcon}>💼</Text>
-          <Text style={[styles.metaText, isDark && styles.mutedTextDark]}>{profile.role}</Text>
+          <Text style={[styles.metaText, isDark && styles.mutedTextDark]}>{roommate.role}</Text>
         </View>
+
         <View style={styles.metaRow}>
           <Text style={styles.metaIcon}>📍</Text>
-          <Text style={[styles.metaText, isDark && styles.mutedTextDark]}>{profile.location}</Text>
+          <Text style={[styles.metaText, isDark && styles.mutedTextDark]}>
+            {roommate.location}
+          </Text>
         </View>
+
         <Text style={[styles.sectionTitle, isDark && styles.titleDark]}>About</Text>
-        <Text style={[styles.about, isDark && styles.mutedTextDark]}>{profile.about}</Text>
+        <Text style={[styles.about, isDark && styles.mutedTextDark]}>{roommate.about}</Text>
+
         <Text style={[styles.sectionTitle, { marginTop: 10 }, isDark && styles.titleDark]}>
           Lifestyle
         </Text>
+
         <View style={styles.chipRow}>
-          {profile.lifestyle.map((item: string) => (
-            <View key={item} style={[styles.chip, isDark && styles.chipDark]}>
-              <Text style={styles.chipIcon}>{formatLifestyleIcon(item)}</Text>
-              <Text style={styles.chipText}>{item}</Text>
-            </View>
-          ))}
+          {roommate.lifestyle.length > 0 ? (
+            roommate.lifestyle.map((item) => (
+              <View key={item} style={[styles.chip, isDark && styles.chipDark]}>
+                <Text style={styles.chipIcon}>{formatLifestyleIcon(item)}</Text>
+                <Text style={styles.chipText}>{item}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={[styles.about, isDark && styles.mutedTextDark]}>
+              No lifestyle preferences shared yet.
+            </Text>
+          )}
         </View>
       </View>
     </>
   );
-  const [activeTab, setActiveTab] = useState("Home");
+
   const handleTabPress = (label: string, route: Href) => {
     setActiveTab(label);
     if (label === "Home") return;
     router.push(route);
   };
+
   return (
     <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
       <StatusBar barStyle="light-content" />
+
       <LinearGradient
         colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
         start={{ x: 0, y: 0 }}
@@ -419,86 +455,103 @@ useEffect(() => {
           >
             <Text style={styles.headerIcon}>←</Text>
           </Pressable>
+
           <View>
-            <Text style={styles.headerTitle}>matchs                                                    </Text>
-            <Text style={styles.headerSubtitle}>{profiles.length} potential matches      </Text>
+            <Text style={styles.headerTitle}>Matches</Text>
+            <Text style={styles.headerSubtitle}>{profiles.length} potential matches</Text>
           </View>
         </View>
+
         <Text style={styles.headerHint}>Swipe right to save, left to pass</Text>
       </LinearGradient>
+
       <View style={styles.deckArea}>
         {loading ? (
           <View style={[styles.card, isDark && styles.cardDark, styles.shadow, styles.emptyCard]}>
             <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>Finding matches...</Text>
           </View>
-        ) : null}
-        {nextProfile && (
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.card,
-              isDark && styles.cardDark,
-              styles.shadow,
-              styles.nextCard,
-              { transform: [{ scale: nextCardScale }, { translateY: 12 }] },
-            ]}
-          >
-            {renderProfile(nextProfile)}
-          </Animated.View>
-        )}
-        {currentProfile ? (
-          <Animated.View
-            style={[
-              styles.card,
-              isDark && styles.cardDark,
-              styles.shadow,
-              {
-                transform: [
-                  { translateX: pan.x },
-                  { translateY: pan.y },
-                  { rotate },
-                ],
-              },
-            ]}
-            {...panResponder.panHandlers}
-          >
-            <View
-              style={[styles.stamp, styles.passStamp, { opacity: nopeOpacity }]}>
-              <Text style={[styles.stampText, isDark && styles.stampTextDark]}>PASS</Text>
-            </View>
-            <View
-              style={[styles.stamp, styles.saveStamp, { opacity: likeOpacity }]}>
-              <Text style={[styles.stampText, isDark && styles.stampTextDark]}>SAVE</Text>
-            </View>
-            {renderProfile(currentProfile)}
-          </Animated.View>
+        ) : error ? (
+          <View style={[styles.card, isDark && styles.cardDark, styles.shadow, styles.emptyCard]}>
+            <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>Something went wrong</Text>
+            <Text style={[styles.emptySubtitle, isDark && styles.emptySubtitleDark]}>
+              {error}
+            </Text>
+            <Pressable style={styles.primaryButton} onPress={() => void refreshMatches()}>
+              <Text style={styles.primaryLabel}>Try again</Text>
+            </Pressable>
+          </View>
+        ) : currentProfile ? (
+          <>
+            {nextProfile ? (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.card,
+                  isDark && styles.cardDark,
+                  styles.shadow,
+                  styles.nextCard,
+                  { transform: [{ scale: nextCardScale }, { translateY: 12 }] },
+                ]}
+              >
+                {renderProfile(nextProfile)}
+              </Animated.View>
+            ) : null}
+
+            <Animated.View
+              style={[
+                styles.card,
+                isDark && styles.cardDark,
+                styles.shadow,
+                {
+                  transform: [
+                    { translateX: pan.x },
+                    { translateY: pan.y },
+                    { rotate },
+                  ],
+                },
+              ]}
+              {...panResponder.panHandlers}
+            >
+              <View style={[styles.stamp, styles.passStamp, { opacity: nopeOpacity }]}>
+                <Text style={[styles.stampText, isDark && styles.stampTextDark]}>PASS</Text>
+              </View>
+
+              <View style={[styles.stamp, styles.saveStamp, { opacity: likeOpacity }]}>
+                <Text style={[styles.stampText, isDark && styles.stampTextDark]}>SAVE</Text>
+              </View>
+
+              {renderProfile(currentProfile)}
+            </Animated.View>
+          </>
         ) : (
           <View style={[styles.card, isDark && styles.cardDark, styles.shadow, styles.emptyCard]}>
-            <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>All caught up</Text>
+            <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>No suggestions yet</Text>
             <Text style={[styles.emptySubtitle, isDark && styles.emptySubtitleDark]}>
-              You have seen everyone for now. We will refresh suggestions soon.
+              Complete your roommate preferences and we will bring back fresh AI suggestions.
             </Text>
-            <Pressable style={styles.primaryButton} onPress={() => setIndex(0)}>
-              <Text style={styles.primaryLabel}>Restart</Text>
+            <Pressable style={styles.primaryButton} onPress={() => router.push("/form")}>
+              <Text style={styles.primaryLabel}>Update preferences</Text>
             </Pressable>
           </View>
         )}
       </View>
+
       <View style={styles.actionsRow}>
         <Pressable
           style={[styles.circleButton, styles.skipButton]}
-          onPress={() => forceSwipe("left")}
+          onPress={() => void forceSwipe("left")}
         >
           <Text style={styles.buttonIcon}>✕</Text>
         </Pressable>
+
         <Pressable
           style={[styles.circleButton, styles.likeButton]}
-          onPress={() => forceSwipe("right")}
+          onPress={() => void forceSwipe("right")}
         >
           <Text style={styles.buttonIcon}>❤️</Text>
         </Pressable>
       </View>
-      {/* BOTTOM TAB BAR */}
+
       <View style={[styles.tabBar, isDark && styles.tabBarDark]}>
         {tabs.map((tab) => (
           <AnimatedTabIcon
@@ -552,7 +605,9 @@ function AnimatedTabIcon({
       onPress={handlePress}
       activeOpacity={0.8}
     >
-      <Animated.Text style={[styles.tabIcon, { transform: [{ translateY }] }]}>{icon}</Animated.Text>
+      <Animated.Text style={[styles.tabIcon, { transform: [{ translateY }] }]}>
+        {icon}
+      </Animated.Text>
       <Text
         style={[
           styles.tabLabel,
