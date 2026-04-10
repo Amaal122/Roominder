@@ -29,6 +29,9 @@ type Listing = {
   baths: string;
   size: string;
   match: number;
+  scoreLocation?: string;
+  scoreBudget?: string;
+  scoreLifestyle?: string;
   image: string;
   description?: string;
   ownerId?: string;
@@ -51,6 +54,24 @@ type HouseRecord = {
   space?: number | null;
   description?: string | null;
   image_url?: string | null;
+  match?: number;
+  score?: number;
+  score_details?: {
+    budget?: number;
+    location?: number;
+    rooms?: number;
+    lifestyle?: number;
+  };
+};
+
+type AIHouseRecord = HouseRecord & {
+  property_id?: number;
+  score_details?: {
+    budget?: number;
+    location?: number;
+    rooms?: number;
+    lifestyle?: number;
+  };
 };
 
 type DashboardResponse = {
@@ -177,8 +198,8 @@ const resolveImageUrl = (imageUrl?: string | null) => {
   return `${API_BASE}/${imageUrl}`;
 };
 
-const toListing = (item: HouseRecord): Listing => ({
-  id: String(item.id),
+const toListing = (item: HouseRecord | AIHouseRecord): Listing => ({
+  id: String(item.id ?? item.property_id ?? ""),
   title: item.title,
   location: `${item.address ?? ""}${item.city ? `, ${item.city}` : ""}`.trim()
     || "Unknown location",
@@ -186,12 +207,15 @@ const toListing = (item: HouseRecord): Listing => ({
   rooms: `${item.rooms ?? 1} room${(item.rooms ?? 1) > 1 ? "s" : ""}`,
   baths: `${item.bathrooms ?? 1} Bath${(item.bathrooms ?? 1) > 1 ? "s" : ""}`,
   size: `${item.space ?? 0} m²`,
-  match: Math.floor(Math.random() * 30) + 70,
+  match: Number(item.score ?? item.match ?? 0),
+  scoreLocation: item.score_details ? String(item.score_details.location ?? 0) : undefined,
+  scoreBudget: item.score_details ? String(item.score_details.budget ?? 0) : undefined,
+  scoreLifestyle: item.score_details ? String(item.score_details.lifestyle ?? 0) : undefined,
   image:
     resolveImageUrl(item.image_url) ??
     "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
   description: item.description ?? undefined,
-  ownerId: String(item.owner_id),
+  ownerId: typeof item.owner_id === "number" ? String(item.owner_id) : undefined,
   ownerName: item.owner_name ?? undefined,
 });
 
@@ -203,6 +227,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({ new_listings: 0, best_match: 0 });
+  const { profile, loaded } = useSeekerProfile();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
 
@@ -246,50 +271,80 @@ export default function HomeScreen() {
     };
 
     void fetchStats();
-    void fetchListings();
-  }, []);
+    if (loaded) {
+      void fetchListings();
+    }
+  }, [loaded, profile]);
 
   const fetchListings = async () => {
-  setLoading(true);
-  setError(null);
-  try {
-    const token = await getAuthToken();
-    let nextListings: Listing[] = [];
+    setLoading(true);
+    setError(null);
+    try {
+      const token = await getAuthToken();
+      let nextListings: Listing[] = [];
 
-    if (token) {
-      // ✅ Use personalized endpoint
-      const res = await fetch(`${API_BASE}/seeker/recommended`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (loaded) {
+        const aiPayload = {
+          budget: Number((profile as any)?.budget ?? 1200),
+          city: profile?.location ?? "tunis",
+          rooms_needed: Number((profile as any)?.rooms ?? 1) || 1,
+          sleep_schedule: profile?.sleep_schedule ?? "flexible",
+          cleanliness: profile?.cleanliness ?? "moderate",
+          social_life: profile?.social_life ?? "moderate",
+          work_style: profile?.work_style ?? "hybrid",
+        };
 
-      if (res.ok) {
-        const data: HouseRecord[] = await res.json();
-        nextListings = data.map(toListing);
+        const aiHeaders: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (token) aiHeaders.Authorization = `Bearer ${token}`;
+
+        const res = await fetch(`${API_BASE}/ai/match-properties`, {
+          method: "POST",
+          headers: aiHeaders,
+          body: JSON.stringify(aiPayload),
+        });
+
+        if (res.ok) {
+          const data = (await res.json()) as { matches?: AIHouseRecord[] };
+          if (Array.isArray(data.matches) && data.matches.length > 0) {
+            nextListings = data.matches.map(toListing);
+          }
+        }
       }
-    }
 
-    // Fallback to all properties if not logged in or no results
-    if (nextListings.length === 0) {
-      const res = await fetch(`${API_BASE}/properties/`);
-      if (res.ok) {
-        const data: HouseRecord[] = await res.json();
-        nextListings = data.map(toListing);
+      if (nextListings.length === 0 && token) {
+        const res = await fetch(`${API_BASE}/seeker/recommended`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.ok) {
+          const data: HouseRecord[] = await res.json();
+          nextListings = data.map(toListing);
+        }
       }
-    }
 
-    setListings(nextListings);
-    if (nextListings.length === 0) setError("No properties available right now.");
-  } catch (e) {
-    console.error("Error fetching listings:", e);
-    setError("Unable to load properties. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+      if (nextListings.length === 0) {
+        const res = await fetch(`${API_BASE}/properties/`);
+        if (res.ok) {
+          const data: HouseRecord[] = await res.json();
+          nextListings = data.map(toListing);
+        }
+      }
+
+      setListings(nextListings);
+      if (nextListings.length === 0) setError("No properties available right now.");
+    } catch (e) {
+      console.error("Error fetching listings:", e);
+      setError("Unable to load properties. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Use SeekerProfile context to determine if Roommates tab/toggle should show
-  const { profile } = useSeekerProfile();
   let showRoommates = true;
-  if (profile.looking_for === "house") {
+  if (profile?.looking_for === "house") {
     showRoommates = false;
   }
   const tabs: { icon: string; label: string; route: Href }[] = [
@@ -318,6 +373,9 @@ export default function HomeScreen() {
         baths: item.baths,
         size: item.size,
         match: String(item.match),
+        scoreLocation: item.scoreLocation,
+        scoreBudget: item.scoreBudget,
+        scoreLifestyle: item.scoreLifestyle,
         image: item.image,
         description: item.description,
         ownerId: item.ownerId,

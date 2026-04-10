@@ -3,6 +3,7 @@
 from sqlalchemy.orm import Session
 
 from backend.backend_propertyowner.models import Property
+from backend.backend_user.models import User
 
 from .encoder import Vector, cosine_similarity, encode_property, encode_user_profile
 
@@ -126,6 +127,17 @@ def match_properties(
     if not properties:
         return []
 
+    owner_ids = {prop.owner_id for prop in properties}
+    owner_name_rows = (
+        db.query(User.id, User.full_name, User.email)
+        .filter(User.id.in_(owner_ids))
+        .all()
+    )
+    owner_names = {
+        user_id: full_name or email
+        for user_id, full_name, email in owner_name_rows
+    }
+
     results = []
     for prop in properties:
         prop_vec = encode_property(prop)
@@ -133,11 +145,18 @@ def match_properties(
 
         results.append(
             {
+                "id": prop.id,
                 "property_id": prop.id,
+                "owner_id": prop.owner_id,
+                "owner_name": owner_names.get(prop.owner_id),
                 "title": prop.title,
+                "address": prop.address,
                 "city": prop.city,
                 "price": prop.price,
                 "rooms": prop.rooms,
+                "bathrooms": prop.bathrooms,
+                "space": prop.space,
+                "description": prop.description,
                 "image_url": prop.image_url,
                 "status": prop.status,
                 **scores,

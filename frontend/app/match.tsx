@@ -1,68 +1,36 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, type Href } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import { getAuthToken } from "./state/auth"; // adjust path
-import { useSeekerProfile } from "./contexts/SeekerProfileContext";
+import { useFocusEffect, useRouter, type Href } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Colors } from "@/constants/theme";
 
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+
+import { useSeekerProfile } from "./contexts/SeekerProfileContext";
+import {
+  loadSavedRoommateMatches,
+  type RoommateMatchProfile,
+} from "./state/roommateMatching";
 
 export default function Match() {
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
-
-  const [matches, setMatches] = useState<any[]>([]);
-const [loading, setLoading] = useState(true);
-
-useEffect(() => {
-  const loadMatches = async () => {
-    try {
-      const token = await getAuthToken();
-      if (!token) return;
-
-      // Step 1: get saved match IDs
-      const matchRes = await fetch("http://127.0.0.1:8001/matches/", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!matchRes.ok) return;
-      const savedMatches = await matchRes.json();
-      const savedIds = new Set(savedMatches.map((m: any) => String(m.matched_id)));
-
-      if (savedIds.size === 0) {
-        setMatches([]);
-        return;
-      }
-
-      // Step 2: get full profiles from roommates endpoint
-      const profilesRes = await fetch("http://127.0.0.1:8001/roommates/matches", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!profilesRes.ok) return;
-      const allProfiles = await profilesRes.json();
-
-      // Step 3: filter only the ones the user liked
-      const filtered = allProfiles.filter((p: any) => savedIds.has(String(p.id)));
-      setMatches(filtered);
-    } catch (e) {
-      console.error("Failed to load matches", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  loadMatches();
-}, []);
   const router = useRouter();
   const { profile } = useSeekerProfile();
+
+  const [matches, setMatches] = useState<RoommateMatchProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("Match");
+
   const tabs: { icon: string; label: string; route: Href }[] = useMemo(() => {
     const lookingFor = profile?.looking_for;
     const showMatch = lookingFor !== "house";
@@ -73,14 +41,49 @@ useEffect(() => {
     return [
       { icon: "🏠", label: "Home", route: homeRoute },
       ...(showMatch ? [{ icon: "👥", label: "Match", route: "/match" as Href }] : []),
-      { icon: "💬", label: "Chat", route: "/chat" },
+      { icon: "💬", label: "Chat", route: "/chat" as Href },
       ...(showFavorites
         ? [{ icon: "❤️", label: "Favorites", route: "/favorite" as Href }]
         : []),
-      { icon: "👤", label: "Profile", route: "/profile" },
+      { icon: "👤", label: "Profile", route: "/profile" as Href },
     ];
   }, [profile?.looking_for]);
-  const [activeTab, setActiveTab] = useState("Match");
+
+  const refreshMatches = useCallback(
+    async (shouldAbort?: () => boolean) => {
+      const abort = shouldAbort ?? (() => false);
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const data = await loadSavedRoommateMatches();
+        if (abort()) return;
+        setMatches(data);
+      } catch (loadError) {
+        console.error("Failed to load matches", loadError);
+        if (abort()) return;
+        setMatches([]);
+        setError("Unable to load your saved roommate matches right now.");
+      } finally {
+        if (!abort()) {
+          setLoading(false);
+        }
+      }
+    },
+    [],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void refreshMatches(() => cancelled);
+
+      return () => {
+        cancelled = true;
+      };
+    }, [refreshMatches]),
+  );
 
   const handleContact = (id: string, name: string) => {
     router.push({ pathname: "/chat/[id]", params: { id, name } });
@@ -111,16 +114,16 @@ useEffect(() => {
           >
             <Text style={[styles.iconText, isDark && styles.iconTextDark]}>←</Text>
           </TouchableOpacity>
+
           <View>
-            <Text style={[styles.title, isDark && styles.titleDark]}>
-              Your Matches
-            </Text>
+            <Text style={[styles.title, isDark && styles.titleDark]}>Your Matches</Text>
             <Text style={[styles.subtitle, isDark && styles.mutedTextDark]}>
               {matches.length === 1
                 ? "1 person you saved"
                 : `${matches.length} people you saved`}
             </Text>
           </View>
+
           <TouchableOpacity
             style={[styles.iconBtn, isDark && styles.iconBtnDark]}
             onPress={() => router.push("/roomatematch")}
@@ -132,19 +135,23 @@ useEffect(() => {
         <View style={[styles.sheet, isDark && styles.sheetDark]}>
           {loading ? (
             <View style={styles.emptyState}>
-              <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>
-                Loading...
-              </Text>
+              <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>Loading...</Text>
             </View>
-          ) : null}
-          {matches.length === 0 ? (
+          ) : error ? (
             <View style={styles.emptyState}>
               <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>
-                No matches yet
+                Something went wrong
               </Text>
+              <Text style={[styles.emptyCopy, isDark && styles.mutedTextDark]}>{error}</Text>
+              <TouchableOpacity style={styles.primaryBtn} onPress={() => void refreshMatches()}>
+                <Text style={styles.primaryLabel}>Try again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : matches.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={[styles.emptyTitle, isDark && styles.titleDark]}>No matches yet</Text>
               <Text style={[styles.emptyCopy, isDark && styles.mutedTextDark]}>
-                Swipe right or tap the heart in Roommate Match to add someone
-                here.
+                Swipe right or tap the heart in Roommate Match to add someone here.
               </Text>
               <TouchableOpacity
                 style={styles.primaryBtn}
@@ -158,29 +165,32 @@ useEffect(() => {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 100 }}
             >
-              {matches.map((profile) => (
-                <View key={profile.id} style={[styles.card, isDark && styles.cardDark]}>
-                  {profile.image ? (
-                    <Image source={{ uri: profile.image }} style={styles.photo} />
+              {matches.map((roommate) => (
+                <View key={roommate.id} style={[styles.card, isDark && styles.cardDark]}>
+                  {roommate.image ? (
+                    <Image source={{ uri: roommate.image }} style={styles.photo} />
                   ) : null}
+
                   <View style={styles.cardBody}>
                     <View style={styles.rowBetween}>
                       <Text style={[styles.name, isDark && styles.titleDark]}>
-                        {profile.name}, {profile.age}
+                        {roommate.name}, {roommate.age}
                       </Text>
                       <View style={styles.badge}>
-                        <Text style={styles.badgeText}>{profile.match}%</Text>
+                        <Text style={styles.badgeText}>{roommate.match}%</Text>
                       </View>
                     </View>
+
                     <Text style={[styles.meta, isDark && styles.mutedTextDark]}>
-                      {profile.role}
+                      {roommate.role}
                     </Text>
                     <Text style={[styles.meta, isDark && styles.mutedTextDark]}>
-                      {profile.location}
+                      {roommate.location}
                     </Text>
+
                     <TouchableOpacity
                       style={styles.contactBtn}
-                      onPress={() => handleContact(profile.id, profile.name)}
+                      onPress={() => handleContact(roommate.id, roommate.name)}
                     >
                       <Text style={styles.contactLabel}>Contact</Text>
                     </TouchableOpacity>
@@ -191,7 +201,6 @@ useEffect(() => {
           )}
         </View>
 
-        {/* Bottom nav */}
         <View style={[styles.tabBar, isDark && styles.tabBarDark]}>
           {tabs.map((tab) => (
             <TouchableOpacity
