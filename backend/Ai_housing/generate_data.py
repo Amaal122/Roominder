@@ -195,7 +195,7 @@ def main():
 
     db = SessionLocal()
     try:
-        generate_properties(db, count=50)
+        generate_properties(db, count=150)
         generate_seeker_profiles(db, count=100)
 
         print("\n" + "=" * 50)
