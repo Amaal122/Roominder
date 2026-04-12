@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSeekerProfile } from "../contexts/SeekerProfileContext";
 import {
   Animated,
+  FlatList,
   Pressable,
   ScrollView,
   StatusBar,
@@ -32,6 +33,7 @@ type Listing = {
   scoreLocation?: string;
   scoreBudget?: string;
   scoreLifestyle?: string;
+  explanation?: string;
   image: string;
   description?: string;
   ownerId?: string;
@@ -72,6 +74,7 @@ type AIHouseRecord = HouseRecord & {
     rooms?: number;
     lifestyle?: number;
   };
+  explanation?: string[];
 };
 
 type DashboardResponse = {
@@ -162,9 +165,11 @@ const ListingCard = ({
             resizeMode="cover"
           />
         )}
-        <View style={styles.matchBadge}>
-          <Text style={styles.matchBadgeText}>✨ {match}%</Text>
-        </View>
+        {match > 0 && (
+          <View style={styles.matchBadge}>
+            <Text style={styles.matchBadgeText}>✨ {match}%</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.cardBody}>
@@ -198,30 +203,40 @@ const resolveImageUrl = (imageUrl?: string | null) => {
   return `${API_BASE}/${imageUrl}`;
 };
 
-const toListing = (item: HouseRecord | AIHouseRecord): Listing => ({
-  id: String(item.id ?? item.property_id ?? ""),
-  title: item.title,
-  location: `${item.address ?? ""}${item.city ? `, ${item.city}` : ""}`.trim()
-    || "Unknown location",
-  price: `DT ${item.price}`,
-  rooms: `${item.rooms ?? 1} room${(item.rooms ?? 1) > 1 ? "s" : ""}`,
-  baths: `${item.bathrooms ?? 1} Bath${(item.bathrooms ?? 1) > 1 ? "s" : ""}`,
-  size: `${item.space ?? 0} m²`,
-  match: Number(item.score ?? item.match ?? 0),
-  scoreLocation: item.score_details ? String(item.score_details.location ?? 0) : undefined,
-  scoreBudget: item.score_details ? String(item.score_details.budget ?? 0) : undefined,
-  scoreLifestyle: item.score_details ? String(item.score_details.lifestyle ?? 0) : undefined,
-  image:
-    resolveImageUrl(item.image_url) ??
-    "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
-  description: item.description ?? undefined,
-  ownerId: typeof item.owner_id === "number" ? String(item.owner_id) : undefined,
-  ownerName: item.owner_name ?? undefined,
-});
+const toListing = (item: HouseRecord | AIHouseRecord, activeFilter: string): Listing => {
+  let displayMatch = Number(item.score ?? item.match ?? 0);
+  if (activeFilter === "budget") displayMatch = Number(item.score_details?.budget ?? displayMatch);
+  if (activeFilter === "location") displayMatch = Number(item.score_details?.location ?? displayMatch);
+  if (activeFilter === "lifestyle") displayMatch = Number(item.score_details?.lifestyle ?? displayMatch);
+
+  return {
+    id: String(item.id ?? item.property_id ?? ""),
+    title: item.title,
+    location: `${item.address ?? ""}${item.city ? `, ${item.city}` : ""}`.trim()
+      || "Unknown location",
+    price: `DT ${item.price}`,
+    rooms: `${item.rooms ?? 1} room${(item.rooms ?? 1) > 1 ? "s" : ""}`,
+    baths: `${item.bathrooms ?? 1} Bath${(item.bathrooms ?? 1) > 1 ? "s" : ""}`,
+    size: `${item.space ?? 0} m²`,
+    match: displayMatch,
+    scoreLocation: item.score_details ? String(item.score_details.location ?? 0) : undefined,
+    scoreBudget: item.score_details ? String(item.score_details.budget ?? 0) : undefined,
+    scoreLifestyle: item.score_details ? String(item.score_details.lifestyle ?? 0) : undefined,
+    explanation: JSON.stringify(item.explanation || []),
+    image:
+      resolveImageUrl(item.image_url) ??
+      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
+    description: item.description ?? undefined,
+    ownerId: typeof item.owner_id === "number" ? String(item.owner_id) : undefined,
+    ownerName: item.owner_name ?? undefined,
+  };
+};
 
 export default function HomeScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("Home");
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [visibleCount, setVisibleCount] = useState(10);
   const [userName, setUserName] = useState<string>("");
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -274,7 +289,7 @@ export default function HomeScreen() {
     if (loaded) {
       void fetchListings();
     }
-  }, [loaded, profile]);
+  }, [loaded, profile, activeFilter]);
 
   const fetchListings = async () => {
     setLoading(true);
@@ -292,6 +307,7 @@ export default function HomeScreen() {
           cleanliness: profile?.cleanliness ?? "moderate",
           social_life: profile?.social_life ?? "moderate",
           work_style: profile?.work_style ?? "hybrid",
+          filter_by: activeFilter,
         };
 
         const aiHeaders: Record<string, string> = {
@@ -308,27 +324,8 @@ export default function HomeScreen() {
         if (res.ok) {
           const data = (await res.json()) as { matches?: AIHouseRecord[] };
           if (Array.isArray(data.matches) && data.matches.length > 0) {
-            nextListings = data.matches.map(toListing);
+            nextListings = data.matches.map((item) => toListing(item, activeFilter));
           }
-        }
-      }
-
-      if (nextListings.length === 0 && token) {
-        const res = await fetch(`${API_BASE}/seeker/recommended`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (res.ok) {
-          const data: HouseRecord[] = await res.json();
-          nextListings = data.map(toListing);
-        }
-      }
-
-      if (nextListings.length === 0) {
-        const res = await fetch(`${API_BASE}/properties/`);
-        if (res.ok) {
-          const data: HouseRecord[] = await res.json();
-          nextListings = data.map(toListing);
         }
       }
 
@@ -376,6 +373,7 @@ export default function HomeScreen() {
         scoreLocation: item.scoreLocation,
         scoreBudget: item.scoreBudget,
         scoreLifestyle: item.scoreLifestyle,
+        explanation: item.explanation,
         image: item.image,
         description: item.description,
         ownerId: item.ownerId,
@@ -428,10 +426,19 @@ export default function HomeScreen() {
       <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
         <StatusBar barStyle="light-content" backgroundColor={CORAL} />
 
-        <ScrollView
+        <FlatList
           style={[styles.container, isDark && styles.containerDark]}
           showsVerticalScrollIndicator={false}
-        >
+          data={listings.slice(0, visibleCount)}
+          keyExtractor={(item) => item.id}
+          onEndReached={() => {
+            if (visibleCount < listings.length) {
+              setVisibleCount((prev) => prev + 10);
+            }
+          }}
+          onEndReachedThreshold={0.5}
+          ListHeaderComponent={
+            <>
           {/* ── HERO ── */}
           <LinearGradient
             colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
@@ -512,6 +519,27 @@ export default function HomeScreen() {
             </View>
           </View>
 
+          {/* ── FILTERS ── */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+            {["all", "location", "budget", "lifestyle"].map((filterOpt) => (
+              <TouchableOpacity
+                key={filterOpt}
+                style={[
+                  styles.filterChip,
+                  activeFilter === filterOpt && styles.filterChipActive,
+                ]}
+                onPress={() => setActiveFilter(filterOpt)}
+              >
+                <Text style={[
+                  styles.filterChipText,
+                  activeFilter === filterOpt && styles.filterChipTextActive
+                ]}>
+                  {filterOpt.charAt(0).toUpperCase() + filterOpt.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
           {/* ── LISTINGS ── */}
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
@@ -524,31 +552,32 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {listings.map((item) => (
+            </>
+          }
+          renderItem={({ item }) => (
             <ListingCard
-              key={item.id}
               {...item}
               onPress={() => goToDetails(item)}
             />
-          ))}
-
-          {!listings.length && error ? (
-            <View style={[styles.feedbackCard, isDark && styles.feedbackCardDark]}>
-              <Text style={[styles.feedbackTitle, isDark && styles.feedbackTitleDark]}>
-                No properties to show
-              </Text>
-              <Text style={[styles.feedbackText, isDark && styles.feedbackTextDark]}>{error}</Text>
-              <TouchableOpacity
-                style={styles.feedbackButton}
-                onPress={() => void fetchListings()}
-              >
-                <Text style={styles.feedbackButtonText}>Retry</Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
-
-          <View style={{ height: 16 }} />
-        </ScrollView>
+          )}
+          ListEmptyComponent={
+            !loading && error ? (
+              <View style={[styles.feedbackCard, isDark && styles.feedbackCardDark]}>
+                <Text style={[styles.feedbackTitle, isDark && styles.feedbackTitleDark]}>
+                  No properties to show
+                </Text>
+                <Text style={[styles.feedbackText, isDark && styles.feedbackTextDark]}>{error}</Text>
+                <TouchableOpacity
+                  style={styles.feedbackButton}
+                  onPress={() => void fetchListings()}
+                >
+                  <Text style={styles.feedbackButtonText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null
+          }
+          ListFooterComponent={<View style={{ height: 16 }} />}
+        />
 
         {/* ── BOTTOM TAB BAR ── */}
         <View style={[styles.tabBar, isDark && styles.tabBarDark]}>
@@ -817,6 +846,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
+
+  // FILTERS
+  filterScroll: { paddingHorizontal: 16, marginTop: 16, marginBottom: 8, gap: 10 },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.8)",
+    borderWidth: 1,
+    borderColor: CORAL_PASTEL,
+  },
+  filterChipActive: { backgroundColor: CORAL, borderColor: CORAL },
+  filterChipText: { color: INK, fontSize: 13, fontWeight: "600" },
+  filterChipTextActive: { color: "#FFF" },
 
   // BOTTOM TAB BAR
   tabBar: {

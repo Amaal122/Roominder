@@ -260,6 +260,7 @@ export default function PropertyDetail() {
     image?: string;
     baths?: string;
     size?: string;
+    explanation?: string;
     description?: string;
     lat?: string;
     lng?: string;
@@ -276,13 +277,18 @@ export default function PropertyDetail() {
   const location = getSingleParam(params.location) ?? "Le Marais, Paris";
   const rooms = getSingleParam(params.rooms) ?? "2 Beds";
   const match = getSingleParam(params.match) ?? "95";
-  const price = getSingleParam(params.price) ?? "DT 1200";
   const scoreLocation = parseNumberOrFallback(getSingleParam(params.scoreLocation), 98);
   const scoreBudget = parseNumberOrFallback(getSingleParam(params.scoreBudget), 92);
   const scoreLifestyle = parseNumberOrFallback(getSingleParam(params.scoreLifestyle), 95);
   const image = getSingleParam(params.image);
   const baths = getSingleParam(params.baths) ?? "1 Bath";
   const size = getSingleParam(params.size) ?? "65 m²";
+  let parsedExplanation: string[] = [];
+  try {
+    parsedExplanation = JSON.parse(getSingleParam(params.explanation) || "[]");
+  } catch (e) {
+    // ignore
+  }
   const initialDescription = getSingleParam(params.description)?.trim();
   const [description, setDescription] = useState(
     initialDescription || "No description provided.",
@@ -536,6 +542,23 @@ export default function PropertyDetail() {
               </View>
             ))}
           </View>
+
+          {parsedExplanation.length > 0 && (
+            <View style={[styles.insightsCard, isDark && styles.insightsCardDark]}>
+              <View style={styles.scoreTitleRow}>
+                <Text style={styles.scoreStar}>✨</Text>
+                <Text style={[styles.scoreTitle, isDark && styles.titleDark]}>
+                  AI Insights
+                </Text>
+              </View>
+              {parsedExplanation.map((insight, idx) => (
+                <View key={idx} style={styles.insightRow}>
+                  <Text style={styles.insightBullet}>✓</Text>
+                  <Text style={[styles.insightText, isDark && styles.mutedTextDark]}>{insight}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -972,5 +995,34 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     letterSpacing: 0.3,
+  },
+  insightsCard: {
+    backgroundColor: "rgba(126,206,196,0.1)",
+    borderRadius: 16,
+    padding: 18,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "rgba(126,206,196,0.3)",
+  },
+  insightsCardDark: {
+    backgroundColor: "rgba(126,206,196,0.05)",
+    borderColor: Colors.dark.border,
+  },
+  insightRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  insightBullet: {
+    color: TEAL,
+    fontSize: 14,
+    fontWeight: "800",
+    marginRight: 8,
+  },
+  insightText: {
+    color: INK,
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
   },
 });

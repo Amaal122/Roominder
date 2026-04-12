@@ -19,6 +19,7 @@ class PropertyMatchRequest(BaseModel):
     cleanliness: Optional[str] = "moderate"
     social_life: Optional[str] = "moderate"
     work_style: Optional[str] = "hybrid"
+    filter_by: Optional[str] = None
 
 
 @router.post("/match-properties")
@@ -31,7 +32,8 @@ def get_property_matches(
     results = match_properties(
         db=db,
         user_profile=user_profile,
-        top_n=5
+        filter_by=request.filter_by,
+        top_n=50
     )
     return {
         "matches": results,
