@@ -210,7 +210,7 @@ const toListing = (item: HouseRecord | AIHouseRecord, activeFilter: string): Lis
   if (activeFilter === "lifestyle") displayMatch = Number(item.score_details?.lifestyle ?? displayMatch);
 
   return {
-    id: String(item.id ?? item.property_id ?? ""),
+    id: String(item.id ?? (item as AIHouseRecord).property_id ?? ""),
     title: item.title,
     location: `${item.address ?? ""}${item.city ? `, ${item.city}` : ""}`.trim()
       || "Unknown location",
@@ -222,7 +222,7 @@ const toListing = (item: HouseRecord | AIHouseRecord, activeFilter: string): Lis
     scoreLocation: item.score_details ? String(item.score_details.location ?? 0) : undefined,
     scoreBudget: item.score_details ? String(item.score_details.budget ?? 0) : undefined,
     scoreLifestyle: item.score_details ? String(item.score_details.lifestyle ?? 0) : undefined,
-    explanation: JSON.stringify(item.explanation || []),
+    explanation: JSON.stringify((item as AIHouseRecord).explanation || []),
     image:
       resolveImageUrl(item.image_url) ??
       "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
