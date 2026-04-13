@@ -37,6 +37,7 @@ Base.metadata.create_all(bind=engine)  # create tables on startup
 
 
 from ..Ai_housing.routes.matching import router as ai_router
+from ..Ai_roomate.router import router as ai_roommate_router
 
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -85,6 +86,7 @@ app.include_router(stats_router)
 app.include_router(seeker_dashboard_router)
 app.include_router(two_factor_router)
 app.include_router(ai_router)
+app.include_router(ai_roommate_router)
 # ──────────────────────────────────────────────────────────────────────────────
 
 
