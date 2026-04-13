@@ -276,7 +276,6 @@ export default function PropertyDetail() {
   const location = getSingleParam(params.location) ?? "Le Marais, Paris";
   const rooms = getSingleParam(params.rooms) ?? "2 Beds";
   const match = getSingleParam(params.match) ?? "95";
-  const price = getSingleParam(params.price) ?? "DT 1200";
   const scoreLocation = parseNumberOrFallback(getSingleParam(params.scoreLocation), 98);
   const scoreBudget = parseNumberOrFallback(getSingleParam(params.scoreBudget), 92);
   const scoreLifestyle = parseNumberOrFallback(getSingleParam(params.scoreLifestyle), 95);
