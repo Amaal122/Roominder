@@ -40,6 +40,7 @@ export default function RootLayout() {
           <Stack.Screen name="completeprofile" />
           <Stack.Screen name="form" />
           <Stack.Screen name="roomatematch" />
+          <Stack.Screen name="roommateprofile" />
           <Stack.Screen name="index" />
           <Stack.Screen name="register" />
           <Stack.Screen name="homescreen" />

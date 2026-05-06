@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import { getAuthToken } from "../state/auth"; // adjust path
 type SeekerProfile = {
@@ -44,7 +45,7 @@ export const SeekerProfileProvider = ({
         const token = await getAuthToken();
         if (!token) return;
 
-        const res = await fetch("http://127.0.0.1:8001/seeker/me", {
+        const res = await fetch(`${API_BASE}/seeker/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

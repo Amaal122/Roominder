@@ -13,7 +13,7 @@ from .dashbord import router as dashboard_router
 from .notifications import router as notifications_router
 from .users import router as users_router
 from .chatuser import router as chat_router
-from .roomate import router as roommate_router
+
 from .favorite import router as favorites_router
 from .websocket import router as websocket_router
 from .profile import router as profile_router
@@ -28,8 +28,7 @@ from backend.backend_user.applicationrequest import router as rental_application
 from ..backend_propertyowner.routes.stats import router as stats_router
 from .listings_bestmatch import router as seeker_dashboard_router
 from .two_factor import router as two_factor_router
-
-Base.metadata.create_all(bind=engine)  # create tables on startup
+from ..Ai_roomate.facedetection import router as face_detection_router
 
 
 
@@ -72,7 +71,6 @@ app.include_router(dashboard_router)
 app.include_router(notifications_router)
 app.include_router(users_router)
 app.include_router(chat_router)
-app.include_router(roommate_router)
 app.include_router(matches_router)
 app.include_router(favorites_router)
 app.include_router(profile_router)
@@ -87,64 +85,13 @@ app.include_router(seeker_dashboard_router)
 app.include_router(two_factor_router)
 app.include_router(ai_router)
 app.include_router(ai_roommate_router)
+app.include_router(face_detection_router)
 # ──────────────────────────────────────────────────────────────────────────────
 
 
 @app.on_event("startup")
 def _create_tables_on_startup() -> None:
-	"""Create tables when the app starts, not during import."""
-	Base.metadata.create_all(bind=engine, checkfirst=True)
-	# Quick, in-place migrations for dev: align DB column types with current models.
-	with engine.connect() as conn:
-		conn.execute(text(
-			"""
-			ALTER TABLE IF EXISTS users
-			ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN DEFAULT FALSE,
-			ADD COLUMN IF NOT EXISTS two_factor_secret VARCHAR,
-			ADD COLUMN IF NOT EXISTS two_factor_temp_secret VARCHAR;
-			"""
-		))
-		conn.execute(text(
-			"""
-			ALTER TABLE IF EXISTS seeker_profiles
-			ADD COLUMN IF NOT EXISTS interests VARCHAR,
-			ADD COLUMN IF NOT EXISTS "values" VARCHAR;
-			"""
-		))
-		conn.execute(text(
-			"""
-			ALTER TABLE IF EXISTS seeker_profiles
-			ALTER COLUMN sleep_schedule TYPE VARCHAR USING sleep_schedule::VARCHAR,
-			ALTER COLUMN cleanliness TYPE VARCHAR USING cleanliness::VARCHAR,
-			ALTER COLUMN social_life TYPE VARCHAR USING social_life::VARCHAR,
-			ALTER COLUMN guests TYPE VARCHAR USING guests::VARCHAR,
-			ALTER COLUMN work_style TYPE VARCHAR USING work_style::VARCHAR,
-			ALTER COLUMN looking_for TYPE VARCHAR USING looking_for::VARCHAR,
-			ALTER COLUMN interests TYPE VARCHAR USING interests::VARCHAR,
-			ALTER COLUMN "values" TYPE VARCHAR USING "values"::VARCHAR;
-			"""
-		))
-		conn.execute(text(
-			"""
-			ALTER TABLE IF EXISTS properties
-			ADD COLUMN IF NOT EXISTS bathrooms INTEGER DEFAULT 1;
-			"""
-		))
-		conn.execute(text(
-			"""
-			ALTER TABLE IF EXISTS properties
-			ADD COLUMN IF NOT EXISTS space DOUBLE PRECISION DEFAULT 0;
-			"""
-		))
-		conn.execute(text(
-			"""
-			UPDATE properties
-			SET bathrooms = COALESCE(bathrooms, 1),
-			    space = COALESCE(space, 0)
-			WHERE bathrooms IS NULL OR space IS NULL;
-			"""
-		))
-		conn.commit()
+	return
 
 
 @app.get("/health")

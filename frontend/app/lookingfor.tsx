@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSeekerProfile } from "../app/contexts/SeekerProfileContext";
@@ -44,7 +45,7 @@ const OptionCard = ({ option, isActive, onPress }: OptionCardProps) => {
     Animated.timing(lift, {
       toValue: value,
       duration: 180,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
   };
 

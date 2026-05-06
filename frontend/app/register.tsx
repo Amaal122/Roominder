@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { Feather } from "@expo/vector-icons";
 import { setAuthToken } from "./state/auth";
 import { LinearGradient } from "expo-linear-gradient";
@@ -35,7 +36,7 @@ export default function Register() {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:8001/auth/register", {
+      const response = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

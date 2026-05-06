@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -22,7 +23,6 @@ import { formatMoney } from "./utils/money";
 
 import { getAuthToken } from "./state/auth";
 
-const API_BASE = "http://127.0.0.1:8001";
 
 type Params = {
   id?: string | string[];

@@ -17,4 +17,5 @@ pyotp>=2.9.0
 qrcode[pil]>=7.4.2
 numpy>=1.26.0
 langdetect>=1.0.9
-
+mediapipe>=0.8.10
+opencv-python>=0.8.10

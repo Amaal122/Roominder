@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, type Href } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -19,7 +20,6 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Colors } from "@/constants/theme";
 import { useSettings } from "./state/settings";
 
-const API_BASE = "http://127.0.0.1:8001";
 
 type ProfileMeOut = {
   user_id: number;

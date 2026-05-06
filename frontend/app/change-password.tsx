@@ -1,3 +1,4 @@
+import { API_BASE as API_URL } from "@/constants/api";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
@@ -14,7 +15,6 @@ import { useRouter } from "expo-router";
 import { getAuthToken } from "./state/auth";
 import { useTranslation } from "react-i18next";
 
-const API_URL = "http://127.0.0.1:8001";
 
 export default function ChangePassword() {
   const router = useRouter();

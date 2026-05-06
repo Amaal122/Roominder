@@ -13,6 +13,7 @@ import {
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Colors } from "@/constants/theme";
+import { API_BASE } from "@/constants/api";
 
 const getSingleParam = (value?: string | string[]) =>
   Array.isArray(value) ? value[0] : value;
@@ -59,7 +60,7 @@ export default function OwnerProfile() {
     let cancelled = false;
     const loadOwner = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:8001/users/${ownerId}`);
+        const response = await fetch(`${API_BASE}/users/${ownerId}`);
         if (!response.ok) return;
         const data = await response.json();
         if (cancelled) return;

@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,7 +25,6 @@ type Question = {
   options: { id: string; label: string; icon: keyof typeof Feather.glyphMap }[];
 };
 
-const API_BASE = "http://127.0.0.1:8001";
 
 export const QUESTIONS: Question[] = [
   {

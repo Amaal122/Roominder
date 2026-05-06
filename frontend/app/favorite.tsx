@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, type Href } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -18,7 +19,6 @@ import { useFavoritesStore } from "../store/favoriteStore";
 import { getAuthToken } from "./state/auth";
 import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 
-const API_BASE = "http://127.0.0.1:8001";
 
 type PropertyOut = {
   id: number;

@@ -22,5 +22,6 @@
   "terminal.integrated.defaultProfile.windows": "PowerShell (NoProfile)",
   "terminal.integrated.gpuAcceleration": "off",
   "terminal.integrated.inheritEnv": false,
-  "terminal.integrated.shellIntegration.enabled": false
+  "terminal.integrated.shellIntegration.enabled": false,
+  "claudeCodeChat.permissions.yoloMode": false
 }

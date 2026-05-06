@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { Feather } from "@expo/vector-icons";
 import { QUESTIONS } from "./form";
 import { LinearGradient } from "expo-linear-gradient";
@@ -13,7 +14,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAuthToken } from "./state/auth";
 
-const API_BASE = "http://127.0.0.1:8001";
 
 
 // List of all profile fields to display

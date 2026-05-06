@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RoleSelection() {
@@ -22,7 +23,7 @@ export default function RoleSelection() {
       toValue,
       duration: 260,
       easing: Easing.out(Easing.quad),
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
   };
 
