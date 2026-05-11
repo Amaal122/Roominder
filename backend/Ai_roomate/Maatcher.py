@@ -8,26 +8,38 @@ import re
 import sys
 from pathlib import Path
 
+
 # ─────────────────────────────────────────────
 # LAYER 1 — HARD FILTERS
 # ─────────────────────────────────────────────
 
 def passes_hard_filters(profile_a: dict, profile_b: dict) -> tuple[bool, str]:
 
-    loc_a = profile_a.get("location", "").strip().lower()
-    loc_b = profile_b.get("location", "").strip().lower()
+    # ── Location ──────────────────────────────
+    # FIX: removed the "if loc_a and loc_b" guard — now filters even if one side
+    # is empty, treating an empty location as "unknown" and allowing the match,
+    # but if BOTH are filled and differ → eliminate.
+    loc_a = (profile_a.get("location") or "").strip().lower()
+    loc_b = (profile_b.get("location") or "").strip().lower()
     if loc_a and loc_b and loc_a != loc_b:
-        return False, f"Different locations: {loc_a} vs {loc_b}"
+        return False, f"Different locations: {loc_a!r} vs {loc_b!r}"
 
-    gender_a = profile_a.get("gender", "").strip().lower()
-    gender_b = profile_b.get("gender", "").strip().lower()
+    # ── Gender ────────────────────────────────
+    # FIX: same guard issue — now properly eliminates mismatched genders
+    # when both sides have a value.
+    gender_a = (profile_a.get("gender") or "").strip().lower()
+    gender_b = (profile_b.get("gender") or "").strip().lower()
     if gender_a and gender_b and gender_a != gender_b:
-        return False, f"Gender mismatch: {profile_a.get('full_name','')} is {gender_a}, {profile_b.get('full_name','')} is {gender_b}"
+        return False, (
+            f"Gender mismatch: {profile_a.get('full_name', '')} is {gender_a}, "
+            f"{profile_b.get('full_name', '')} is {gender_b}"
+        )
 
-    budget_min_a = profile_a.get("budget_min", 0)
-    budget_max_a = profile_a.get("budget_max", 999999)
-    budget_min_b = profile_b.get("budget_min", 0)
-    budget_max_b = profile_b.get("budget_max", 999999)
+    # ── Budget ────────────────────────────────
+    budget_min_a = profile_a.get("budget_min") or 0
+    budget_max_a = profile_a.get("budget_max") or 999_999
+    budget_min_b = profile_b.get("budget_min") or 0
+    budget_max_b = profile_b.get("budget_max") or 999_999
     if min(budget_max_a, budget_max_b) - max(budget_min_a, budget_min_b) < 0:
         return False, "Budget ranges don't overlap"
 
@@ -37,6 +49,7 @@ def passes_hard_filters(profile_a: dict, profile_b: dict) -> tuple[bool, str]:
 # ─────────────────────────────────────────────
 # LAYER 2 — CONFLICT SCORING
 # ─────────────────────────────────────────────
+
 def extract_sleep_hour(text: str):
     if not text:
         return None
@@ -53,6 +66,7 @@ def extract_sleep_hour(text: str):
             hour = 0
         return hour
     return None
+
 
 def sleep_conflict_score(profile_a: dict, profile_b: dict) -> float:
     hour_a = extract_sleep_hour(profile_a.get("sleep_schedule", ""))
@@ -71,6 +85,7 @@ def sleep_conflict_score(profile_a: dict, profile_b: dict) -> float:
     if diff <= 4:  return 0.20
     return 0.05
 
+
 def cleanliness_conflict_score(profile_a: dict, profile_b: dict) -> float:
     CLEANLINESS_MAP = {
         "immediately":     5,
@@ -88,7 +103,7 @@ def cleanliness_conflict_score(profile_a: dict, profile_b: dict) -> float:
     }
 
     def get_level(profile):
-        text = profile.get("cleanliness", "").lower()
+        text = (profile.get("cleanliness") or "").lower()
         for keyword, level in CLEANLINESS_MAP.items():
             if keyword in text:
                 return level
@@ -101,6 +116,7 @@ def cleanliness_conflict_score(profile_a: dict, profile_b: dict) -> float:
 # ─────────────────────────────────────────────
 # PRINT HELPER
 # ─────────────────────────────────────────────
+
 def print_result(result: dict):
     print(f"\n  Pair: {result['pair']}")
 
@@ -121,12 +137,13 @@ def print_result(result: dict):
 # ─────────────────────────────────────────────
 # COMPUTE COMPATIBILITY — combines all 3 layers
 # ─────────────────────────────────────────────
+
 def compute_compatibility(profile_a: dict, profile_b: dict) -> dict:
 
     passed, reason = passes_hard_filters(profile_a, profile_b)
     if not passed:
         return {
-            "pair":        f"{profile_a.get('full_name','')} × {profile_b.get('full_name','')}",
+            "pair":        f"{profile_a.get('full_name', '')} × {profile_b.get('full_name', '')}",
             "eligible":    False,
             "reason":      reason,
             "final_score": 0.0,
@@ -137,7 +154,7 @@ def compute_compatibility(profile_a: dict, profile_b: dict) -> dict:
 
     vec_a     = np.array(profile_a["final_vector"])
     vec_b     = np.array(profile_b["final_vector"])
-    nlp_score = cosine_similarity([vec_a], [vec_b])[0][0]
+    nlp_score = float(cosine_similarity([vec_a], [vec_b])[0][0])
 
     final = (
         nlp_score   * 0.50 +
@@ -146,7 +163,7 @@ def compute_compatibility(profile_a: dict, profile_b: dict) -> dict:
     )
 
     return {
-        "pair":        f"{profile_a.get('full_name','')} × {profile_b.get('full_name','')}",
+        "pair":        f"{profile_a.get('full_name', '')} × {profile_b.get('full_name', '')}",
         "eligible":    True,
         "nlp_score":   round(nlp_score   * 100, 1),
         "sleep_score": round(sleep_score * 100, 1),
@@ -158,6 +175,7 @@ def compute_compatibility(profile_a: dict, profile_b: dict) -> dict:
 # ─────────────────────────────────────────────
 # FIND TOP MATCHES
 # ─────────────────────────────────────────────
+
 def find_top_matches(target_email: str, profiles: list, top_n: int = 5) -> list:
     target = next((p for p in profiles if p["email"] == target_email), None)
     if not target:
@@ -183,6 +201,7 @@ def find_top_matches(target_email: str, profiles: list, top_n: int = 5) -> list:
 # ─────────────────────────────────────────────
 # TEST
 # ─────────────────────────────────────────────
+
 def test_compatibility(profiles):
     profile_a = profiles[0]
     profile_b = profiles[1]
@@ -200,27 +219,27 @@ def test_compatibility(profiles):
 
 
 # ─────────────────────────────────────────────
-# DB LOADER — same as nlp_vectorizer but
-# loads already-vectorized profiles from DB
-# by running nlp_vectorizer.load_profiles_from_db()
-# then vectorizing on the fly
+# DB LOADER
 # ─────────────────────────────────────────────
+
 def load_vectorized_profiles_from_db() -> list[dict]:
-    """
-    Loads profiles from Neon DB, calculates Big Five,
-    vectorizes them — returns list of dicts with final_vector.
-    Same result as profiles_vectorized.json but from DB.
-    """
     PROJECT_ROOT = Path(__file__).resolve().parents[2]
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
 
-    # Import vectorizer functions
-    from nlp_vectorizeer import (
-        load_profiles_from_db,
-        vectorize_profile,
-        build_final_vector,
-    )
+    try:
+        from .nlp_vectorizeer import (
+            load_profiles_from_db,
+            vectorize_profile,
+            build_final_vector,
+        )
+    except ImportError:
+        # Fallback for running as a script (python backend/Ai_roomate/Maatcher.py)
+        from backend.Ai_roomate.nlp_vectorizeer import (
+            load_profiles_from_db,
+            vectorize_profile,
+            build_final_vector,
+        )
 
     profiles = load_profiles_from_db()
 
@@ -232,9 +251,9 @@ def load_vectorized_profiles_from_db() -> list[dict]:
 
     return profiles
 
- # ─────────────────────────────────────────────
+
+# ─────────────────────────────────────────────
 # FASTAPI ENTRY POINT
-# This is the function router.py calls
 # ─────────────────────────────────────────────
 
 def get_roommate_matches(
@@ -249,29 +268,55 @@ def get_roommate_matches(
 
     from backend.backend_user.auth import SeekerProfile
     from backend.backend_user.models import User
-    from nlp_vectorizeer import vectorize_profile, build_final_vector, calculate_big_five, _to_cat
+    try:
+        from .nlp_vectorizeer import (
+            vectorize_profile,
+            build_final_vector,
+            calculate_big_five,
+            _to_cat,
+        )
+    except ImportError:
+        # Fallback for running as a script
+        from backend.Ai_roomate.nlp_vectorizeer import (
+            vectorize_profile,
+            build_final_vector,
+            calculate_big_five,
+            _to_cat,
+        )
 
     # ── Convert SQLAlchemy row → dict ──────────
     def seeker_to_dict(seeker, user) -> dict:
         profile = {
             "user_id":        seeker.user_id,
-            "full_name":      user.full_name or "Unknown",
+            "full_name":      (user.full_name or "Unknown"),
             "email":          user.email,
             "age":            seeker.age or 25,
-            "gender":         seeker.gender or "",
-            "occupation":     seeker.occupation or "",
-            "location":       seeker.location or "",
-            "looking_for":    seeker.looking_for or "both",
-            "sleep_schedule": seeker.sleep_schedule or "",
-            "cleanliness":    seeker.cleanliness or "",
-            "social_life":    seeker.social_life or "",
-            "guests":         seeker.guests or "",
-            "work_style":     seeker.work_style or "",
-            "interests":      seeker.interests or "",
-            "values":         getattr(seeker, "values", "") or "",
-            "image_url":      seeker.image_url or None,
+            # FIX: use getattr with fallback to avoid AttributeError if column missing
+            "gender":         (getattr(seeker, "gender",         None) or "").strip(),
+            "occupation":     (getattr(seeker, "occupation",     None) or "").strip(),
+            "location":       (getattr(seeker, "location",       None) or "").strip(),
+            "looking_for":    (getattr(seeker, "looking_for",    None) or "both"),
+            "sleep_schedule": (getattr(seeker, "sleep_schedule", None) or "").strip(),
+            "cleanliness":    (getattr(seeker, "cleanliness",    None) or "").strip(),
+            "social_life":    (getattr(seeker, "social_life",    None) or "").strip(),
+            "guests":         (getattr(seeker, "guests",         None) or "").strip(),
+            "work_style":     (getattr(seeker, "work_style",     None) or "").strip(),
+            "interests":      (getattr(seeker, "interests",      None) or "").strip(),
+            "values":         (getattr(seeker, "values",         None) or "").strip(),
+            "budget_min":     getattr(seeker, "budget_min",      None),
+            "budget_max":     getattr(seeker, "budget_max",      None),
+            "image_url":      getattr(seeker, "image_url",       None),
         }
         profile.update(calculate_big_five(profile))
+
+        # DEBUG — remove once confirmed working
+        print(
+            f"[seeker_to_dict] {profile['full_name']} | "
+            f"gender={profile['gender']!r} | "
+            f"location={profile['location']!r} | "
+            f"budget={profile['budget_min']}–{profile['budget_max']}"
+        )
+
         return profile
 
     # ── Load current user's profile ────────────
@@ -283,10 +328,12 @@ def get_roommate_matches(
     if not current_seeker:
         raise ValueError("Complete your seeker profile first")
 
-    current_user = db.query(User).filter(User.id == current_user_id).first()
+    current_user    = db.query(User).filter(User.id == current_user_id).first()
     current_profile = seeker_to_dict(current_seeker, current_user)
     current_profile["text_vector"]  = vectorize_profile(current_profile)
     current_profile["final_vector"] = build_final_vector(current_profile)
+
+    print(f"\n[get_roommate_matches] Loaded current user: {current_profile['full_name']}")
 
     # ── Load all other profiles ────────────────
     all_rows = (
@@ -297,7 +344,10 @@ def get_roommate_matches(
     )
 
     if not all_rows:
+        print("[get_roommate_matches] No other profiles found in DB.")
         return []
+
+    print(f"[get_roommate_matches] Scoring {len(all_rows)} candidates...")
 
     # ── Score each candidate ───────────────────
     results = []
@@ -308,35 +358,41 @@ def get_roommate_matches(
             candidate["final_vector"] = build_final_vector(candidate)
 
             result = compute_compatibility(current_profile, candidate)
+
+            # DEBUG — shows whether each candidate passes or fails hard filters
+            print(
+                f"  → {candidate['full_name']}: eligible={result.get('eligible')} | "
+                f"score={result.get('final_score')}% | "
+                f"reason={result.get('reason', '')}"
+            )
+
             if not result.get("eligible", False):
                 continue
 
-            # Lifestyle chips
+            # ── Lifestyle chips ────────────────
             chips = []
             sleep = _to_cat(candidate.get("sleep_schedule", ""), "sleep")
-            if sleep == "early":    chips.append("Early bird")
-            elif sleep == "late":   chips.append("Night owl")
+            if sleep == "early":         chips.append("Early bird")
+            elif sleep == "late":        chips.append("Night owl")
             clean = _to_cat(candidate.get("cleanliness", ""), "clean")
-            if clean == "high":     chips.append("Very organized")
-            elif clean == "low":    chips.append("Relaxed about cleaning")
+            if clean == "high":          chips.append("Very organized")
+            elif clean == "low":         chips.append("Relaxed about cleaning")
             social = _to_cat(candidate.get("social_life", ""), "social")
-            if social == "introvert":  chips.append("Introverted")
-            elif social == "extrovert": chips.append("Very social")
+            if social == "introvert":    chips.append("Introverted")
+            elif social == "extrovert":  chips.append("Very social")
             work = _to_cat(candidate.get("work_style", ""), "work")
-            if work == "remote":    chips.append("Works from home")
-            elif work == "on-site": chips.append("Office worker")
+            if work == "remote":         chips.append("Works from home")
+            elif work == "on-site":      chips.append("Office worker")
             if candidate.get("occupation"):
                 chips.append(candidate["occupation"].capitalize())
 
-            # Reasons
+            # ── Reasons ───────────────────────
             reasons = []
-            for field, label_map in [
-                ("sleep_schedule", {"early": "early birds 🌅", "late": "night owls 🌙", "normal": "on similar sleep schedules"}),
-            ]:
-                cat_a = _to_cat(current_profile.get(field, ""), "sleep")
-                cat_b = _to_cat(candidate.get(field, ""), "sleep")
-                if cat_a == cat_b:
-                    reasons.append(f"You are both {label_map.get(cat_a, 'compatible')}")
+            cat_a = _to_cat(current_profile.get("sleep_schedule", ""), "sleep")
+            cat_b = _to_cat(candidate.get("sleep_schedule", ""), "sleep")
+            label_map = {"early": "early birds 🌅", "late": "night owls 🌙", "normal": "on similar sleep schedules"}
+            if cat_a == cat_b:
+                reasons.append(f"You are both {label_map.get(cat_a, 'compatible')}")
 
             cat_a = _to_cat(current_profile.get("cleanliness", ""), "clean")
             cat_b = _to_cat(candidate.get("cleanliness", ""), "clean")
@@ -369,24 +425,24 @@ def get_roommate_matches(
             })
 
         except Exception as e:
-            print(f"Skipping user {seeker.user_id}: {e}")
+            # FIX: print full traceback so errors are never silently swallowed
+            import traceback
+            print(f"[get_roommate_matches] Skipping user {seeker.user_id}: {e}")
+            traceback.print_exc()
             continue
 
     results.sort(key=lambda x: x["match"], reverse=True)
+    print(f"[get_roommate_matches] Returning {len(results)} matches.")
     return results[:top_n]
+
+
 # ─────────────────────────────────────────────
 # MAIN
-# Now loads from DB instead of JSON file
 # ─────────────────────────────────────────────
 
 if __name__ == "__main__":
 
-    # ── Option 1: Load from DB (recommended) ──
     profiles = load_vectorized_profiles_from_db()
-
-    # ── Option 2: Load from JSON (for offline testing) ──
-    # with open("profiles_vectorized.json", "r", encoding="utf-8") as f:
-    #     profiles = json.load(f)
 
     if len(profiles) < 3:
         print("Need at least 3 profiles to test. Add more seeker profiles to the DB.")

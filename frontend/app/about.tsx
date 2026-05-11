@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -18,7 +19,6 @@ import { useTranslation } from "react-i18next";
 import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 import { clearAuthToken, getAuthToken } from "./state/auth";
 
-const API_BASE = "http://127.0.0.1:8001";
 
 type CurrentUserProfile = {
   id: number;

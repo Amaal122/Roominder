@@ -8,6 +8,10 @@
     "android": "expo start --offline --android",
     "ios": "expo start --offline --ios",
     "web": "expo start --offline --web",
+    "build:android:apk": "npx eas-cli build -p android --profile preview",
+    "build:android:store": "npx eas-cli build -p android --profile production",
+    "build:ios": "npx eas-cli build -p ios --profile ios-preview",
+    "build:ios:simulator": "npx eas-cli build -p ios --profile ios-simulator",
     "lint": "expo lint"
   },
   "dependencies": {

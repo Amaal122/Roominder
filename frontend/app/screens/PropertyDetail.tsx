@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -30,7 +31,6 @@ const INK = "#2B2B33";
 const MUTED = "#7A6D6A";
 const BG = "#FFF7F3";
 const BORDER = "#F1E3DC";
-const API_BASE = "http://127.0.0.1:8001";
 
 const getSingleParam = (value?: string | string[]) =>
   Array.isArray(value) ? value[0] : value;
@@ -201,7 +201,7 @@ function ProgressBar({ value }: { value: number }) {
     Animated.timing(anim, {
       toValue: value / 100,
       duration: 900,
-      useNativeDriver: false,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
   }, [anim, value]);
 

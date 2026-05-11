@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
@@ -10,6 +11,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform as RNPlatform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSeekerProfile } from "./contexts/SeekerProfileContext";
@@ -48,57 +50,70 @@ export default function CompleteProfile() {
   };
 
   const handleContinue = async () => {
-  const ageNumber = Number(age.trim());
-  if (!gender || !age.trim() || Number.isNaN(ageNumber) || ageNumber <= 0 || !occupation.trim() || !avatarUri) {
-    setError("Please select gender, add a photo, and fill in all fields.");
-    return;
-  }
-
-  let uploadedImageUrl = avatarUri; // fallback to local if upload fails
-
-  try {
-    const filename = avatarUri.split('/').pop() || 'avatar.jpg';
-    const match = /\.(\w+)$/.exec(filename);
-    const mimeType = match ? `image/${match[1].toLowerCase()}` : 'image/jpeg';
-
-    const formData = new FormData();
-
-    if (avatarUri.startsWith('blob:') || avatarUri.startsWith('data:')) {
-      const blobResponse = await fetch(avatarUri);
-      const blob = await blobResponse.blob();
-      formData.append('file', blob, filename);
-    } else {
-      formData.append('file', {
-        uri: avatarUri,
-        name: filename,
-        type: mimeType,
-      } as any);
+    const ageNumber = Number(age.trim());
+    if (!gender || !age.trim() || Number.isNaN(ageNumber) || ageNumber <= 0 || !occupation.trim() || !avatarUri) {
+      setError("Please select gender, add a photo, and fill in all fields.");
+      return;
     }
 
-    const uploadRes = await fetch('http://127.0.0.1:8001/properties/upload-image', {
-      method: 'POST',
-      body: formData,
-    });
+    // 1. Face detection check
+    try {
+      const filename = 'avatar.jpg';
+      const mimeType = 'image/jpeg';
 
-    if (uploadRes.ok) {
-      const uploadData = await uploadRes.json();
-      if (uploadData.url) {
-        uploadedImageUrl = uploadData.url; // ✅ real Cloudinary URL
+      const formData = new FormData();
+
+      if (RNPlatform.OS === 'web') {
+        // For web, fetch the file as a Blob and append
+        const response = await fetch(avatarUri);
+        const blob = await response.blob();
+        // Always use .jpg extension and image/jpeg type
+        const jpegBlob = blob.type === 'image/jpeg' ? blob : new Blob([await blob.arrayBuffer()], { type: 'image/jpeg' });
+        formData.append('file', jpegBlob, filename);
+      } else {
+        // For native, append as file object with forced jpeg type
+        formData.append('file', {
+          uri: avatarUri,
+          name: filename,
+          type: mimeType,
+        } as any);
       }
+
+      const faceRes = await fetch(`${API_BASE}/face/verify`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!faceRes.ok) {
+        throw new Error("Face detection API failed");
+      }
+
+      const faceData = await faceRes.json();
+
+      console.log("Face detection response:", faceData);
+
+      if (
+        faceData.success !== true ||
+        faceData.face_detected !== true ||
+        faceData.faces_count !== 1
+      ) {
+        setError(faceData.message || "Your face is needed.");
+        return;
+      }
+
+      // 2. (Optional) Upload image to your storage as before, or just use avatarUri
+      updateProfile({
+        gender,
+        age: ageNumber,
+        occupation,
+        image_url: avatarUri,
+      });
+
+      router.push("/form");
+    } catch (err: any) {
+      setError(err.message || "An error occurred during face detection.");
     }
-  } catch (e) {
-    console.error('Avatar upload failed', e);
-  }
-
-  updateProfile({
-    gender,
-    age: ageNumber,
-    occupation,
-    image_url: uploadedImageUrl, // ✅ now a public Cloudinary URL
-  });
-
-  router.push("/form");
-};
+  };
   return (
     <LinearGradient
       colors={["#c8f7d8", "#d8fae6", "#e9fdf1", "#f6fef9", "#ffffff"]}

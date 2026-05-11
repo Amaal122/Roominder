@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
@@ -32,10 +33,10 @@ const resolveImageUrl = (value?: string | null) => {
   }
 
   if (value.startsWith("/")) {
-    return `http://localhost:8001${value}`;
+    return `${API_BASE}${value}`;
   }
 
-  return `http://localhost:8001/${value}`;
+  return `${API_BASE}/${value}`;
 };
 
 export default function NewProperty() {
@@ -116,7 +117,7 @@ export default function NewProperty() {
         }
 
         const uploadRes = await fetch(
-          "http://127.0.0.1:8001/properties/upload-image",
+          `${API_BASE}/properties/upload-image`,
           {
             method: "POST",
             body: formData,

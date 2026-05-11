@@ -1,3 +1,4 @@
+import { API_BASE as API_BASE_URL } from "@/constants/api";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -16,7 +17,6 @@ import {
 import { getAuthToken } from "./state/auth";
 import { updateSettings, useSettings } from "./state/settings";
 
-const API_BASE_URL = "http://127.0.0.1:8001";
 
 async function authedFetch(path: string, init?: RequestInit) {
   const token = await getAuthToken();

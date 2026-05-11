@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -5,7 +6,6 @@ import { Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "r
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Colors } from "@/constants/theme";
 
-const API_BASE = "http://127.0.0.1:8001";
 
 const getSingleParam = (value?: string | string[]) =>
   Array.isArray(value) ? value[0] : value;

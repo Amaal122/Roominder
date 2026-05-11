@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -30,7 +31,7 @@ export default function Login() {
     try {
       const resolvedRole = Array.isArray(role) ? role[0] : role;
 
-      const response = await fetch("http://127.0.0.1:8001/auth/login", {
+      const response = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -91,7 +92,7 @@ export default function Login() {
       }
 
       // Fetch seeker profile after login
-      const seekerRes = await fetch("http://127.0.0.1:8001/seeker/me", {
+      const seekerRes = await fetch(`${API_BASE}/seeker/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (seekerRes.ok) {

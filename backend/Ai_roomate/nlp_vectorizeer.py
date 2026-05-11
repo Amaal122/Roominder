@@ -1,6 +1,8 @@
 # ─────────────────────────────────────────────
 # IMPORTS
 # ─────────────────────────────────────────────
+from functools import lru_cache
+
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import json
@@ -8,10 +10,43 @@ import sys
 from pathlib import Path
 
 # ─────────────────────────────────────────────
-# MODEL
+# MODEL (lazy-loaded)
 # ─────────────────────────────────────────────
-model = SentenceTransformer("paraphrase-multilingual-mpnet-base-v2")
-print("Model loaded ✅")
+
+MODEL_NAME = "paraphrase-multilingual-mpnet-base-v2"
+
+
+@lru_cache(maxsize=1)
+def get_sentence_model() -> SentenceTransformer:
+    """Load and cache the SentenceTransformer model.
+
+    Loading can be slow the first time (downloads weights/tokenizer).
+    We keep it lazy so importing this module doesn't crash or block app startup.
+    """
+
+    def _load(local_only: bool) -> SentenceTransformer:
+        # SentenceTransformer forwards many kwargs to Transformers under the hood.
+        # Newer versions accept local_files_only; if not, we fall back.
+        try:
+            return SentenceTransformer(MODEL_NAME, local_files_only=local_only)
+        except TypeError:
+            if local_only:
+                raise
+            return SentenceTransformer(MODEL_NAME)
+
+    try:
+        # Prefer the already-downloaded cache to avoid network stalls.
+        return _load(local_only=True)
+    except Exception as exc:  # pragma: no cover
+        try:
+            # Cache miss: allow an online download on first run.
+            return _load(local_only=False)
+        except Exception as online_exc:  # pragma: no cover
+            raise RuntimeError(
+                f"Failed to load SentenceTransformer model '{MODEL_NAME}'. "
+                "Ensure the server has internet access on first run (to download), "
+                "or pre-cache the model, then restart the backend."
+            ) from online_exc
 
 # ─────────────────────────────────────────────
 # TEXT BUILDER
@@ -34,7 +69,7 @@ def build_profile_text(profile: dict) -> str:
 # ─────────────────────────────────────────────
 def vectorize_profile(profile: dict) -> list:
     text   = build_profile_text(profile)
-    vector = model.encode(text)
+    vector = get_sentence_model().encode(text)
     return vector.tolist()
 
 def build_structured_vector(profile: dict) -> list:
