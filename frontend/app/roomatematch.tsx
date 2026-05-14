@@ -12,6 +12,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -294,7 +295,7 @@ export default function RoomateMatch() {
   const resetPosition = () => {
     Animated.spring(pan, {
       toValue: { x: 0, y: 0 },
-      useNativeDriver: false,
+      useNativeDriver: Platform.OS !== 'web',
       bounciness: 10,
     }).start();
   };
@@ -329,7 +330,7 @@ export default function RoomateMatch() {
     Animated.timing(pan, {
       toValue: { x: destinationX, y: 0 },
       duration: 240,
-      useNativeDriver: false,
+      useNativeDriver: Platform.OS !== 'web',
     }).start(handleSwipeComplete);
   };
 
@@ -338,7 +339,7 @@ export default function RoomateMatch() {
       onMoveShouldSetPanResponder: (_, gesture) =>
         Math.abs(gesture.dx) > 4 || Math.abs(gesture.dy) > 4,
       onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
-        useNativeDriver: false,
+        useNativeDriver: Platform.OS !== 'web',
       }),
       onPanResponderRelease: (_, gesture) => {
         if (gesture.dx > swipeThreshold) {
@@ -377,8 +378,19 @@ export default function RoomateMatch() {
     extrapolate: "clamp",
   });
 
-  const renderProfile = (roommate: RoommateMatchProfile) => (
-    <>
+  const handleOpenProfile = (roommate: RoommateMatchProfile) => {
+    router.push({
+      pathname: "/roommateprofile",
+      params: {
+        id: roommate.id,
+        profile: JSON.stringify(roommate),
+      },
+    });
+  };
+
+  const renderProfile = (roommate: RoommateMatchProfile, tappable = false) => {
+    const content = (
+      <>
       <View style={styles.imageWrapper}>
         {roommate.image ? (
           <Image source={{ uri: roommate.image }} style={styles.photo} />
@@ -429,8 +441,17 @@ export default function RoomateMatch() {
           )}
         </View>
       </View>
-    </>
-  );
+      </>
+    );
+
+    if (!tappable) return content;
+
+    return (
+      <Pressable onPress={() => handleOpenProfile(roommate)}>
+        {content}
+      </Pressable>
+    );
+  };
 
   const handleTabPress = (label: string, route: Href) => {
     setActiveTab(label);
@@ -520,7 +541,7 @@ export default function RoomateMatch() {
                 <Text style={[styles.stampText, isDark && styles.stampTextDark]}>SAVE</Text>
               </View>
 
-              {renderProfile(currentProfile)}
+              {renderProfile(currentProfile, true)}
             </Animated.View>
           </>
         ) : (
@@ -587,13 +608,13 @@ function AnimatedTabIcon({
       Animated.timing(translateY, {
         toValue: -7,
         duration: 120,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }),
       Animated.spring(translateY, {
         toValue: 0,
         friction: 4,
         tension: 160,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }),
     ]).start();
     onPress?.();

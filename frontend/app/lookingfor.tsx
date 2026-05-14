@@ -1,7 +1,7 @@
-import { Feather } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Pressable,
@@ -9,13 +9,14 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSeekerProfile } from "../app/contexts/SeekerProfileContext";
 
 const OPTIONS = [
   {
-    key: "house",
+    key: "housing",
     title: "Looking for Housing",
     subtitle: "Find places that fit you",
     icon: <Feather name="home" size={26} color="#36b37e" />,
@@ -29,6 +30,7 @@ const OPTIONS = [
 ] as const;
 
 type OptionKey = (typeof OPTIONS)[number]["key"];
+type SelectedState = Record<OptionKey, boolean>;
 
 type OptionCardProps = {
   option: (typeof OPTIONS)[number];
@@ -43,7 +45,7 @@ const OptionCard = ({ option, isActive, onPress }: OptionCardProps) => {
     Animated.timing(lift, {
       toValue: value,
       duration: 180,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
   };
 
@@ -73,8 +75,6 @@ const OptionCard = ({ option, isActive, onPress }: OptionCardProps) => {
         key={option.key}
         style={[styles.optionCard, isActive && styles.optionCardActive]}
         onPress={onPress}
-        accessibilityRole="radio"
-        accessibilityState={{ checked: isActive }}
         onHoverIn={() => animateTo(1)}
         onHoverOut={() => animateTo(0)}
         onPressIn={() => animateTo(1)}
@@ -85,8 +85,8 @@ const OptionCard = ({ option, isActive, onPress }: OptionCardProps) => {
           <Text style={styles.optionTitle}>{option.title}</Text>
           <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
         </View>
-        <View style={[styles.radioOuter, isActive && styles.radioOuterActive]}>
-          {isActive ? <View style={styles.radioInner} /> : null}
+        <View style={[styles.check, isActive && styles.checkActive]}>
+          {isActive && <AntDesign name="check" size={16} color="#fff" />}
         </View>
       </Pressable>
     </Animated.View>
@@ -96,28 +96,40 @@ const OptionCard = ({ option, isActive, onPress }: OptionCardProps) => {
 export default function LookingFor() {
   const router = useRouter();
   const { profile, updateProfile } = useSeekerProfile();
-  const [selected, setSelected] = useState<OptionKey | null>(null);
-  const hasSelection = selected !== null;
+  const [selected, setSelected] = useState<SelectedState>({
+    housing: false,
+    roommate: false,
+  });
+  const getLookingFor = () => {
+    if (selected.housing && selected.roommate) return "both";
+    if (selected.housing) return "house";
+    if (selected.roommate) return "roommate";
+    return null;
+  };
+
+  const hasSelection = useMemo(
+    () => Object.values(selected).some(Boolean),
+    [selected],
+  );
+
+  const toggle = (key: OptionKey) => {
+    setSelected((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   useEffect(() => {
     console.log("[LookingFor] profile snapshot", profile);
   }, [profile]);
 
-  useEffect(() => {
-    if (selected) return;
-    if (profile.looking_for === "house" || profile.looking_for === "roommate") {
-      setSelected(profile.looking_for);
-    }
-  }, [profile.looking_for, selected]);
-
   const handleContinue = () => {
-    if (!selected) return;
+    if (!hasSelection) return;
+    const looking_for = getLookingFor();
+    if (!looking_for) return;
 
     // Save to context
-    updateProfile({ looking_for: selected });
+    updateProfile({ looking_for });
 
-    // If housing is selected, skip roommate questions and go to location.
-    if (selected === "house") {
+    // If only housing, skip form and set form data null, go to location
+    if (looking_for === "house") {
       updateProfile({
         sleep_schedule: undefined,
         cleanliness: undefined,
@@ -128,10 +140,15 @@ export default function LookingFor() {
       router.push("/location");
       return;
     }
-
-    // If roommate is selected, skip location.
-    // Do NOT clear location/radius here, because users might already have saved values.
-    router.push("/completeprofile");
+    // If only roommate, skip location and go to profile completion.
+    // Do NOT clear location/radius here, because users might already have saved values
+    // (and editing/confirming should keep them if unchanged).
+    if (looking_for === "roommate") {
+      router.push("/completeprofile");
+      return;
+    }
+    // If both, proceed as normal (location first)
+    router.push("/location");
   };
 
   return (
@@ -157,17 +174,17 @@ export default function LookingFor() {
 
           <Text style={styles.stepLabel}>Step 1 of 5</Text>
           <Text style={styles.title}>What are you looking for?</Text>
-          <Text style={styles.subtitle}>Choose one option to continue</Text>
+          <Text style={styles.subtitle}>Select one or both options</Text>
 
-          <View style={styles.optionsContainer} accessibilityRole="radiogroup">
+          <View style={styles.optionsContainer}>
             {OPTIONS.map((option) => {
-              const isActive = selected === option.key;
+              const isActive = selected[option.key];
               return (
                 <OptionCard
                   key={option.key}
                   option={option}
                   isActive={isActive}
-                  onPress={() => setSelected(option.key)}
+                  onPress={() => toggle(option.key)}
                 />
               );
             })}
@@ -254,7 +271,7 @@ const styles = StyleSheet.create({
   optionTextBox: { flex: 1 },
   optionTitle: { fontSize: 17, fontWeight: "700", color: "#0f3d2a" },
   optionSubtitle: { color: "#4f6a5b", marginTop: 4, fontSize: 13 },
-  radioOuter: {
+  check: {
     width: 24,
     height: 24,
     borderRadius: 12,
@@ -263,14 +280,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  radioOuterActive: {
-    borderColor: "#36b37e",
-  },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  checkActive: {
     backgroundColor: "#36b37e",
+    borderColor: "#36b37e",
   },
   cta: {
     marginHorizontal: 16,

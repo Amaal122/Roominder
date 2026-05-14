@@ -5,12 +5,14 @@ import { initI18n } from "../i18n";
 import { useEffect, useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Colors } from "@/constants/theme";
+import { setupNotifications } from "@/utils/notifications";
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
   const scheme = useColorScheme();
 
   useEffect(() => {
+    setupNotifications();
     initI18n().then(() => setReady(true));
   }, []);
 
@@ -38,6 +40,7 @@ export default function RootLayout() {
           <Stack.Screen name="completeprofile" />
           <Stack.Screen name="form" />
           <Stack.Screen name="roomatematch" />
+          <Stack.Screen name="roommateprofile" />
           <Stack.Screen name="index" />
           <Stack.Screen name="register" />
           <Stack.Screen name="homescreen" />

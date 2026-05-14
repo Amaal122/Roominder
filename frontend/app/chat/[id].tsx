@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -17,7 +18,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const API_BASE = "http://127.0.0.1:8001";
 
 type ChatMessage = {
   id: number;
@@ -155,7 +155,7 @@ export default function ChatDetail() {
     const token = await getAuthToken();
     if (!token) return;
 
-    const res = await fetch("http://127.0.0.1:8001/chat/messages", {
+    const res = await fetch(`${API_BASE}/chat/messages`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

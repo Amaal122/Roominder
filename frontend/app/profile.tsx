@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, type Href } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -19,7 +20,6 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Colors } from "@/constants/theme";
 import { useSettings } from "./state/settings";
 
-const API_BASE = "http://127.0.0.1:8001";
 
 type ProfileMeOut = {
   user_id: number;
@@ -34,6 +34,8 @@ type ProfileMeOut = {
   social_life?: string | null;
   guests?: string | null;
   work_style?: string | null;
+  interests?: string | null;
+  values?: string | null;
 };
 
 const preferenceQuestionKeyByField: Record<string, string> = {
@@ -42,6 +44,8 @@ const preferenceQuestionKeyByField: Record<string, string> = {
   social_life: "social",
   guests: "guests",
   work_style: "work",
+  interests: "interests",
+  values: "values",
 };
 
 const formatPreference = (field: keyof ProfileMeOut, value?: string | null) => {
@@ -149,6 +153,8 @@ export default function Profile() {
       formatPreference("social_life", remote.social_life),
       formatPreference("guests", remote.guests),
       formatPreference("work_style", remote.work_style),
+      formatPreference("interests", remote.interests),
+      formatPreference("values", remote.values),
     ].filter((p): p is string => Boolean(p));
   }, [remote]);
 

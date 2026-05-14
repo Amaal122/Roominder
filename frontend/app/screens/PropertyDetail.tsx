@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -30,7 +31,6 @@ const INK = "#2B2B33";
 const MUTED = "#7A6D6A";
 const BG = "#FFF7F3";
 const BORDER = "#F1E3DC";
-const API_BASE = "http://127.0.0.1:8001";
 
 const getSingleParam = (value?: string | string[]) =>
   Array.isArray(value) ? value[0] : value;
@@ -191,6 +191,7 @@ const AMENITIES = [
   { icon: <IconPeople />, label: "Flatmates" },
 ];
 
+
 function ProgressBar({ value }: { value: number }) {
   const anim = useRef(new Animated.Value(0)).current;
   const scheme = useColorScheme();
@@ -200,7 +201,7 @@ function ProgressBar({ value }: { value: number }) {
     Animated.timing(anim, {
       toValue: value / 100,
       duration: 900,
-      useNativeDriver: false,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
   }, [anim, value]);
 
@@ -259,6 +260,7 @@ export default function PropertyDetail() {
     image?: string;
     baths?: string;
     size?: string;
+    explanation?: string;
     description?: string;
     lat?: string;
     lng?: string;
@@ -271,17 +273,22 @@ export default function PropertyDetail() {
 
   const propertyId = getSingleParam(params.id);
   const title = getSingleParam(params.title) ?? "Modern Loft\nin Marais";
-  const budget = getSingleParam(params.budget) ?? "DT 1200";
+  const price = getSingleParam(params.price) ?? "DT 1200";
   const location = getSingleParam(params.location) ?? "Le Marais, Paris";
   const rooms = getSingleParam(params.rooms) ?? "2 Beds";
   const match = getSingleParam(params.match) ?? "95";
-  const price = getSingleParam(params.price) ?? "DT 1200";
   const scoreLocation = parseNumberOrFallback(getSingleParam(params.scoreLocation), 98);
   const scoreBudget = parseNumberOrFallback(getSingleParam(params.scoreBudget), 92);
   const scoreLifestyle = parseNumberOrFallback(getSingleParam(params.scoreLifestyle), 95);
   const image = getSingleParam(params.image);
   const baths = getSingleParam(params.baths) ?? "1 Bath";
   const size = getSingleParam(params.size) ?? "65 m²";
+  let parsedExplanation: string[] = [];
+  try {
+    parsedExplanation = JSON.parse(getSingleParam(params.explanation) || "[]");
+  } catch (e) {
+    // ignore
+  }
   const initialDescription = getSingleParam(params.description)?.trim();
   const [description, setDescription] = useState(
     initialDescription || "No description provided.",
@@ -489,8 +496,8 @@ export default function PropertyDetail() {
           <View style={styles.titleRow}>
             <Text style={[styles.title, isDark && styles.titleDark]}>{title}</Text>
             <View>
-              <Text style={styles.budget}>{budget}</Text>
-              <Text style={[styles.budgetPer, isDark && styles.mutedTextDark]}>
+              <Text style={styles.price}>{price}</Text>
+              <Text style={[styles.pricePer, isDark && styles.mutedTextDark]}>
                 /month
               </Text>
             </View>
@@ -535,6 +542,23 @@ export default function PropertyDetail() {
               </View>
             ))}
           </View>
+
+          {parsedExplanation.length > 0 && (
+            <View style={[styles.insightsCard, isDark && styles.insightsCardDark]}>
+              <View style={styles.scoreTitleRow}>
+                <Text style={styles.scoreStar}>✨</Text>
+                <Text style={[styles.scoreTitle, isDark && styles.titleDark]}>
+                  AI Insights
+                </Text>
+              </View>
+              {parsedExplanation.map((insight, idx) => (
+                <View key={idx} style={styles.insightRow}>
+                  <Text style={styles.insightBullet}>✓</Text>
+                  <Text style={[styles.insightText, isDark && styles.mutedTextDark]}>{insight}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -805,8 +829,8 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 22, fontWeight: "700", color: INK, lineHeight: 28 },
   titleDark: { color: Colors.dark.text },
-  budget: { fontSize: 22, fontWeight: "700", color: CORAL, textAlign: "right" },
-  budgetPer: { fontSize: 12, color: MUTED, textAlign: "right" },
+  price: { fontSize: 22, fontWeight: "700", color: CORAL, textAlign: "right" },
+  pricePer: { fontSize: 12, color: MUTED, textAlign: "right" },
   mutedTextDark: { color: Colors.dark.mutedText },
   locationRow: {
     flexDirection: "row",
@@ -971,5 +995,34 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     letterSpacing: 0.3,
+  },
+  insightsCard: {
+    backgroundColor: "rgba(126,206,196,0.1)",
+    borderRadius: 16,
+    padding: 18,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "rgba(126,206,196,0.3)",
+  },
+  insightsCardDark: {
+    backgroundColor: "rgba(126,206,196,0.05)",
+    borderColor: Colors.dark.border,
+  },
+  insightRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  insightBullet: {
+    color: TEAL,
+    fontSize: 14,
+    fontWeight: "800",
+    marginRight: 8,
+  },
+  insightText: {
+    color: INK,
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
   },
 });

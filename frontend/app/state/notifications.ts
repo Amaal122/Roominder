@@ -1,6 +1,6 @@
+import { API_BASE, WS_BASE } from "@/constants/api";
 import { getAuthToken } from "./auth";
 
-const API_BASE = "http://127.0.0.1:8001";
 
 export type AppNotification = {
   id: number;
@@ -49,7 +49,7 @@ export const connectWebSocket = async (onNotification: (notification: AppNotific
   const token = await getAuthToken();
   if (!token) return;
 
-  const wsUrl = `ws://127.0.0.1:8001/ws/notifications?token=${encodeURIComponent(token)}`;
+  const wsUrl = `${WS_BASE}/ws/notifications?token=${encodeURIComponent(token)}`;
   ws = new WebSocket(wsUrl);
 
   ws.onopen = () => {

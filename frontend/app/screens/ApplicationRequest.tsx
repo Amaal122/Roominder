@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
@@ -19,7 +20,6 @@ import { Colors } from "@/constants/theme";
 
 import { getAuthToken } from "../state/auth";
 
-const API_BASE = "http://127.0.0.1:8001";
 
 type DocKey = "id" | "income" | "employment" | "guarantor";
 
