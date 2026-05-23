@@ -1,3 +1,4 @@
+import { API_BASE } from "@/constants/api";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter, type Href } from "expo-router";
@@ -16,7 +17,6 @@ import { Colors } from "@/constants/theme";
 import { getAuthToken } from "./state/auth";
 import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 
-const API_BASE = "http://127.0.0.1:8001";
 
 type ConversationItem = {
   other_user_id: number;

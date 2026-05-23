@@ -119,7 +119,8 @@ def _hybrid_score(
 def match_properties(
     db: Session,
     user_profile: dict,
-    top_n: int = 5,
+    filter_by: str = None,
+    top_n: int = 50,
 ) -> list:
     user_vec = encode_user_profile(user_profile)
 
@@ -163,5 +164,18 @@ def match_properties(
             }
         )
 
-    results.sort(key=lambda item: item["score"], reverse=True)
+    if filter_by == "budget":
+        results = [r for r in results if r["score_details"]["budget"] >= 50.0]
+        results.sort(key=lambda item: item["score_details"]["budget"], reverse=True)
+    elif filter_by == "location":
+        results = [r for r in results if r["score_details"]["location"] >= 50.0]
+        results.sort(key=lambda item: item["score_details"]["location"], reverse=True)
+    elif filter_by == "lifestyle":
+        results = [r for r in results if r["score_details"]["lifestyle"] >= 50.0]
+        results.sort(key=lambda item: item["score_details"]["lifestyle"], reverse=True)
+    elif filter_by == "all" or not filter_by:
+        results.sort(key=lambda item: item["id"], reverse=True)
+    else:
+        results.sort(key=lambda item: item["score"], reverse=True)
+        
     return results[:top_n]

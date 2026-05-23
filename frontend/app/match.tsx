@@ -89,6 +89,16 @@ export default function Match() {
     router.push({ pathname: "/chat/[id]", params: { id, name } });
   };
 
+  const handleOpenProfile = (roommate: RoommateMatchProfile) => {
+    router.push({
+      pathname: "/roommateprofile",
+      params: {
+        id: roommate.id,
+        profile: JSON.stringify(roommate),
+      },
+    });
+  };
+
   const handleTabPress = (tabLabel: string, route: Href) => {
     setActiveTab(tabLabel);
     if (tabLabel === "Match") return;
@@ -166,7 +176,12 @@ export default function Match() {
               contentContainerStyle={{ paddingBottom: 100 }}
             >
               {matches.map((roommate) => (
-                <View key={roommate.id} style={[styles.card, isDark && styles.cardDark]}>
+                <TouchableOpacity
+                  key={roommate.id}
+                  style={[styles.card, isDark && styles.cardDark]}
+                  activeOpacity={0.86}
+                  onPress={() => handleOpenProfile(roommate)}
+                >
                   {roommate.image ? (
                     <Image source={{ uri: roommate.image }} style={styles.photo} />
                   ) : null}
@@ -195,7 +210,7 @@ export default function Match() {
                       <Text style={styles.contactLabel}>Contact</Text>
                     </TouchableOpacity>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))}
             </ScrollView>
           )}

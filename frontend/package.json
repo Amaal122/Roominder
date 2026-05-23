@@ -8,6 +8,10 @@
     "android": "expo start --offline --android",
     "ios": "expo start --offline --ios",
     "web": "expo start --offline --web",
+    "build:android:apk": "npx eas-cli build -p android --profile preview",
+    "build:android:store": "npx eas-cli build -p android --profile production",
+    "build:ios": "npx eas-cli build -p ios --profile ios-preview",
+    "build:ios:simulator": "npx eas-cli build -p ios --profile ios-simulator",
     "lint": "expo lint"
   },
   "dependencies": {
@@ -27,6 +31,7 @@
     "expo-linking": "~8.0.11",
     "expo-localization": "^55.0.11",
     "expo-location": "~19.0.8",
+    "expo-notifications": "~0.32.16",
     "expo-router": "~6.0.23",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
@@ -50,7 +55,7 @@
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
-    "expo-module-scripts": "^5.0.8",
+    "expo-module-scripts": "^3.0.5",
     "typescript": "~5.9.2"
   },
   "private": true

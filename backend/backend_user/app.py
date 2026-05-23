@@ -13,7 +13,7 @@ from .dashbord import router as dashboard_router
 from .notifications import router as notifications_router
 from .users import router as users_router
 from .chatuser import router as chat_router
-from .roomate import router as roommate_router
+
 from .favorite import router as favorites_router
 from .websocket import router as websocket_router
 from .profile import router as profile_router
@@ -30,8 +30,8 @@ from .listings_bestmatch import router as seeker_dashboard_router
 from .two_factor import router as two_factor_router
 
 from ..chatbot.routes.chat import router as chatbot_router
-
 Base.metadata.create_all(bind=engine)  # create tables on startup
+from ..Ai_roomate.facedetection import router as face_detection_router
 
 
 
@@ -74,7 +74,6 @@ app.include_router(dashboard_router)
 app.include_router(notifications_router)
 app.include_router(users_router)
 app.include_router(chat_router)
-app.include_router(roommate_router)
 app.include_router(matches_router)
 app.include_router(favorites_router)
 app.include_router(profile_router)
@@ -91,7 +90,7 @@ app.include_router(ai_router)
 app.include_router(ai_roommate_router)
 
 app.include_router(chatbot_router)
-
+app.include_router(face_detection_router)
 # ──────────────────────────────────────────────────────────────────────────────
 
 
