@@ -1,4 +1,3 @@
-import { API_BASE } from "@/constants/api";
 // app/screens/HomeScreen.tsx
 
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,7 +7,6 @@ import { useSeekerProfile } from "../contexts/SeekerProfileContext";
 import {
   Animated,
   FlatList,
-  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -104,13 +102,13 @@ const AnimatedTabIcon = ({
       Animated.timing(translateY, {
         toValue: -7,
         duration: 120,
-        useNativeDriver: Platform.OS !== 'web',
+        useNativeDriver: true,
       }),
       Animated.spring(translateY, {
         toValue: 0,
         friction: 4,
         tension: 160,
-        useNativeDriver: Platform.OS !== 'web',
+        useNativeDriver: true,
       }),
     ]).start();
 
@@ -196,6 +194,7 @@ const ListingCard = ({
 };
 
 // ─── HomeScreen ───────────────────────────────────────────────────────────────
+const API_BASE = "http://127.0.0.1:8001";
 
 const resolveImageUrl = (imageUrl?: string | null) => {
   if (!imageUrl) return null;
@@ -254,7 +253,7 @@ export default function HomeScreen() {
       const token = await getAuthToken();
       if (!token) return;
 
-      const res = await fetch(`${API_BASE}/auth/me`, {
+      const res = await fetch("http://127.0.0.1:8001/auth/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -351,6 +350,7 @@ export default function HomeScreen() {
     { icon: "💬", label: "Chat", route: "/chat" as Href },
     { icon: "❤️", label: "Favorites", route: "/favorite" as Href },
     { icon: "👤", label: "Profile", route: "/profile" as Href },
+    { icon: "🤖", label: "SeekerBot", route: "/chatbot-seeker" as Href },
   ];
 
   const handleTabPress = (label: string, route: Href) => {
@@ -440,118 +440,118 @@ export default function HomeScreen() {
           onEndReachedThreshold={0.5}
           ListHeaderComponent={
             <>
-          {/* ── HERO ── */}
-          <LinearGradient
-            colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.hero}
-          >
-            <View style={styles.heroTop}>
-              <View>
-                <Text style={styles.heroTitle}>
-                   Welcome,{"\n"}{userName || "Roominder"} 👋
-                </Text>
-                <Text style={styles.heroSubtitle}>Find your perfect match</Text>
-                <View style={styles.heroChips}>
-                  <View style={styles.heroChip}>
-                    <Text style={styles.heroChipText}>New in Paris</Text>
+              {/* ── HERO ── */}
+              <LinearGradient
+                colors={["#F4896B", "#F7B89A", "#7ECEC4"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.hero}
+              >
+                <View style={styles.heroTop}>
+                  <View>
+                    <Text style={styles.heroTitle}>
+                      Welcome,{"\n"}{userName || "Roominder"} 👋
+                    </Text>
+                    <Text style={styles.heroSubtitle}>Find your perfect match</Text>
+                    <View style={styles.heroChips}>
+                      <View style={styles.heroChip}>
+                        <Text style={styles.heroChipText}>New in Paris</Text>
+                      </View>
+                      <View style={[styles.heroChip, styles.heroChipTeal]}>
+                        <Text style={styles.heroChipTextDark}>Verified</Text>
+                      </View>
+                    </View>
                   </View>
-                  <View style={[styles.heroChip, styles.heroChipTeal]}>
-                    <Text style={styles.heroChipTextDark}>Verified</Text>
+                  <TouchableOpacity
+                    style={styles.bellButton}
+                    onPress={() => router.push("/notifications")}
+                  >
+                    <Text style={styles.bellIcon}>🔔</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {showRoommates ? (
+                  <View style={[styles.toggleContainer, isDark && styles.toggleContainerDark]}>
+                    <TouchableOpacity
+                      style={[
+                        styles.toggleBtn,
+                        styles.toggleActive,
+                        isDark && styles.toggleActiveDark,
+                      ]}
+                    >
+                      <Text style={styles.toggleIconActive}>🏠</Text>
+                      <Text style={styles.toggleTextActive}>Housing</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.toggleBtn}
+                      onPress={() => router.push("/roomatematch")}
+                    >
+                      <Text style={[styles.toggleIcon, isDark && styles.toggleIconDark]}>👥</Text>
+                      <Text style={[styles.toggleText, isDark && styles.toggleTextDark]}>Roommates</Text>
+                    </TouchableOpacity>
                   </View>
+                ) : (
+                  <View style={[styles.toggleContainer, isDark && styles.toggleContainerDark]}>
+                    <TouchableOpacity
+                      style={[
+                        styles.toggleBtn,
+                        styles.toggleActive,
+                        isDark && styles.toggleActiveDark,
+                      ]}
+                    >
+                      <Text style={styles.toggleIconActive}>🏠</Text>
+                      <Text style={styles.toggleTextActive}>Housing</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </LinearGradient>
+
+              {/* ── STATS ── */}
+              <View style={styles.statsRow}>
+                <View style={[styles.statCard, isDark && styles.statCardDark]}>
+                  <Text style={[styles.statLabel, isDark && styles.statLabelDark]}>📈 New Listings</Text>
+                  <Text style={[styles.statValue, styles.statValueTeal, isDark && styles.statValueDark]}>{stats.new_listings}</Text>
+                </View>
+                <View style={[styles.statCard, isDark && styles.statCardDark]}>
+                  <Text style={[styles.statLabel, isDark && styles.statLabelDark]}>✨ Best Match</Text>
+                  <Text style={[styles.statValue, styles.statValueAccent, isDark && styles.statValueDark]}>
+                    {stats.best_match}%
+                  </Text>
                 </View>
               </View>
-            <TouchableOpacity
-              style={styles.bellButton}
-              onPress={() => router.push("/notifications")}
-            >
-              <Text style={styles.bellIcon}>🔔</Text>
-            </TouchableOpacity>
-            </View>
 
-            {showRoommates ? (
-              <View style={[styles.toggleContainer, isDark && styles.toggleContainerDark]}>
-                <TouchableOpacity
-                  style={[
-                    styles.toggleBtn,
-                    styles.toggleActive,
-                    isDark && styles.toggleActiveDark,
-                  ]}
-                >
-                  <Text style={styles.toggleIconActive}>🏠</Text>
-                  <Text style={styles.toggleTextActive}>Housing</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.toggleBtn}
-                  onPress={() => router.push("/roomatematch")}
-                >
-                  <Text style={[styles.toggleIcon, isDark && styles.toggleIconDark]}>👥</Text>
-                  <Text style={[styles.toggleText, isDark && styles.toggleTextDark]}>Roommates</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={[styles.toggleContainer, isDark && styles.toggleContainerDark]}>
-                <TouchableOpacity
-                  style={[
-                    styles.toggleBtn,
-                    styles.toggleActive,
-                    isDark && styles.toggleActiveDark,
-                  ]}
-                >
-                  <Text style={styles.toggleIconActive}>🏠</Text>
-                  <Text style={styles.toggleTextActive}>Housing</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </LinearGradient>
+              {/* ── FILTERS ── */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+                {["all", "location", "budget", "lifestyle"].map((filterOpt) => (
+                  <TouchableOpacity
+                    key={filterOpt}
+                    style={[
+                      styles.filterChip,
+                      activeFilter === filterOpt && styles.filterChipActive,
+                    ]}
+                    onPress={() => setActiveFilter(filterOpt)}
+                  >
+                    <Text style={[
+                      styles.filterChipText,
+                      activeFilter === filterOpt && styles.filterChipTextActive
+                    ]}>
+                      {filterOpt.charAt(0).toUpperCase() + filterOpt.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
-          {/* ── STATS ── */}
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, isDark && styles.statCardDark]}>
-              <Text style={[styles.statLabel, isDark && styles.statLabelDark]}>📈 New Listings</Text>
-              <Text style={[styles.statValue, styles.statValueTeal, isDark && styles.statValueDark]}>{stats.new_listings}</Text>
-            </View>
-            <View style={[styles.statCard, isDark && styles.statCardDark]}>
-              <Text style={[styles.statLabel, isDark && styles.statLabelDark]}>✨ Best Match</Text>
-              <Text style={[styles.statValue, styles.statValueAccent, isDark && styles.statValueDark]}>
-                {stats.best_match}%
-              </Text>
-            </View>
-          </View>
-
-          {/* ── FILTERS ── */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-            {["all", "location", "budget", "lifestyle"].map((filterOpt) => (
-              <TouchableOpacity
-                key={filterOpt}
-                style={[
-                  styles.filterChip,
-                  activeFilter === filterOpt && styles.filterChipActive,
-                ]}
-                onPress={() => setActiveFilter(filterOpt)}
-              >
-                <Text style={[
-                  styles.filterChipText,
-                  activeFilter === filterOpt && styles.filterChipTextActive
-                ]}>
-                  {filterOpt.charAt(0).toUpperCase() + filterOpt.slice(1)}
+              {/* ── LISTINGS ── */}
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
+                  Recommended for{"\n"}You
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* ── LISTINGS ── */}
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
-              Recommended for{"\n"}You
-            </Text>
-            <TouchableOpacity>
-              <Text style={[styles.viewAll, isDark && styles.viewAllDark]}>
-                View{"\n"}All
-              </Text>
-            </TouchableOpacity>
-          </View>
+                <TouchableOpacity>
+                  <Text style={[styles.viewAll, isDark && styles.viewAllDark]}>
+                    View{"\n"}All
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
             </>
           }
@@ -588,10 +588,10 @@ export default function HomeScreen() {
               icon={tab.icon}
               label={tab.label}
               active={activeTab === tab.label}
-            onPress={() => handleTabPress(tab.label, tab.route)}
-          />
-        ))}
-      </View>
+              onPress={() => handleTabPress(tab.label, tab.route)}
+            />
+          ))}
+        </View>
       </SafeAreaView>
     </LinearGradient>
   );
