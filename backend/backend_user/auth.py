@@ -24,7 +24,6 @@ from .models import User
 
 
 
-
 class UserCreate(BaseModel):
 	email: EmailStr
 	password: str
@@ -191,35 +190,38 @@ async def get_current_user_ws(token: str, db: Session) -> User:
 	return user
 
 
-@auth_router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-def register_user(payload: UserCreate, db: Session = Depends(get_db)):
-	existing = get_user_by_email(db, payload.email)
-	if existing:
-		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+@auth_router.post("/register", response_model=LoginResponse)
+def register_user(payload: UserCreate, db: Session = Depends(get_db), request: Request = None):
 
-	# Enforce bcrypt length constraints early
-	_ensure_password_len(payload.password)
+    existing = get_user_by_email(db, payload.email)
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already exists")
 
-	user = User(
-		email=payload.email,
-		hashed_password=get_password_hash(payload.password),
-		full_name=payload.full_name,
-		role=payload.role
-	)
-	db.add(user)
-	try:
-		db.commit()
-	except IntegrityError:
-		db.rollback()
-		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
-	db.refresh(user)
+    ip = request.client.host if request else "unknown"
 
-	# Issue token after registration
-	claims = {"sub": str(user.id)}
-	if user.role:
-		claims["role"] = user.role
-	token = create_access_token(claims)
-	return {"access_token": token, "token_type": "bearer", "role": user.role}
+    device_exists = False  # later you can detect real device
+    score, status = calculate_score(device_exists, ip)
+
+    # CREATE USER AS PENDING FIRST
+    user = User(
+        email=payload.email,
+        hashed_password=get_password_hash(payload.password),
+        full_name=payload.full_name,
+        role=payload.role,
+        status="pending",   # 🔥 IMPORTANT
+        risk_score=score
+    )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "message": "pending_verification",
+        "user_id": user.id,
+        "status": "pending",
+        "score": score
+    }
 
 
 @auth_router.post("/login", response_model=LoginResponse)
