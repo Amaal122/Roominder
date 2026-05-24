@@ -1,6 +1,6 @@
 import { API_BASE } from "@/constants/api";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, type Href } from "expo-router";
+import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -65,35 +65,9 @@ export default function Profile() {
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
 
-  type TabId = "home" | "match" | "chat" | "favorites" | "profile";
-  const tabs: { id: TabId; icon: string; label: string; route: Href }[] = useMemo(() => {
-    const lookingFor = profile?.looking_for;
-    const showMatch = lookingFor !== "house";
-    const showFavorites = lookingFor !== "roommate";
-    const homeRoute =
-      (lookingFor === "roommate" ? "/roomatematch" : "/homescreen") as Href;
-
-    return [
-      { id: "home", icon: "🏠", label: t("tabs.home"), route: homeRoute },
-      ...(showMatch
-        ? [{ id: "match" as const, icon: "👥", label: t("tabs.match"), route: "/match" as Href }]
-        : []),
-      { id: "chat", icon: "💬", label: t("tabs.chat"), route: "/chat" },
-      ...(showFavorites
-        ? [{ id: "favorites" as const, icon: "❤️", label: t("tabs.favorites"), route: "/favorite" as Href }]
-        : []),
-      { id: "profile", icon: "👤", label: t("tabs.profile"), route: "/profile" },
-    ];
-  }, [profile?.looking_for, t]);
-  const [activeTab, setActiveTab] = useState<TabId>("profile");
   const [remote, setRemote] = useState<ProfileMeOut | null>(null);
   const [loadingRemote, setLoadingRemote] = useState(false);
 
-  const handleTabPress = (tabId: TabId, route: Href) => {
-    setActiveTab(tabId);
-    if (tabId === "profile") return;
-    router.push(route);
-  };
 
   const handleDisconnect = async () => {
     await clearAuthToken();
@@ -324,27 +298,6 @@ export default function Profile() {
           </View>
         </ScrollView>
 
-        <View style={[styles.tabBar, isDark && styles.tabBarDark]}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab.label}
-              style={styles.tabItem}
-              activeOpacity={0.8}
-              onPress={() => handleTabPress(tab.id, tab.route)}
-            >
-              <Text style={styles.tabIcon}>{tab.icon}</Text>
-              <Text
-                style={[
-                  styles.tabLabel,
-                  isDark && styles.tabLabelDark,
-                  activeTab === tab.id && styles.tabLabelActive,
-                ]}
-              >
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -452,21 +405,5 @@ const styles = StyleSheet.create({
   actionLabel: { fontWeight: "800", color: "#fff" },
   actionGhostLabel: { color: "#2b2b33" },
   actionGhostLabelDark: { color: Colors.dark.text },
-  tabBar: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    paddingBottom: 8,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#e6e9ef",
-  },
-  tabBarDark: {
-    backgroundColor: Colors.dark.card,
-    borderTopColor: Colors.dark.border,
-  },
-  tabItem: { flex: 1, alignItems: "center" },
-  tabIcon: { fontSize: 20, marginBottom: 2 },
-  tabLabel: { fontSize: 10, color: "#AAAAAA", fontWeight: "500" },
-  tabLabelDark: { color: Colors.dark.mutedText },
-  tabLabelActive: { color: "#F4896B", fontWeight: "700" },
 });
+

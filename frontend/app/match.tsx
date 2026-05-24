@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useRouter, type Href } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -14,7 +14,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 import {
   loadSavedRoommateMatches,
   type RoommateMatchProfile,
@@ -24,30 +23,10 @@ export default function Match() {
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
   const router = useRouter();
-  const { profile } = useSeekerProfile();
 
   const [matches, setMatches] = useState<RoommateMatchProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("Match");
-
-  const tabs: { icon: string; label: string; route: Href }[] = useMemo(() => {
-    const lookingFor = profile?.looking_for;
-    const showMatch = lookingFor !== "house";
-    const showFavorites = lookingFor !== "roommate";
-    const homeRoute =
-      (lookingFor === "roommate" ? "/roomatematch" : "/homescreen") as Href;
-
-    return [
-      { icon: "🏠", label: "Home", route: homeRoute },
-      ...(showMatch ? [{ icon: "👥", label: "Match", route: "/match" as Href }] : []),
-      { icon: "💬", label: "Chat", route: "/chat" as Href },
-      ...(showFavorites
-        ? [{ icon: "❤️", label: "Favorites", route: "/favorite" as Href }]
-        : []),
-      { icon: "👤", label: "Profile", route: "/profile" as Href },
-    ];
-  }, [profile?.looking_for]);
 
   const refreshMatches = useCallback(
     async (shouldAbort?: () => boolean) => {
@@ -99,11 +78,6 @@ export default function Match() {
     });
   };
 
-  const handleTabPress = (tabLabel: string, route: Href) => {
-    setActiveTab(tabLabel);
-    if (tabLabel === "Match") return;
-    router.push(route);
-  };
 
   return (
     <LinearGradient
@@ -216,27 +190,6 @@ export default function Match() {
           )}
         </View>
 
-        <View style={[styles.tabBar, isDark && styles.tabBarDark]}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab.label}
-              style={styles.tabItem}
-              activeOpacity={0.8}
-              onPress={() => handleTabPress(tab.label, tab.route)}
-            >
-              <Text style={styles.tabIcon}>{tab.icon}</Text>
-              <Text
-                style={[
-                  styles.tabLabel,
-                  isDark && styles.tabLabelDark,
-                  activeTab === tab.label && styles.tabLabelActive,
-                ]}
-              >
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -343,21 +296,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   contactLabel: { color: "#fff", fontWeight: "800" },
-  tabBar: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    paddingBottom: 8,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#e6e9ef",
-  },
-  tabBarDark: {
-    backgroundColor: Colors.dark.card,
-    borderTopColor: Colors.dark.border,
-  },
-  tabItem: { flex: 1, alignItems: "center" },
-  tabIcon: { fontSize: 20, marginBottom: 2 },
-  tabLabel: { fontSize: 10, color: "#AAAAAA", fontWeight: "500" },
-  tabLabelDark: { color: Colors.dark.mutedText },
-  tabLabelActive: { color: "#F4896B", fontWeight: "700" },
 });
+

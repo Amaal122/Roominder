@@ -1,6 +1,6 @@
 import { API_BASE } from "@/constants/api";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, type Href } from "expo-router";
+import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -17,7 +17,6 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Colors } from "@/constants/theme";
 import { useFavoritesStore } from "../store/favoriteStore";
 import { getAuthToken } from "./state/auth";
-import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 
 
 type PropertyOut = {
@@ -41,26 +40,6 @@ export default function Favorite() {
   const router = useRouter();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
-
-  const { profile } = useSeekerProfile();
-  const tabs: { icon: string; label: string; route: Href }[] = useMemo(() => {
-    const lookingFor = profile?.looking_for;
-    const showMatch = lookingFor !== "house";
-    const showFavorites = lookingFor !== "roommate";
-    const homeRoute =
-      (lookingFor === "roommate" ? "/roomatematch" : "/homescreen") as Href;
-
-    return [
-      { icon: "🏠", label: "Home", route: homeRoute },
-      ...(showMatch ? [{ icon: "👥", label: "Match", route: "/match" as Href }] : []),
-      { icon: "💬", label: "Chat", route: "/chat" },
-      ...(showFavorites
-        ? [{ icon: "❤️", label: "Favorites", route: "/favorite" as Href }]
-        : []),
-      { icon: "👤", label: "Profile", route: "/profile" },
-    ];
-  }, [profile?.looking_for]);
-  const [activeTab, setActiveTab] = useState("Favorites");
   const [items, setItems] = useState(localFavorites);
   const [loading, setLoading] = useState(false);
 
@@ -145,12 +124,6 @@ export default function Favorite() {
       cancelled = true;
     };
   }, [localFavorites, localNumericPropertyIds]);
-
-  const handleTabPress = (tabLabel: string, route: Href) => {
-    setActiveTab(tabLabel);
-    if (tabLabel === "Favorites") return;
-    router.push(route);
-  };
 
   return (
     <LinearGradient
@@ -254,29 +227,6 @@ export default function Favorite() {
             </ScrollView>
           )}
         </View>
-
-        {/* Bottom nav */}
-        <View style={[styles.tabBar, isDark && styles.tabBarDark]}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab.label}
-              style={styles.tabItem}
-              activeOpacity={0.8}
-              onPress={() => handleTabPress(tab.label, tab.route)}
-            >
-              <Text style={styles.tabIcon}>{tab.icon}</Text>
-              <Text
-                style={[
-                  styles.tabLabel,
-                  isDark && styles.tabLabelDark,
-                  activeTab === tab.label && styles.tabLabelActive,
-                ]}
-              >
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -373,21 +323,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   contactLabel: { color: "#fff", fontWeight: "800" },
-  tabBar: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    paddingBottom: 8,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#e6e9ef",
-  },
-  tabBarDark: {
-    backgroundColor: Colors.dark.card,
-    borderTopColor: Colors.dark.border,
-  },
-  tabItem: { flex: 1, alignItems: "center" },
-  tabIcon: { fontSize: 20, marginBottom: 2 },
-  tabLabel: { fontSize: 10, color: "#AAAAAA", fontWeight: "500" },
-  tabLabelDark: { color: Colors.dark.mutedText },
-  tabLabelActive: { color: "#F4896B", fontWeight: "700" },
 });
+

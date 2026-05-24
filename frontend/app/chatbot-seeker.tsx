@@ -20,6 +20,13 @@ const API_URL = "http://127.0.0.1:8001";
 type Message = {
     role: "user" | "assistant";
     content: string;
+    links?: ChatLink[];
+};
+
+type ChatLink = {
+    label: string;
+    route: string;
+    params?: Record<string, string>;
 };
 
 export default function ChatbotSeeker() {
@@ -61,6 +68,7 @@ export default function ChatbotSeeker() {
             const botMessage: Message = {
                 role: "assistant",
                 content: data.response,
+                links: Array.isArray(data.links) ? data.links : [],
             };
             setMessages([...newMessages, botMessage]);
         } catch (error) {
@@ -133,6 +141,24 @@ export default function ChatbotSeeker() {
                                 >
                                     {msg.content}
                                 </Text>
+                                {msg.role === "assistant" && msg.links && msg.links.length > 0 && (
+                                    <View style={styles.linkRow}>
+                                        {msg.links.map((link, linkIndex) => (
+                                            <TouchableOpacity
+                                                key={`${link.route}-${linkIndex}`}
+                                                style={styles.linkButton}
+                                                onPress={() =>
+                                                    router.push({
+                                                        pathname: link.route as any,
+                                                        params: link.params ?? {},
+                                                    })
+                                                }
+                                            >
+                                                <Text style={styles.linkButtonText}>{link.label}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
                             </View>
                         </View>
                     ))}
@@ -228,6 +254,25 @@ const styles = StyleSheet.create({
     messageText: { fontSize: 15, lineHeight: 22 },
     userText: { color: "#fff" },
     botText: { color: "#1e1f2b" },
+    linkRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+        marginTop: 10,
+    },
+    linkButton: {
+        backgroundColor: "#e8f8f1",
+        borderWidth: 1,
+        borderColor: "#bfead8",
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+    },
+    linkButtonText: {
+        color: "#1f8f63",
+        fontSize: 13,
+        fontWeight: "700",
+    },
     inputContainer: {
         flexDirection: "row",
         alignItems: "center",

@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, relationship
 
@@ -120,8 +120,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 	return jwt.encode(to_encode, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
+def _normalize_email(email: str) -> str:
+	return email.strip().lower()
+
+
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
-	return db.query(User).filter(User.email == email).first()
+	normalized_email = _normalize_email(email)
+	return db.query(User).filter(func.lower(User.email) == normalized_email).first()
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
@@ -193,7 +198,8 @@ async def get_current_user_ws(token: str, db: Session) -> User:
 
 @auth_router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 def register_user(payload: UserCreate, db: Session = Depends(get_db)):
-	existing = get_user_by_email(db, payload.email)
+	email = _normalize_email(payload.email)
+	existing = get_user_by_email(db, email)
 	if existing:
 		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
@@ -201,7 +207,7 @@ def register_user(payload: UserCreate, db: Session = Depends(get_db)):
 	_ensure_password_len(payload.password)
 
 	user = User(
-		email=payload.email,
+		email=email,
 		hashed_password=get_password_hash(payload.password),
 		full_name=payload.full_name,
 		role=payload.role

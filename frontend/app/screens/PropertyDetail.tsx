@@ -41,6 +41,13 @@ const parseNumberOrFallback = (value: string | undefined, fallback: number) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const resolveImageUrl = (value?: string) => {
+  if (!value) return undefined;
+  if (/^(https?:|data:|blob:)/i.test(value)) return value;
+  if (value.startsWith("/")) return `${API_BASE}${value}`;
+  return `${API_BASE}/${value}`;
+};
+
 const IconWifi = () => (
   <View style={{ alignItems: "center", gap: 3 }}>
     {[20, 14, 8].map((w, i) => (
@@ -280,7 +287,8 @@ export default function PropertyDetail() {
   const scoreLocation = parseNumberOrFallback(getSingleParam(params.scoreLocation), 98);
   const scoreBudget = parseNumberOrFallback(getSingleParam(params.scoreBudget), 92);
   const scoreLifestyle = parseNumberOrFallback(getSingleParam(params.scoreLifestyle), 95);
-  const image = getSingleParam(params.image);
+  const initialImage = resolveImageUrl(getSingleParam(params.image));
+  const [heroImage, setHeroImage] = useState<string | undefined>(initialImage);
   const baths = getSingleParam(params.baths) ?? "1 Bath";
   const size = getSingleParam(params.size) ?? "65 m²";
   let parsedExplanation: string[] = [];
@@ -361,7 +369,11 @@ export default function PropertyDetail() {
         const response = await fetch(`${API_BASE}/properties/${propertyId}`);
         if (!response.ok) return;
 
-        const data: { owner_id?: number; description?: string | null } = await response.json();
+        const data: {
+          owner_id?: number;
+          description?: string | null;
+          image_url?: string | null;
+        } = await response.json();
 
         if (cancelled) return;
 
@@ -371,6 +383,11 @@ export default function PropertyDetail() {
 
         if (data.description?.trim()) {
           setDescription(data.description.trim());
+        }
+
+        const nextImage = resolveImageUrl(data.image_url ?? undefined);
+        if (nextImage) {
+          setHeroImage(nextImage);
         }
       } catch {
         // ignore; fallbacks manage this state
@@ -415,7 +432,7 @@ export default function PropertyDetail() {
 
   const handleFavorite = () => {
     const id = propertyId ?? `${title}-${location}`;
-    addFavorite({ id, title, location, price, image });
+    addFavorite({ id, title, location, price, image: heroImage });
   };
 
   const handleBack = useCallback(() => {
@@ -444,9 +461,9 @@ export default function PropertyDetail() {
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         <View style={styles.hero}>
-          {image ? (
+          {heroImage ? (
             <Image
-              source={{ uri: image }}
+              source={{ uri: heroImage }}
               style={styles.heroImage}
               resizeMode="cover"
             />

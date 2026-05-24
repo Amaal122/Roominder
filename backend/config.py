@@ -20,6 +20,10 @@ def normalize_sqlalchemy_database_url(url: str) -> str:
 
 	if url.startswith(("postgresql://", "postgres://")):
 		return "postgresql+psycopg://" + url.split("://", 1)[1]
+	if "://" not in url and "@" in url:
+		# Neon sometimes gets copied without the scheme/user prefix, e.g.
+		# password@host/db?sslmode=require. Default Neon database user is neondb_owner.
+		return f"postgresql+psycopg://neondb_owner:{url}"
 	return url
 
 

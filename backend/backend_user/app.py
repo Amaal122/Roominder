@@ -31,11 +31,6 @@ from .two_factor import router as two_factor_router
 from ..chatbot.routes.chat import router as chatbot_router
 from ..Ai_roomate.facedetection import router as face_detection_router
 
-
-
-
-
-
 from ..Ai_housing.routes.matching import router as ai_router
 from ..Ai_roomate.router import router as ai_roommate_router
 
@@ -59,6 +54,7 @@ app.add_middleware(
 		"http://127.0.0.1:19006",  # Expo go (IP)
 		"http://localhost:3000",   # fallback dev port
 		"http://127.0.0.1:3000",   # fallback dev port (IP)
+		"https://greedily-flaring-snoring.ngrok-free.dev",  # ngrok mobile tunnel
 	],
 	allow_credentials=True,
 	allow_methods=["*"],

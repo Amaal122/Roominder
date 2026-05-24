@@ -240,7 +240,9 @@ export default function RoomateMatch() {
     { icon: "🏠", label: "Home", route: "/roomatematch" as Href },
     ...(showRoommates ? [{ icon: "👥", label: "Match", route: "/match" as Href }] : []),
     { icon: "💬", label: "Chat", route: "/chat" as Href },
+    { icon: "❤️", label: "Favorites", route: "/favorite" as Href },
     { icon: "👤", label: "Profile", route: "/profile" as Href },
+    { icon: "🤖", label: "SeekerBot", route: "/chatbot-seeker" as Href },
   ];
 
   const [profiles, setProfiles] = useState<RoommateMatchProfile[]>([]);
@@ -641,3 +643,4 @@ function AnimatedTabIcon({
     </TouchableOpacity>
   );
 }
+

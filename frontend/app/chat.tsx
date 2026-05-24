@@ -1,7 +1,7 @@
 import { API_BASE } from "@/constants/api";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useRouter, type Href } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   ScrollView,
@@ -15,7 +15,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Colors } from "@/constants/theme";
 import { getAuthToken } from "./state/auth";
-import { useSeekerProfile } from "./contexts/SeekerProfileContext";
 
 
 type ConversationItem = {
@@ -46,36 +45,10 @@ export default function Chat() {
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
 
-  const { profile } = useSeekerProfile();
-  const tabs: { icon: string; label: string; route: Href }[] = useMemo(() => {
-    const lookingFor = profile?.looking_for;
-    const showMatch = lookingFor !== "house";
-    const showFavorites = lookingFor !== "roommate";
-    const homeRoute =
-      (lookingFor === "roommate" ? "/roomatematch" : "/homescreen") as Href;
-
-    return [
-      { icon: "🏠", label: "Home", route: homeRoute },
-      ...(showMatch ? [{ icon: "👥", label: "Match", route: "/match" as Href }] : []),
-      { icon: "💬", label: "Chat", route: "/chat" },
-      ...(showFavorites
-        ? [{ icon: "❤️", label: "Favorites", route: "/favorite" as Href }]
-        : []),
-      { icon: "👤", label: "Profile", route: "/profile" },
-    ];
-  }, [profile?.looking_for]);
-  const [activeTab, setActiveTab] = useState("Chat");
-  const [isOwner, setIsOwner] = useState(false);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-
-  const handleTabPress = (tabLabel: string, route: Href) => {
-    setActiveTab(tabLabel);
-    if (tabLabel === "Chat") return;
-    router.push(route);
-  };
 
 useFocusEffect(
   useCallback(() => {
@@ -87,41 +60,6 @@ useFocusEffect(
         setError(null);
         const token = await getAuthToken();
         if (!token) throw new Error("Missing auth token");
-
-        // Determine role so we can hide the bottom nav for owners
-        try {
-          const meRes = await fetch(`${API_BASE}/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (meRes.ok) {
-            const meRaw = await meRes.text();
-            let me: any = null;
-            if (meRaw) {
-              try {
-                me = JSON.parse(meRaw);
-              } catch {
-                me = null;
-              }
-            }
-
-            const role = typeof me?.role === "string" ? me.role : undefined;
-            const userType = typeof me?.user_type === "string" ? me.user_type : undefined;
-            const ownerFlag = me?.is_owner === true;
-
-            const looksLikeOwner =
-              (typeof role === "string" && role.toLowerCase().includes("owner")) ||
-              (typeof userType === "string" && userType.toLowerCase().includes("owner")) ||
-              ownerFlag;
-
-            if (isMounted) {
-              setIsOwner(looksLikeOwner);
-            }
-          }
-        } catch (roleErr) {
-          // Don't block the chat list if role detection fails
-          console.warn("Failed to detect user role:", roleErr);
-        }
 
         const response = await fetch(`${API_BASE}/chat/conversations`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -222,7 +160,7 @@ useFocusEffect(
 
         {/* Messages list */}
         <ScrollView
-          contentContainerStyle={[styles.listContent, isOwner ? { paddingBottom: 24 } : null]}
+          contentContainerStyle={styles.listContent}
           style={[styles.list, isDark && styles.listDark]}
           showsVerticalScrollIndicator={false}
         >
@@ -311,30 +249,6 @@ useFocusEffect(
           )}
         </ScrollView>
 
-        {/* Bottom nav (hide for owners) */}
-        {!isOwner ? (
-          <View style={[styles.tabBar, isDark && styles.tabBarDark]}>
-            {tabs.map((tab) => (
-              <TouchableOpacity
-                key={tab.label}
-                style={styles.tabItem}
-                activeOpacity={0.8}
-                onPress={() => handleTabPress(tab.label, tab.route)}
-              >
-                <Text style={styles.tabIcon}>{tab.icon}</Text>
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    isDark && styles.tabLabelDark,
-                    activeTab === tab.label && styles.tabLabelActive,
-                  ]}
-                >
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ) : null}
       </SafeAreaView>
     </LinearGradient>
   );
@@ -477,21 +391,4 @@ const styles = StyleSheet.create({
   emptyTitleDark: { color: Colors.dark.text },
   emptySubtitle: { color: "#7a7d8a", fontSize: 13, marginTop: 8, textAlign: "center" },
   emptySubtitleDark: { color: Colors.dark.mutedText },
-  tabBar: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    paddingBottom: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#eceef4",
-  },
-  tabBarDark: {
-    backgroundColor: Colors.dark.card,
-    borderTopColor: Colors.dark.border,
-  },
-  tabItem: { flex: 1, alignItems: "center" },
-  tabIcon: { fontSize: 20, marginBottom: 2 },
-  tabLabel: { fontSize: 10, color: "#AAAAAA", fontWeight: "500" },
-  tabLabelDark: { color: Colors.dark.mutedText },
-  tabLabelActive: { color: "#7d5dff", fontWeight: "700" },
 });
