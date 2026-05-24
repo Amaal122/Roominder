@@ -62,3 +62,7 @@ app-example
 
 # npm caches
 .npm-cache/
+
+frontend/.env
+replace.txt
+secrets.txt
