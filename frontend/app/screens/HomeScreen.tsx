@@ -1,4 +1,3 @@
-import { API_BASE } from "@/constants/api";
 // app/screens/HomeScreen.tsx
 
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,7 +7,6 @@ import { useSeekerProfile } from "../contexts/SeekerProfileContext";
 import {
   Animated,
   FlatList,
-  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -104,13 +102,13 @@ const AnimatedTabIcon = ({
       Animated.timing(translateY, {
         toValue: -7,
         duration: 120,
-        useNativeDriver: Platform.OS !== 'web',
+        useNativeDriver: true,
       }),
       Animated.spring(translateY, {
         toValue: 0,
         friction: 4,
         tension: 160,
-        useNativeDriver: Platform.OS !== 'web',
+        useNativeDriver: true,
       }),
     ]).start();
 
@@ -196,6 +194,7 @@ const ListingCard = ({
 };
 
 // ─── HomeScreen ───────────────────────────────────────────────────────────────
+const API_BASE = "http://127.0.0.1:8001";
 
 const resolveImageUrl = (imageUrl?: string | null) => {
   if (!imageUrl) return null;
@@ -254,7 +253,7 @@ export default function HomeScreen() {
       const token = await getAuthToken();
       if (!token) return;
 
-      const res = await fetch(`${API_BASE}/auth/me`, {
+      const res = await fetch("http://127.0.0.1:8001/auth/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
