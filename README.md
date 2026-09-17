@@ -1,50 +1,72 @@
-# Welcome to ROOMINDER👋
+# Roominder — AI Roommate & Housing Matching Platform
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Roominder is a Tunisian cross-platform mobile application that connects people seeking shared housing with compatible roommates and properties. An AI assistant built on the Groq API helps both tenants and property owners throughout the search, matching, and management flow.
 
-## Get started
+## Repository structure
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+backend/               FastAPI backend services
+  Ai_roomate/          Roommate matching engine (NLP vectorization + clustering, MediaPipe face detection)
+  Ai_housing/          Property matching engine
+  backend_user/        Tenant service: auth (JWT), profiles, favorites, matches, WebSocket chat, 2FA
+  backend_propertyowner/  Owner service: properties, applications, visits, notifications, stats
+  chatbot/             AI assistant (Groq llama-3.1-8b-instant) with owner/seeker role prompts
+  db.py                SQLAlchemy / PostgreSQL setup
+frontend/              Expo (React Native, TypeScript) mobile app, file-based routing
+admin-dashboard/       Next.js admin dashboard + dedicated FastAPI admin backend
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## How matching works
 
-## Learn more
+- Tenant and owner profiles are encoded with NLP embeddings (sentence-transformers).
+- Candidate roommates and properties are grouped and ranked via clustering.
+- Scoring weights: budget 35%, location 30%, rooms 20%, lifestyle 15%.
+- Property owners can also review tenant profiles before approving applications.
 
-To learn more about developing your project with Expo, look at the following resources:
+## AI assistant
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- Backed by the Groq API (`llama-3.1-8b-instant`), with separate system prompts and live context for:
+  - **Owners** — property management, revenue/occupancy stats, visit scheduling, application review.
+  - **Tenants** — housing and roommate search (constrained to real available listings, never invented), application and messaging guidance.
+- Replies in French, Arabic, or English based on the user's language; conversation history (last 10 turns) is included per request.
 
-## Join the community
+## Stack
 
-Join our community of developers creating universal apps.
+- **Frontend:** React Native (Expo), TypeScript, file-based routing
+- **Backend:** FastAPI, SQLAlchemy, PostgreSQL (psycopg), uvicorn, Cloudinary (media)
+- **Auth & security:** python-jose (JWT), passlib/bcrypt, pyotp + QR (TOTP two-factor)
+- **AI/ML:** sentence-transformers embeddings, clustering, MediaPipe/OpenCV (face detection), Groq `llama-3.1-8b-instant`
+- **Real-time:** WebSocket chat with connection/room management
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Running locally
+
+Backend:
+
+```bash
+cd backend
+pip install -r requirements.txt
+# configure database / env (see backend/config.py and .env)
+uvicorn app:app --reload
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+npx expo start
+```
+
+Admin dashboard:
+
+```bash
+cd admin-dashboard/frontend
+npm install
+npm run dev
+# plus admin-dashboard/backend: uvicorn main:app --port 8002
+```
+
+## Notes
+
+- The mobile frontend is the source of truth for the tenant/owner UX; the admin dashboard is a management view over the same data model.
+- Static uploads and local databases are service-level data, not source code.
