@@ -1,74 +1,23 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
 node_modules/
-
-# Expo
+.npm-cache/
+frontend/.npm-cache/
 .expo/
 dist/
+build/
 web-build/
-expo-env.d.ts
-
-# Next.js build output
-admin-dashboard/.next/
-
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env*.local
-backend/.env
-
-# generated exports / local artifacts
-backend/seeker_profiles.xlsx
-
-# Ai_roomate generated datasets/vectors (can contain PII and are re-generatable)
-backend/Ai_roomate/*.json
-backend/Ai_roomate/*.csv
-
-# Legacy/experimental routes folder (not used by app entrypoint)
-backend/backend_user/routes/
-
-# python
 __pycache__/
-*.pyc
-
-# typescript
-*.tsbuildinfo
-
-app-example
-
-# generated native folders
-/ios
-/android
-
-# npm caches
-.npm-cache/
-
-frontend/.env
-replace.txt
-secrets.txt
-
-node_modules/
-.next/
-frontend/node_modules/
-frontend/.next/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+backend/roominderdb.sql
+backend/static/
 *.log
+.vscode/
+.idea/
